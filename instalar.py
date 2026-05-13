@@ -26,7 +26,7 @@ import urllib.request
 # ── Configuración de la instalación ─────────────────────────────────────────
 DESTINO   = r"C:\liverpool-automation"
 PYTHON    = sys.executable
-REPO_RAW  = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
+REPO_RAW  = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/claude/bot-installer-setup-zhcN0"
 
 # Archivos a descargar desde GitHub (sin credenciales)
 ARCHIVOS_GITHUB = [
