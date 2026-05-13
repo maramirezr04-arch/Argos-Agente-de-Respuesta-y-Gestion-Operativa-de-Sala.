@@ -1,132 +1,126 @@
-#!/usr/bin/env python3
-"""Mantiene la hoja DIRECTORIO actualizada con los jefes del CSV más reciente."""
-
-import sys
-import os
-import csv
-import logging
-import datetime
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import config
-
+from datetime import datetime
 import gspread
-from google.oauth2.service_account import Credentials
 
-SCOPES = [
-    "https://spreadsheets.google.com/feeds",
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive",
-]
+def actualizar_directorio_e_historial(gc, sheet_id):
+    print("Actualizando DIRECTORIO e HISTORIAL...")
+    ss = gc.open_by_key(sheet_id)
 
+    hoja1    = ss.worksheet('Hoja 1')
+    datos_h1 = hoja1.get_all_values()
 
-def setup_logging():
-    os.makedirs(config.LOGS_DIR, exist_ok=True)
-    hoy = datetime.date.today().strftime("%Y-%m-%d")
-    log_file = os.path.join(config.LOGS_DIR, f"{hoy}.log")
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [DIRECTORIO] %(message)s",
-        handlers=[
-            logging.FileHandler(log_file, encoding="utf-8"),
-            logging.StreamHandler(sys.stdout),
-        ],
-    )
-    return logging.getLogger("directorio")
+    if len(datos_h1) < 2:
+        print("  Hoja 1 vacía, omitiendo")
+        return
 
+    COL_SECCION = 5
+    COL_JEFE    = 17
 
-def get_gc():
-    creds = Credentials.from_service_account_file(config.CREDENTIALS_FILE, scopes=SCOPES)
-    return gspread.authorize(creds)
+    hoja_hist  = ss.worksheet('HISTORIAL')
+    datos_hist = hoja_hist.get_all_values()
+    hist_dict  = {}
+    for row in datos_hist[1:]:
+        if row and row[0]:
+            sec = str(row[0]).strip()
+            hist_dict[sec] = {
+                'Nombre_Seccion': row[1] if len(row) > 1 else '',
+                'Jefe':           row[2] if len(row) > 2 else '',
+                'Gerencia':       row[3] if len(row) > 3 else '',
+                'Direccion':      row[4] if len(row) > 4 else '',
+                'Ubicacion':      row[5] if len(row) > 5 else '',
+                'No_Caja':        row[6] if len(row) > 6 else '',
+                'Fecha':          row[7] if len(row) > 7 else '',
+            }
 
+    hoja_dir  = ss.worksheet('DIRECTORIO')
+    datos_dir = hoja_dir.get_all_values()
+    dir_dict  = {}
+    for row in datos_dir[1:]:
+        if row and row[0]:
+            sec = str(row[0]).strip()
+            dir_dict[sec] = {
+                'Nombre_Seccion': row[1] if len(row) > 1 else '',
+                'Jefe':           row[2] if len(row) > 2 else '',
+                'Gerencia':       row[3] if len(row) > 3 else '',
+                'Direccion':      row[4] if len(row) > 4 else '',
+                'Ubicacion':      row[5] if len(row) > 5 else '',
+                'No_Caja':        row[6] if len(row) > 6 else '',
+            }
 
-def normalizar_piso(planta):
-    p = str(planta).upper().strip()
-    if "BAJA" in p or p == "PB":
-        return "PLANTA BAJA"
-    if "3" in p:
-        return "3er PISO"
-    if "2" in p:
-        return "2° PISO"
-    if "1" in p:
-        return "1er PISO"
-    return planta
+    cambios       = 0
+    updates       = []
+    completadas   = 0
 
+    for row in datos_h1[1:]:
+        if not row or len(row) <= COL_SECCION:
+            continue
+        sec  = str(row[COL_SECCION]).strip().replace('.0', '')
+        jefe = str(row[COL_JEFE]).strip() if len(row) > COL_JEFE else ''
+        if not sec or sec in ('', 'nan'):
+            continue
+        jefe_valido = jefe and jefe not in ('', 'nan', 'Sin Asignar', 'UNASSIGNED')
+        if jefe_valido:
+            if sec not in hist_dict or hist_dict[sec]['Jefe'] != jefe:
+                info_base = dir_dict.get(sec, {})
+                hist_dict[sec] = {
+                    'Nombre_Seccion': info_base.get('Nombre_Seccion', ''),
+                    'Jefe':           jefe,
+                    'Gerencia':       info_base.get('Gerencia', ''),
+                    'Direccion':      info_base.get('Direccion', ''),
+                    'Ubicacion':      info_base.get('Ubicacion', ''),
+                    'No_Caja':        info_base.get('No_Caja', ''),
+                    'Fecha':          datetime.now().strftime("%Y-%m-%d %H:%M"),
+                }
+                cambios += 1
 
-def leer_jefes_del_csv():
-    if not os.path.isdir(config.DESCARGAS_DIR):
-        return {}
+    for i, row in enumerate(datos_h1[1:], start=2):
+        if not row or len(row) <= COL_SECCION:
+            continue
+        sec  = str(row[COL_SECCION]).strip().replace('.0', '')
+        jefe = str(row[COL_JEFE]).strip() if len(row) > COL_JEFE else ''
+        jefe_vacio = not jefe or jefe in ('', 'nan', 'Sin Asignar', 'UNASSIGNED')
+        if jefe_vacio and sec in hist_dict and hist_dict[sec]['Jefe']:
+            updates.append({'range': f'R{i}', 'values': [[hist_dict[sec]['Jefe']]]})
+            completadas += 1
 
-    csvs = sorted(
-        [f for f in os.listdir(config.DESCARGAS_DIR) if f.endswith(".csv")],
-        reverse=True,
-    )
-    if not csvs:
-        return {}
+    if updates:
+        hoja1.batch_update(updates)
+        print(f"  Auto-completadas {completadas} celdas de jefe en Hoja 1")
 
-    path = os.path.join(config.DESCARGAS_DIR, csvs[0])
-    jefes: dict = {}
+    if cambios > 0 or completadas > 0:
+        header_hist = ['Sección','Nombre Sección','Jefe','Gerencia','Dirección','Ubicación','No. Caja','Fecha Registro']
+        rows_hist   = [header_hist]
+        for sec, info in sorted(hist_dict.items()):
+            rows_hist.append([
+                sec,
+                info.get('Nombre_Seccion', ''),
+                info.get('Jefe', ''),
+                info.get('Gerencia', ''),
+                info.get('Direccion', ''),
+                info.get('Ubicacion', ''),
+                info.get('No_Caja', ''),
+                info.get('Fecha', datetime.now().strftime("%Y-%m-%d")),
+            ])
+        hoja_hist.clear()
+        hoja_hist.update(rows_hist, "A1")
+        print(f"  HISTORIAL actualizado: {len(rows_hist)-1} secciones")
 
-    try:
-        with open(path, newline="", encoding="utf-8-sig") as f:
-            reader = csv.reader(f)
-            next(reader, None)  # skip header
-            for row in reader:
-                if len(row) < 20:
-                    continue
-                planta       = row[0].strip()
-                seccion      = row[5].strip()
-                jefe_id      = row[16].strip() if len(row) > 16 else ""
-                jefe_nombre  = row[17].strip().upper() if len(row) > 17 else ""
-
-                if not jefe_nombre:
-                    continue
-
-                piso = normalizar_piso(planta)
-
-                if jefe_nombre not in jefes:
-                    jefes[jefe_nombre] = {"piso": piso, "secciones": set(), "id": jefe_id}
-                jefes[jefe_nombre]["secciones"].add(seccion)
-
-    except Exception as e:
-        print(f"Error leyendo CSV: {e}")
-        return {}
-
-    return jefes
-
-
-def actualizar_directorio():
-    log = setup_logging()
-    log.info("Actualizando DIRECTORIO...")
-
-    jefes = leer_jefes_del_csv()
-    if not jefes:
-        log.warning("No se encontraron jefes en el CSV. Verifica que exista un CSV en descargas/")
-        return False
-
-    try:
-        gc = get_gc()
-        sh = gc.open_by_key(config.SHEET_PRINCIPAL_ID)
-        ws = sh.worksheet("DIRECTORIO")
-
-        hoy = datetime.date.today().strftime("%d/%m/%Y")
-        encabezados = ["Jefe", "Piso", "Secciones", "ID", "Última actualización"]
-        filas = [encabezados]
-
-        for nombre, data in sorted(jefes.items()):
-            secciones_str = ", ".join(sorted(data["secciones"]))
-            filas.append([nombre, data["piso"], secciones_str, data["id"], hoy])
-
-        ws.clear()
-        ws.update("A1", filas, value_input_option="RAW")
-        log.info(f"DIRECTORIO actualizado: {len(jefes)} jefes")
-        return True
-
-    except Exception as e:
-        log.error(f"Error actualizando DIRECTORIO: {e}")
-        return False
-
-
-if __name__ == "__main__":
-    ok = actualizar_directorio()
-    sys.exit(0 if ok else 1)
+    header_dir = ['Sección','Nombre Sección','Jefe de Departamento','Gerencia','Dirección','Ubicación','No. Caja','Fuente','Última Actualización']
+    rows_dir   = [header_dir]
+    for sec, info in sorted(dir_dict.items()):
+        jefe_actual = hist_dict.get(sec, {}).get('Jefe', '') or info.get('Jefe', '')
+        rows_dir.append([
+            sec,
+            info.get('Nombre_Seccion', ''),
+            jefe_actual,
+            info.get('Gerencia', ''),
+            info.get('Direccion', ''),
+            info.get('Ubicacion', ''),
+            info.get('No_Caja', ''),
+            'AUTO' if sec in hist_dict and hist_dict[sec]['Jefe'] != info.get('Jefe','') else 'DIRECTORIO',
+            datetime.now().strftime("%Y-%m-%d %H:%M"),
+        ])
+    hoja_dir.clear()
+    hoja_dir.update(rows_dir, "A1")
+    print(f"  DIRECTORIO actualizado: {len(rows_dir)-1} secciones")
+    print(f"  Cambios: {cambios} | Completadas: {completadas}")
+    print("  Directorio e historial listos")

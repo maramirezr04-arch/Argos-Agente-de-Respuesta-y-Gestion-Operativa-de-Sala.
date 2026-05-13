@@ -3,12 +3,12 @@
 ╔══════════════════════════════════════════════════════════╗
 ║          INSTALADOR — LIVERPOOL BOT                      ║
 ║                                                          ║
-║  Uso:  python instalar.py                                ║
+║  Uso:  instalar.bat  (o  python instalar.py)             ║
 ║                                                          ║
 ║  Requiere:  credentials.json  en la misma carpeta       ║
 ╚══════════════════════════════════════════════════════════╝
 
-Este script crea TODO en C:\\liverpool-automation:
+Crea TODO en C:\\liverpool-automation:
   • Todos los archivos Python del bot
   • config.py con credenciales
   • Scripts de ejecución (.bat y .vbs invisibles)
@@ -21,72 +21,44 @@ import sys
 import subprocess
 import shutil
 import json
-import urllib.request
 
-# ── Configuración de la instalación ─────────────────────────────────────────
-DESTINO   = r"C:\liverpool-automation"
-PYTHON    = sys.executable
-REPO_RAW  = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/claude/bot-installer-setup-zhcN0"
+# ── Configuración ────────────────────────────────────────────────────────────
+DESTINO  = r"C:\liverpool-automation"
+PYTHON   = sys.executable
 
-# Archivos a descargar desde GitHub (sin credenciales)
-ARCHIVOS_GITHUB = [
+# Archivos Python a copiar desde la misma carpeta que instalar.py
+ARCHIVOS_BOT = [
     "main.py",
     "actualizar_directorio.py",
     "reparar_bot.py",
 ]
 
-# ── config.py con todas las credenciales ─────────────────────────────────────
-CONFIG_PY = r'''import os
-
-BASE_DIR = r"C:\liverpool-automation"
-
-# Liverpool OMS
-LIVERPOOL_URL  = "https://surtidoapp-oms.liverpool.com.mx/#/login"
-LIVERPOOL_USER = "vmrangelj"
-LIVERPOOL_PASS = "Liverpool1"
-
-# Google Sheets IDs
-SHEET_PRINCIPAL_ID = "135lsymm5A67_ieYZLaKIfvPpkyqRWbUf9UV-mv3b7js"
-SHEET_2_ID         = "1baVeWCA7-fhTHVUnPgd1_67kjJQJchwwvT64K5t0OJs"
-
-# Webhooks Google Chat
-WEBHOOK_REPORTE = (
-    "https://chat.googleapis.com/v1/spaces/AAQAQ6DrmfI/messages"
-    "?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI"
-    "&token=VzOYmkn9w65FPf64JLq1ySI0VFyD5E8sdc-KQc29nXw"
-)
-WEBHOOK_JEFES = (
-    "https://chat.googleapis.com/v1/spaces/AAAAMBLT-t0/messages"
-    "?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI"
-    "&token=W0pDeYnH05xXzjRER8arPy9xm820yM6Fh1iDHOEJftQ"
-)
-WEBHOOK_TIEMPOS = (
-    "https://chat.googleapis.com/v1/spaces/AAQAY67HLLk/messages"
-    "?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI"
-    "&token=RZGLTs-sAZfBsAamgr7x2y8E6yPVDENsNghyKIOkj6A"
-)
-
-# Apps Script (dashboard)
-APPS_SCRIPT_URL = (
-    "https://script.google.com/macros/s/"
-    "AKfycbxBSox6hX-SfSemrq-CQAx_w_iCGP-4uUsMB1eKD8HCYJJC_Ul9BoEItLAAVNVm5ELtzA/exec"
-)
-
-SERVICE_ACCOUNT_EMAIL = "liverpool-bot@liverpool-auto.iam.gserviceaccount.com"
-CREDENTIALS_FILE      = os.path.join(BASE_DIR, "credentials.json")
-
-DESCARGAS_DIR  = os.path.join(BASE_DIR, "descargas")
-LOGS_DIR       = os.path.join(BASE_DIR, "logs")
-SCREENSHOTS_DIR = os.path.join(BASE_DIR, "screenshots")
-
-JEFES_MUJERES = {
-    "ALMA DELIA", "BRENDA", "DENISSE", "GEOLIBETH",
-    "JOANA", "LIZBETH", "MARIA DE LOS ANGELES",
-    "NUBIA BERENICE", "ROSALBA",
+# config.py con las credenciales del bot (formato que usa main.py)
+CONFIG_PY = r'''LIVERPOOL = {
+    "url_login": "https://surtidoapp-oms.liverpool.com.mx/#/login",
+    "usuario":   "vmrangelj",
+    "password":  "Liverpool1",
 }
 
-PISOS              = ["PLANTA BAJA", "1er PISO", "2° PISO", "3er PISO"]
-TIPOS_PRIORITARIOS = ["HD0D", "HD1D", "CC0D", "CC1D", "C&C Misma Tienda"]
+GOOGLE = {
+    "sheet_id":       "135lsymm5A67_ieYZLaKIfvPpkyqRWbUf9UV-mv3b7js",
+    "nombre_hoja":    "Hoja 1",
+    "credentials":    r"C:\liverpool-automation\credentials.json",
+    "sheet2_id":      "1baVeWCA7-fhTHVUnPgd1_67kjJQJchwwvT64K5t0OJs",
+    "sheet2_hoja":    "Hoja 1",
+    "sheet2_col":     "V",
+    "sheet2_fila":    2,
+    "timestamp_col":  "AS",
+    "timestamp_fila": 2,
+}
+
+CHAT = {
+    "webhook_url":    "https://chat.googleapis.com/v1/spaces/AAQAQ6DrmfI/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=VzOYmkn9w65FPf64JLq1ySI0VFyD5E8sdc-KQc29nXw",
+    "looker_url":     "https://lookerstudio.google.com/u/0/reporting/25b92bb8-e5e8-40a6-bc36-e39b62ff98df/page/Kn5mD",
+    "nombre_reporte": "Indicadores Liverpool 456",
+}
+
+CARPETA_DESCARGA = r"C:\liverpool-automation\descargas"
 '''
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -146,16 +118,16 @@ def main():
         err("Se requiere Python 3.8 o superior.")
         sys.exit(1)
 
-    # ── Verificar credentials.json ───────────────────────────────────────────
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    creds_src  = os.path.join(script_dir, "credentials.json")
+
+    # ── Verificar credentials.json ───────────────────────────────────────────
+    creds_src = os.path.join(script_dir, "credentials.json")
     if not os.path.exists(creds_src):
         err("No se encontró 'credentials.json' en la misma carpeta que instalar.py")
         print("     Coloca credentials.json junto a instalar.py y vuelve a ejecutar.")
         input("\nPresiona Enter para salir...")
         sys.exit(1)
 
-    # Validar que es un JSON válido
     try:
         with open(creds_src) as f:
             creds_data = json.load(f)
@@ -170,32 +142,31 @@ def main():
 
     # ── PASO 1: Carpetas ──────────────────────────────────────────────────────
     paso(1, TOTAL, "Creando estructura de carpetas")
-    carpetas = [
-        DESTINO,
-        os.path.join(DESTINO, "descargas"),
-        os.path.join(DESTINO, "logs"),
-        os.path.join(DESTINO, "screenshots"),
-    ]
-    for d in carpetas:
+    for d in [DESTINO,
+              os.path.join(DESTINO, "descargas"),
+              os.path.join(DESTINO, "logs"),
+              os.path.join(DESTINO, "screenshots")]:
         os.makedirs(d, exist_ok=True)
         ok(d)
 
-    # ── PASO 2: Descargar archivos Python desde GitHub ────────────────────────
-    paso(2, TOTAL, "Descargando código del bot desde GitHub")
-    errores_descarga = []
-    for archivo in ARCHIVOS_GITHUB:
-        url  = f"{REPO_RAW}/{archivo}"
-        dest = os.path.join(DESTINO, archivo)
-        try:
-            urllib.request.urlretrieve(url, dest)
+    # ── PASO 2: Copiar archivos Python ────────────────────────────────────────
+    paso(2, TOTAL, "Copiando archivos del bot")
+    faltantes_src = []
+    for archivo in ARCHIVOS_BOT:
+        src = os.path.join(script_dir, archivo)
+        dst = os.path.join(DESTINO, archivo)
+        if os.path.exists(src):
+            shutil.copy2(src, dst)
             ok(archivo)
-        except Exception as e:
-            err(f"{archivo} — {e}")
-            errores_descarga.append(archivo)
+        else:
+            err(f"{archivo} — no encontrado junto a instalar.py")
+            faltantes_src.append(archivo)
 
-    if errores_descarga:
-        print(f"\n  ⚠  No se pudieron descargar: {', '.join(errores_descarga)}")
-        print("     Se intentará continuar; ejecuta el instalador con internet disponible.")
+    if faltantes_src:
+        print(f"\n  ⚠  Archivos faltantes: {', '.join(faltantes_src)}")
+        print("     Asegúrate de que todos los archivos .py estén en la misma carpeta que instalar.py")
+        input("\nPresiona Enter para salir...")
+        sys.exit(1)
 
     # ── PASO 3: Crear config.py ───────────────────────────────────────────────
     paso(3, TOTAL, "Creando config.py con credenciales")
@@ -208,12 +179,7 @@ def main():
 
     # ── PASO 5: Instalar dependencias pip ─────────────────────────────────────
     paso(5, TOTAL, "Instalando dependencias Python")
-    deps = [
-        "gspread>=6.0",
-        "google-auth>=2.0",
-        "requests>=2.28",
-        "playwright>=1.40",
-    ]
+    deps = ["gspread>=6.0", "google-auth>=2.0", "requests>=2.28", "playwright>=1.40"]
     for dep in deps:
         try:
             run(f'"{PYTHON}" -m pip install "{dep}" --quiet --disable-pip-version-check',
@@ -225,7 +191,7 @@ def main():
     # ── PASO 6: Instalar Playwright Chromium ──────────────────────────────────
     paso(6, TOTAL, "Instalando Playwright Chromium (puede tardar ~5 min)")
     try:
-        run(f'"{PYTHON}" -m playwright install chromium', silencioso=False)
+        run(f'"{PYTHON}" -m playwright install chromium')
         ok("Chromium instalado")
     except Exception as e:
         err(f"Playwright: {e}")
@@ -241,7 +207,6 @@ def main():
     vbs_principal   = os.path.join(DESTINO, "ejecutar.vbs")
     vbs_reparar     = os.path.join(DESTINO, "ejecutar_reparar.vbs")
 
-    # .bat para la tarea programada (sin ventana visible gracias al .vbs)
     escribir(bat_principal, (
         f'@echo off\r\n'
         f'cd /d "{DESTINO}"\r\n'
@@ -254,7 +219,6 @@ def main():
         f'"{PYTHON}" reparar_bot.py\r\n'
     ))
 
-    # correr_ahora.bat — ejecución manual con ventana visible y --forzar
     escribir(bat_ahora, (
         f'@echo off\r\n'
         f'title Liverpool Bot\r\n'
@@ -263,7 +227,6 @@ def main():
         f'pause\r\n'
     ))
 
-    # desinstalar.bat
     escribir(bat_desinstalar, (
         f'@echo off\r\n'
         f'echo Eliminando tareas programadas...\r\n'
@@ -273,7 +236,6 @@ def main():
         f'pause\r\n'
     ))
 
-    # .vbs — lanzadores invisibles (sin ventana CMD en la barra de tareas)
     escribir(vbs_principal, (
         f'Set WshShell = CreateObject("WScript.Shell")\r\n'
         f'WshShell.Run Chr(34) & "{bat_principal}" & Chr(34), 0, False\r\n'
@@ -290,21 +252,11 @@ def main():
     paso(8, TOTAL, "Creando tareas programadas de Windows")
 
     tareas = [
-        (
-            "Liverpool Bot",
-            f'wscript "{vbs_principal}"',
-            "MINUTE", "15", "09:45", "21:45",
-            "Corre cada 15 min de 9:45 AM a 9:45 PM",
-        ),
-        (
-            "Liverpool Bot Reparador",
-            f'wscript "{vbs_reparar}"',
-            "MINUTE", "30", "10:00", "22:00",
-            "Corre cada 30 min de 10:00 AM a 10:00 PM",
-        ),
+        ("Liverpool Bot",         f'wscript "{vbs_principal}"', "MINUTE", "15", "09:45", "21:45"),
+        ("Liverpool Bot Reparador", f'wscript "{vbs_reparar}"', "MINUTE", "30", "10:00", "22:00"),
     ]
 
-    for tn, tr, sc, mo, st, et, desc in tareas:
+    for tn, tr, sc, mo, st, et in tareas:
         cmd = (
             f'schtasks /create'
             f' /tn "{tn}"'
@@ -315,38 +267,32 @@ def main():
         )
         try:
             run(cmd, check=True, silencioso=True)
-            ok(f'"{tn}" — {desc}')
+            ok(f'"{tn}" — cada {mo} {sc.lower()} de {st} a {et}')
         except Exception as e:
             err(f'"{tn}": {e}')
-            print(
-                f"     ⚠  Crea la tarea manualmente en el Programador de tareas de Windows.\n"
-                f"        Programa: {tr}\n"
-                f"        Frecuencia: cada {mo} {sc.lower()}"
-            )
+            print(f"     Crea la tarea manualmente: Programador de tareas → Programa: {tr}")
 
     # ── PASO 9: Verificación final ─────────────────────────────────────────────
     paso(9, TOTAL, "Verificación final")
-    archivos_requeridos = [
+    requeridos = [
         "main.py", "actualizar_directorio.py", "reparar_bot.py",
         "config.py", "credentials.json",
-        "ejecutar.bat", "ejecutar_reparar.bat", "ejecutar.vbs", "ejecutar_reparar.vbs",
+        "ejecutar.bat", "ejecutar_reparar.bat",
+        "ejecutar.vbs", "ejecutar_reparar.vbs",
         "correr_ahora.bat",
     ]
-    faltantes = []
-    for archivo in archivos_requeridos:
-        path = os.path.join(DESTINO, archivo)
-        if os.path.exists(path):
-            ok(archivo)
+    faltantes = [a for a in requeridos if not os.path.exists(os.path.join(DESTINO, a))]
+    for a in requeridos:
+        if os.path.exists(os.path.join(DESTINO, a)):
+            ok(a)
         else:
-            err(f"{archivo} — FALTANTE")
-            faltantes.append(archivo)
+            err(f"{a} — FALTANTE")
 
-    # ── Resultado ──────────────────────────────────────────────────────────────
     print()
     if faltantes:
         banner("⚠  INSTALACIÓN INCOMPLETA")
         print(f"  Archivos faltantes: {', '.join(faltantes)}")
-        print(f"  Revisa los errores arriba y vuelve a ejecutar instalar.py.")
+        print("  Revisa los errores arriba y vuelve a ejecutar instalar.bat")
     else:
         banner("✅  INSTALACIÓN COMPLETADA")
         print(f"  Bot instalado en: {DESTINO}")
@@ -354,11 +300,11 @@ def main():
         print("  Comandos útiles:")
         print(f"    Ejecutar ahora (manual):  correr_ahora.bat")
         print(f"    Verificar conexiones:     python main.py test")
-        print(f"    Ver tarea en Windows:     schtasks /query /tn \"Liverpool Bot\" /fo LIST")
-        print(f"    Detener si está colgado:  taskkill /f /im pythonw.exe")
+        print(f"    Ver tarea:                schtasks /query /tn \"Liverpool Bot\" /fo LIST")
+        print(f"    Detener si cuelga:        taskkill /f /im python.exe")
         print(f"    Desinstalar tareas:       desinstalar.bat")
         print()
-        print("  El bot comenzará automáticamente en el próximo ciclo de 15 min.")
+        print("  El bot comenzará en el próximo ciclo de 15 minutos.")
 
     input("\nPresiona Enter para cerrar...")
 
