@@ -131,6 +131,31 @@ input:checked + .slider:before { transform:translateX(22px); }
     <span style="font-size:12px;color:#aaa" id="refresh-countdown"></span>
   </div>
   <div id="bot-status-bar" style="display:none;margin-bottom:1rem"></div>
+
+  <!-- Tarjetas de estatus actual (desde hoja METRICAS) -->
+  <div class="grid4" id="cards-metricas" style="margin-bottom:1rem">
+    <div class="metric" style="border-left:3px solid #E24B4A">
+      <div class="lbl">🔴 Mercancia en Espera</div>
+      <div class="val" id="m-espera">—</div>
+      <div class="sub" id="m-espera-sub">Cargando...</div>
+    </div>
+    <div class="metric" style="border-left:3px solid #3b6d11">
+      <div class="lbl">🏷️ Etiquetas Generadas</div>
+      <div class="val" id="m-etiquetas">—</div>
+      <div class="sub" id="m-etiquetas-sub"></div>
+    </div>
+    <div class="metric" style="border-left:3px solid #854f0b">
+      <div class="lbl">⚠️ Sin Asignar</div>
+      <div class="val" id="m-sin-asignar">—</div>
+      <div class="sub" id="m-sin-asignar-sub"></div>
+    </div>
+    <div class="metric" style="border-left:3px solid #E8416C">
+      <div class="lbl">🔥 Vencidas (+20 min)</div>
+      <div class="val" id="m-vencidas-hoy">—</div>
+      <div class="sub" id="m-vencidas-sub"></div>
+    </div>
+  </div>
+
   <div class="grid4" id="cards"></div>
   <div class="grid2">
     <div class="card"><div class="card-title">Duracion por ejecucion (seg)</div><div style="position:relative;height:160px"><canvas id="cT"></canvas></div></div>
@@ -492,7 +517,8 @@ input:checked + .slider:before { transform:translateX(22px); }
 <script>
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxBSox6hX-SfSemrq-CQAx_w_iCGP-4uUsMB1eKD8HCYJJC_Ul9BoEItLAAVNVm5ELtzA/exec";
 const SHEET_ID = "135lsymm5A67_ieYZLaKIfvPpkyqRWbUf9UV-mv3b7js";
-const URL_MONITOR = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=MONITOR";
+const URL_MONITOR  = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=MONITOR";
+const URL_METRICAS = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=METRICAS";
 let todos=[],chartT,chartI,chartV;
 let DIRECTORIO_SECCIONES = [], DIRECTORIO_JEFES = [];
 let countdownSeg = 30, countdownTimer;
