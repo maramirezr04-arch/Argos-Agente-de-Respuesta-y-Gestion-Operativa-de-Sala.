@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Liverpool Bot 456 — ¿Qué hace el bot?</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f7f6f2;color:#1a1a1a;line-height:1.6}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,#c9254e 0%,#E8416C 60%,#f06090 100%);color:#fff;padding:4rem 1.5rem 5rem;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+.hero-badge{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 16px;font-size:12px;letter-spacing:.5px;margin-bottom:1.25rem;backdrop-filter:blur(4px)}
+.hero h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:700;margin-bottom:.75rem;letter-spacing:-0.5px}
+.hero p{font-size:1.1rem;opacity:.9;max-width:560px;margin:0 auto}
+.bot-icon{font-size:4rem;margin-bottom:1rem;display:block}
+
+/* LAYOUT */
+.page{max-width:900px;margin:0 auto;padding:3rem 1.25rem}
+.section-title{font-size:1.5rem;font-weight:700;margin-bottom:.35rem;color:#111}
+.section-sub{font-size:14px;color:#888;margin-bottom:2rem}
+.divider{border:none;border-top:1px solid rgba(0,0,0,.07);margin:3rem 0}
+
+/* QUÉ HACE — cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem;margin-bottom:2rem}
+.card{background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:16px;padding:1.5rem;transition:.2s}
+.card:hover{box-shadow:0 6px 20px rgba(0,0,0,.08);transform:translateY(-2px)}
+.card-icon{font-size:2.2rem;margin-bottom:.75rem}
+.card h3{font-size:15px;font-weight:600;margin-bottom:.5rem;color:#111}
+.card p{font-size:13px;color:#666;line-height:1.6}
+
+/* TIMELINE */
+.timeline{display:flex;flex-direction:column;gap:0}
+.tl-item{display:flex;gap:1.25rem;padding-bottom:2rem;position:relative}
+.tl-item:not(:last-child)::before{content:'';position:absolute;left:20px;top:42px;bottom:0;width:2px;background:linear-gradient(180deg,#E8416C,rgba(232,65,108,.1))}
+.tl-icon{width:42px;height:42px;border-radius:50%;background:#E8416C;color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 2px 8px rgba(232,65,108,.3);z-index:1}
+.tl-body{padding-top:8px}
+.tl-body h3{font-size:15px;font-weight:600;margin-bottom:4px}
+.tl-body p{font-size:13px;color:#666;line-height:1.6}
+
+/* ESPACIOS */
+.espacios{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem;margin-bottom:2rem}
+.espacio{border-radius:16px;padding:1.5rem;color:#fff;position:relative;overflow:hidden}
+.espacio::after{content:'';position:absolute;right:-20px;bottom:-20px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.1)}
+.esp-r{background:linear-gradient(135deg,#c9254e,#E8416C)}
+.esp-j{background:linear-gradient(135deg,#1a6e4d,#1D9E75)}
+.esp-t{background:linear-gradient(135deg,#1a4d8e,#2d7dd2)}
+.espacio h3{font-size:15px;font-weight:600;margin-bottom:.4rem}
+.espacio p{font-size:12.5px;opacity:.9;line-height:1.55}
+.espacio .chips{margin-top:.75rem;display:flex;flex-wrap:wrap;gap:4px}
+.chip{background:rgba(255,255,255,.2);border-radius:20px;padding:2px 10px;font-size:11px}
+
+/* HORARIO */
+.horario-box{background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:16px;padding:1.5rem 2rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap}
+.horario-box .clock{font-size:3rem}
+.horario-info h3{font-size:16px;font-weight:600;margin-bottom:.25rem}
+.horario-info p{font-size:13px;color:#666}
+.horario-info .badge{display:inline-block;background:#fbeaf0;color:#c9254e;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:500;margin-top:.5rem}
+
+/* FOOTER */
+footer{text-align:center;padding:2rem;font-size:12px;color:#aaa;border-top:1px solid rgba(0,0,0,.06)}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <span class="bot-icon">🤖</span>
+  <div class="hero-badge">Liverpool Parque Antenas · Tienda 456</div>
+  <h1>Liverpool Bot 456</h1>
+  <p>Automatización de reportes e indicadores operativos para el equipo de piso de Liverpool.</p>
+</div>
+
+<div class="page">
+
+  <!-- QUÉ ES -->
+  <h2 class="section-title">¿Qué es?</h2>
+  <p class="section-sub">Un bot que corre automáticamente en segundo plano, sin intervención humana.</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon">📊</div>
+      <h3>Descarga reportes automáticamente</h3>
+      <p>Accede al sistema OMS de Liverpool cada 15 minutos y descarga el reporte de indicadores de la tienda sin que nadie tenga que hacerlo.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📋</div>
+      <h3>Actualiza Google Sheets</h3>
+      <p>Escribe los datos más recientes en dos hojas de cálculo compartidas con el equipo, siempre con información al día.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">💬</div>
+      <h3>Manda mensajes a Google Chat</h3>
+      <p>Envía resúmenes e indicadores a tres espacios del equipo: reportes generales, jefes de piso y seguimiento de tiempos.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🚨</div>
+      <h3>Alerta de remisiones vencidas</h3>
+      <p>Detecta pedidos que llevan más de 20 minutos sin atender y notifica directamente al jefe de piso responsable.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🔧</div>
+      <h3>Se repara solo</h3>
+      <p>Si falla en algún intento de descarga, lo vuelve a intentar automáticamente. También se auto-monitorea para detectar errores.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📅</div>
+      <h3>Respeta el horario operativo</h3>
+      <p>Solo opera dentro del horario de la tienda. Fuera de ese rango, no manda mensajes ni consume recursos innecesariamente.</p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- CÓMO FUNCIONA -->
+  <h2 class="section-title">¿Cómo funciona?</h2>
+  <p class="section-sub">Cada 15 minutos sigue estos pasos de forma automática.</p>
+
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-icon">🔐</div>
+      <div class="tl-body">
+        <h3>Entra al sistema OMS</h3>
+        <p>Abre un navegador invisible, entra con las credenciales de la tienda y selecciona el rango de fechas del día.</p>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-icon">⬇️</div>
+      <div class="tl-body">
+        <h3>Descarga el reporte en CSV</h3>
+        <p>Descarga el archivo con todas las remisiones activas: mercancía en espera, etiquetas generadas, rechazados, etc.</p>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-icon">📋</div>
+      <div class="tl-body">
+        <h3>Actualiza los Sheets</h3>
+        <p>Escribe los datos en Google Sheets para que el equipo pueda consultarlos en tiempo real desde cualquier dispositivo.</p>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-icon">🔍</div>
+      <div class="tl-body">
+        <h3>Detecta pendientes y vencidas</h3>
+        <p>Analiza cada remisión, calcula cuánto tiempo lleva sin atención y detecta cuáles ya superaron los 20 minutos.</p>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-icon">💬</div>
+      <div class="tl-body">
+        <h3>Manda los mensajes</h3>
+        <p>Envía el resumen de indicadores, el estado por jefe de piso y las alertas de tiempos a los espacios de Google Chat.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ESPACIOS DE CHAT -->
+  <h2 class="section-title">¿A quién le escribe?</h2>
+  <p class="section-sub">El bot manda mensajes a tres espacios distintos de Google Chat.</p>
+
+  <div class="espacios">
+    <div class="espacio esp-r">
+      <h3>📈 Reporte</h3>
+      <p>Resumen general de indicadores: totales, mercancía en espera, etiquetas generadas, rechazados y tiempos de descarga.</p>
+      <div class="chips">
+        <span class="chip">Cada 15 min</span>
+        <span class="chip">Indicadores</span>
+      </div>
+    </div>
+    <div class="espacio esp-j">
+      <h3>👔 Jefes de Piso</h3>
+      <p>Detalle por piso y por jefe. Muestra remisiones activas, vencidas y de ayer, con mención directa al responsable.</p>
+      <div class="chips">
+        <span class="chip">Por piso</span>
+        <span class="chip">Alertas +20 min</span>
+      </div>
+    </div>
+    <div class="espacio esp-t">
+      <h3>⏱ Tiempos</h3>
+      <p>Seguimiento de remisiones sin asignar y de los pedidos más urgentes por tipo de entrega (HD0D, CC0D, etc.).</p>
+      <div class="chips">
+        <span class="chip">Sin asignar</span>
+        <span class="chip">Prioridad</span>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- HORARIO -->
+  <h2 class="section-title">¿Cuándo opera?</h2>
+  <p class="section-sub">Solo dentro del horario operativo de la tienda.</p>
+
+  <div class="horario-box">
+    <div class="clock">🕙</div>
+    <div class="horario-info">
+      <h3>10:00 AM — 9:30 PM</h3>
+      <p>Corre automáticamente cada 15 minutos dentro de ese rango, todos los días de la semana.</p>
+      <span class="badge">⚡ Sin intervención humana</span>
+    </div>
+  </div>
+
+</div>
+
+<footer>Liverpool Bot 456 · Tienda Parque Antenas · Desarrollado internamente</footer>
+
+</body>
+</html>
