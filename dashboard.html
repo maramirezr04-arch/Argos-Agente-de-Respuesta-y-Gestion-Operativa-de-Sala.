@@ -8,81 +8,147 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; color: #1a1a1a; }
-.header { background: #E8416C; color: #fff; padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-.header h1 { font-size: 17px; font-weight: 500; }
-.header .sub { font-size: 12px; opacity: .85; margin-top: 2px; }
-.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+
+/* ── HEADER ── */
+.header {
+  background: linear-gradient(135deg, #c9254e 0%, #E8416C 60%, #f06090 100%);
+  color: #fff;
+  padding: 1.75rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='52' height='26' viewBox='0 0 52 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Cpath d='M10 10c0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6h2c0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4v2c-3.314 0-6-2.686-6-6 0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6zm25.464-1.95l8.486 8.486-1.414 1.414-8.486-8.486 1.414-1.414z' /%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+}
+.header h1 { font-size: 22px; font-weight: 700; letter-spacing: -.3px; position: relative; }
+.header .sub { font-size: 13px; opacity: .88; margin-top: 4px; font-weight: 400; position: relative; letter-spacing: .2px; }
+
+/* ── STATUS PILL ── */
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 6px; flex-shrink: 0; }
 .dot-live { background: #a8f0c6; animation: pulse 2s infinite; }
 .dot-off  { background: #ffb3b3; }
 @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
-.status-pill { display:flex;align-items:center;font-size:12px;background:rgba(255,255,255,.2);padding:4px 10px;border-radius:20px; }
-.nav { display:flex;background:#fff;border-bottom:.5px solid rgba(0,0,0,.08);overflow-x:auto;position:sticky;top:0;z-index:10; }
-.nav button { flex-shrink:0;padding:10px 14px;font-size:12px;background:none;border:none;cursor:pointer;color:#666;border-bottom:2px solid transparent;white-space:nowrap; }
-.nav button.active { color:#E8416C;border-bottom-color:#E8416C;font-weight:500; }
-.nav button:hover { background:#f5f4f0; }
-.content { padding:1.25rem;max-width:1000px;margin:0 auto; }
-.grid4 { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:1.25rem; }
-.grid2 { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:1.25rem; }
-.grid3 { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:1.25rem; }
+.status-pill { display:flex;align-items:center;font-size:13px;background:rgba(255,255,255,.22);padding:6px 14px;border-radius:20px;font-weight:500;position:relative; }
+
+/* ── NAV TABS ── */
+.nav { display:flex;background:#fff;border-bottom:1px solid rgba(0,0,0,.08);overflow-x:auto;position:sticky;top:0;z-index:10;box-shadow:0 1px 4px rgba(0,0,0,.06); }
+.nav button { flex-shrink:0;padding:13px 16px;font-size:13px;background:none;border:none;cursor:pointer;color:#666;border-bottom:3px solid transparent;white-space:nowrap;transition:.15s;font-weight:400; }
+.nav button.active { color:#E8416C;border-bottom-color:#E8416C;font-weight:600;background:rgba(232,65,108,.04); }
+.nav button:hover:not(.active) { background:#f5f4f0;color:#333; }
+
+/* ── LAYOUT ── */
+.content { padding:1.5rem;max-width:1000px;margin:0 auto; }
+.grid4 { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:1.25rem; }
+.grid2 { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:1.25rem; }
+.grid3 { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:1.25rem; }
 @media (max-width: 700px) {
   .grid4, .grid3 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .grid2 { grid-template-columns: 1fr; }
 }
-.metric { background:#ececea;border-radius:8px;padding:12px 14px; }
-.metric .lbl { font-size:11px;color:#666;margin-bottom:5px; }
-.metric .val { font-size:20px;font-weight:500; }
-.metric .sub { font-size:11px;color:#888;margin-top:3px; }
-.card { background:#fff;border:.5px solid rgba(0,0,0,.1);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1.25rem; }
-.card-title { font-size:13px;font-weight:500;color:#555;margin-bottom:.75rem;display:flex;align-items:center;gap:6px; }
+
+/* ── METRIC CARDS ── */
+.metric { background:#fff;border-radius:14px;padding:1.25rem 1.1rem;box-shadow:0 2px 8px rgba(0,0,0,.07);transition:.2s; }
+.metric:hover { box-shadow:0 4px 14px rgba(0,0,0,.11);transform:translateY(-1px); }
+.metric .lbl { font-size:11px;color:#777;margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:.4px; }
+.metric .val { font-size:28px;font-weight:700;color:#1a1a1a;line-height:1; }
+.metric .sub { font-size:11px;color:#999;margin-top:6px; }
+
+/* ── CARDS ── */
+.card { background:#fff;border:.5px solid rgba(0,0,0,.08);border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;box-shadow:0 1px 4px rgba(0,0,0,.05); }
+.card-title { font-size:13px;font-weight:600;color:#444;margin-bottom:.9rem;display:flex;align-items:center;gap:6px; }
+
+/* ── TABLES ── */
 table { width:100%;border-collapse:collapse;font-size:13px; }
-th { text-align:left;font-weight:500;color:#666;padding:6px 8px;border-bottom:.5px solid rgba(0,0,0,.1);font-size:12px;background:#faf9f7; }
-td { padding:7px 8px;border-bottom:.5px solid rgba(0,0,0,.06); }
+th { text-align:left;font-weight:600;color:#555;padding:8px 10px;border-bottom:2px solid #E8416C;font-size:12px;background:#fff;text-transform:uppercase;letter-spacing:.3px; }
+td { padding:8px 10px;border-bottom:.5px solid rgba(0,0,0,.06); }
 tr:last-child td { border-bottom:none; }
-.badge { display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500; }
-.ok { background:#eaf3de;color:#3b6d11; } .err { background:#fcebeb;color:#a32d2d; }
-.warn { background:#faeeda;color:#854f0b; } .info { background:#e6f1fb;color:#185fa5; }
-.pink { background:#fbeaf0;color:#993556; } .teal { background:#e1f5ee;color:#0f6e56; }
+tbody tr:nth-child(odd) td { background:#faf9f7; }
+tbody tr:hover td { background:#fef0f5; }
+
+/* ── BADGES ── */
+.badge { display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600; }
+.ok { background:#eaf3de;color:#3b6d11; }
+.err { background:#fcebeb;color:#a32d2d; }
+.warn { background:#faeeda;color:#854f0b; }
+.info { background:#e6f1fb;color:#185fa5; }
+.pink { background:#fbeaf0;color:#993556; }
+.teal { background:#e1f5ee;color:#0f6e56; }
+
+/* ── SECTION INTRO BOX ── */
+.section-intro {
+  background: linear-gradient(135deg, #e8f4fd 0%, #f0f8ff 100%);
+  border: 1px solid #c3dff5;
+  border-left: 4px solid #4a9fd4;
+  border-radius: 10px;
+  padding: 13px 16px;
+  font-size: 13px;
+  color: #1a4a6b;
+  margin-bottom: 1.25rem;
+  line-height: 1.6;
+}
+.section-intro code { background: rgba(0,0,0,.07); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+
+/* ── MISC UI ── */
 .bar-wrap { background:#e0e0e0;border-radius:4px;height:6px;overflow:hidden;flex:1; }
 .bar { height:6px;border-radius:4px;background:#E8416C; }
 .controls { display:flex;gap:10px;margin-bottom:1.25rem;align-items:center;flex-wrap:wrap; }
-select, button, input, textarea { font-size:13px;padding:6px 12px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;font-family:inherit; }
+select, button, input, textarea { font-size:13px;padding:6px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;font-family:inherit; }
 input[type="text"], input[type="number"], input[type="date"], textarea { cursor:text; }
 button:hover { background:#f0f0f0; }
 .section { display:none; }
 .section.active { display:block; }
-.feature { border-left:3px solid #E8416C;padding:8px 12px;background:#faf9f7;margin-bottom:8px;border-radius:0 6px 6px 0; }
-.feature .title { font-size:13px;font-weight:500;margin-bottom:2px; }
+.feature { border-left:3px solid #E8416C;padding:9px 13px;background:#faf9f7;margin-bottom:8px;border-radius:0 8px 8px 0; }
+.feature .title { font-size:13px;font-weight:600;margin-bottom:2px; }
 .feature .desc  { font-size:12px;color:#666; }
-.cfg-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:1rem; }
+
+/* ── CONFIG ── */
+.cfg-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:1rem; }
 @media (max-width: 700px) { .cfg-grid { grid-template-columns: 1fr; } }
-.cfg-card { background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:12px;padding:1rem 1.25rem; }
-.cfg-card h3 { font-size:13px;font-weight:500;color:#444;margin-bottom:.75rem;display:flex;align-items:center;gap:6px; }
+.cfg-card { background:#fff;border:1px solid rgba(0,0,0,.09);border-radius:14px;padding:1.1rem 1.25rem;transition:.15s; }
+.cfg-card:hover { border-color:rgba(232,65,108,.25);box-shadow:0 2px 10px rgba(232,65,108,.07); }
+.cfg-card h3 { font-size:13px;font-weight:600;color:#333;margin-bottom:.85rem;display:flex;align-items:center;gap:6px; }
 .cfg-row { display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;gap:10px; }
-.cfg-row label { color:#666; }
+.cfg-row label { color:#555; }
 .cfg-row input, .cfg-row select { width:140px;text-align:right; }
 .cfg-row input[type="text"], .cfg-row input[type="date"] { width:100%;text-align:left;font-family:monospace;font-size:11px; }
 .cfg-row.full { flex-direction:column;align-items:stretch;gap:6px; }
 .cfg-row.full label { font-weight:500; }
 .cfg-row textarea { width:100%;min-height:80px;text-align:left;font-family:monospace;font-size:12px;resize:vertical; }
-.dia-chip { display:inline-block;padding:6px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid #ddd;background:#fff;margin:2px;user-select:none;transition:.15s; }
-.dia-chip.active { background:#E8416C;color:#fff;border-color:#E8416C; }
+.dia-chip { display:inline-block;padding:7px 14px;border-radius:20px;font-size:12px;cursor:pointer;border:1.5px solid #ddd;background:#fff;margin:2px;user-select:none;transition:.15s;font-weight:500; }
+.dia-chip.active { background:#E8416C;color:#fff;border-color:#E8416C;box-shadow:0 2px 6px rgba(232,65,108,.3); }
 .toggle { position:relative;display:inline-block;width:48px;height:26px; }
 .toggle input { opacity:0;width:0;height:0; }
 .slider { position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;transition:.3s;border-radius:26px; }
 .slider:before { position:absolute;content:"";height:20px;width:20px;left:3px;bottom:3px;background:#fff;transition:.3s;border-radius:50%; }
 input:checked + .slider { background:#1D9E75; }
 input:checked + .slider:before { transform:translateX(22px); }
-.toast { position:fixed;bottom:20px;left:50%;transform:translateX(-50%);padding:12px 20px;border-radius:8px;font-size:13px;color:#fff;z-index:1000;display:none;animation:slideUp .3s; }
+
+/* ── TOAST ── */
+.toast { position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:13px 22px;border-radius:10px;font-size:13px;color:#fff;z-index:1000;display:none;animation:slideUp .3s;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,.2); }
 .toast.show { display:block; }
 .toast.ok { background:#1D9E75; } .toast.err { background:#E24B4A; }
 @keyframes slideUp { from { opacity:0; transform:translate(-50%, 20px); } to { opacity:1; transform:translate(-50%, 0); } }
-.btn-primary { background:#E8416C;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;transition:.15s; }
-.btn-primary:hover { background:#c93962; }
+
+/* ── BUTTONS ── */
+.btn-primary { background:linear-gradient(135deg,#c9254e,#E8416C);color:#fff;border:none;padding:10px 26px;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;box-shadow:0 2px 8px rgba(232,65,108,.25); }
+.btn-primary:hover { background:linear-gradient(135deg,#b01f42,#d0325a);box-shadow:0 4px 12px rgba(232,65,108,.35); }
 .btn-primary:disabled { opacity:.5;cursor:not-allowed; }
-.btn-action { width:100%;padding:14px;border-radius:8px;border:1px solid #ddd;background:#fff;cursor:pointer;font-size:13px;text-align:left;transition:.15s; }
-.btn-action:hover { background:#faf9f7;border-color:#E8416C; }
-.btn-action b { display:block;color:#E8416C;margin-bottom:2px; }
-.btn-action span { color:#666;font-size:11px; }
-.estado-bar { padding:12px 16px;border-radius:8px;margin-bottom:1rem;font-size:13px;display:flex;align-items:center;gap:10px; }
+.btn-action { width:100%;padding:16px;border-radius:12px;border:1.5px solid #e5e5e5;background:#fff;cursor:pointer;font-size:13px;text-align:left;transition:.15s;box-shadow:0 1px 3px rgba(0,0,0,.04); }
+.btn-action:hover { background:#fff5f8;border-color:#E8416C;box-shadow:0 3px 10px rgba(232,65,108,.1); }
+.btn-action b { display:block;color:#E8416C;margin-bottom:3px;font-size:14px; }
+.btn-action span { color:#777;font-size:11px; }
+
+/* ── STATUS BARS ── */
+.estado-bar { padding:12px 16px;border-radius:10px;margin-bottom:1rem;font-size:13px;display:flex;align-items:center;gap:10px;font-weight:500; }
 .estado-bar.ok   { background:#eaf3de;color:#3b6d11; }
 .estado-bar.warn { background:#faeeda;color:#854f0b; }
 .estado-bar.err  { background:#fcebeb;color:#a32d2d; }
@@ -90,15 +156,20 @@ input:checked + .slider:before { transform:translateX(22px); }
 .timeline { border-left:2px solid #E8416C;padding-left:1.25rem;margin:.5rem 0 .5rem .5rem; }
 .tl-item { position:relative;margin-bottom:1rem; }
 .tl-dot { position:absolute;left:-1.6rem;top:3px;width:9px;height:9px;border-radius:50%;background:#E8416C;border:2px solid #f5f4f0; }
-.tl-time { font-size:12px;font-weight:500;color:#E8416C; }
+.tl-time { font-size:12px;font-weight:600;color:#E8416C; }
 .tl-text { font-size:13px;color:#444;line-height:1.5;margin-top:2px; }
 .chip { display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;background:#f0eeea;color:#555;margin:2px; }
 </style>
 </head>
 <body>
 <div class="header">
-  <div><h1>Liverpool Bot 456</h1><div class="sub">Panel de control completo</div></div>
-  <div class="status-pill"><span class="dot dot-off" id="dot"></span><span id="status-txt">Cargando...</span></div>
+  <div>
+    <h1>🤖 Liverpool Bot 456</h1>
+    <div class="sub">Panel de control · Tienda 456 Parque Antenas</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="status-pill"><span class="dot dot-off" id="dot"></span><span id="status-txt">Cargando...</span></div>
+  </div>
 </div>
 <div class="nav">
   <button class="active" onclick="showTab('monitor',this)">📊 Monitor</button>
@@ -117,6 +188,7 @@ input:checked + .slider:before { transform:translateX(22px); }
 
 <!-- ── MONITOR ── -->
 <div id="tab-monitor" class="section active" style="margin-top:1rem">
+  <div class="section-intro">📊 <b>Monitor en tiempo real</b> — Aquí puedes ver el historial de ejecuciones del bot, métricas de rendimiento y el estado actual de las remisiones.</div>
   <div class="controls">
     <select id="filtro" onchange="renderAll()">
       <option value="5">Ultimas 5</option><option value="10">Ultimas 10</option>
@@ -134,22 +206,22 @@ input:checked + .slider:before { transform:translateX(22px); }
 
   <!-- Tarjetas de estatus actual (desde hoja METRICAS) -->
   <div class="grid4" id="cards-metricas" style="margin-bottom:1rem">
-    <div class="metric" style="border-left:3px solid #E24B4A">
+    <div class="metric" style="border-left:4px solid #E24B4A;background:#fff">
       <div class="lbl">🔴 Mercancia en Espera</div>
       <div class="val" id="m-espera">—</div>
       <div class="sub" id="m-espera-sub">Cargando...</div>
     </div>
-    <div class="metric" style="border-left:3px solid #3b6d11">
+    <div class="metric" style="border-left:4px solid #1D9E75;background:#fff">
       <div class="lbl">🏷️ Etiquetas Generadas</div>
       <div class="val" id="m-etiquetas">—</div>
       <div class="sub" id="m-etiquetas-sub"></div>
     </div>
-    <div class="metric" style="border-left:3px solid #854f0b">
+    <div class="metric" style="border-left:4px solid #F5A623;background:#fff">
       <div class="lbl">⚠️ Sin Asignar</div>
       <div class="val" id="m-sin-asignar">—</div>
       <div class="sub" id="m-sin-asignar-sub"></div>
     </div>
-    <div class="metric" style="border-left:3px solid #E8416C">
+    <div class="metric" style="border-left:4px solid #c9254e;background:#fff">
       <div class="lbl">🔥 Vencidas (+20 min)</div>
       <div class="val" id="m-vencidas-hoy">—</div>
       <div class="sub" id="m-vencidas-sub"></div>
@@ -172,6 +244,7 @@ input:checked + .slider:before { transform:translateX(22px); }
 
 <!-- ── CONFIGURACION ── -->
 <div id="tab-config" class="section" style="margin-top:1rem">
+  <div class="section-intro">⚙️ <b>Configuración</b> — Ajusta el horario de operación, los días activos y los umbrales del bot. Los cambios aplican en la siguiente ejecución.</div>
   <div id="cfg-estado" class="estado-bar warn">⏳ Cargando...</div>
   <div class="cfg-grid">
     <div class="cfg-card"><h3>⏰ Horario</h3>
@@ -244,6 +317,7 @@ input:checked + .slider:before { transform:translateX(22px); }
 
 <!-- ── DESCANSOS POR JEFE ── -->
 <div id="tab-descansos" class="section" style="margin-top:1rem">
+  <div class="section-intro">🏖️ <b>Descansos de jefes</b> — Registra cuando un jefe descansa para que el bot reasigne automáticamente sus secciones al jefe que lo cubre ese día.</div>
   <div class="cfg-card" style="margin-bottom:1rem">
     <h3>➕ Agregar descanso de jefe</h3>
     <div class="cfg-grid" style="margin-bottom:0">
@@ -272,6 +346,7 @@ input:checked + .slider:before { transform:translateX(22px); }
 
 <!-- ── PLANTILLAS DE MENSAJES ── -->
 <div id="tab-plantillas" class="section" style="margin-top:1rem">
+  <div class="section-intro">💬 <b>Plantillas de mensajes</b> — Personaliza los textos que el bot manda al Chat. Puedes usar <code>{total}</code> para insertar el número total de remisiones.</div>
   <div class="estado-bar warn" style="font-size:11px">
     💡 Edita los textos que el bot manda al Chat. Usa <code>{total}</code> donde quieras que aparezca el numero total.
   </div>
@@ -283,6 +358,7 @@ input:checked + .slider:before { transform:translateX(22px); }
 
 <!-- ── GESTION DE JEFES ── -->
 <div id="tab-jefes" class="section" style="margin-top:1rem">
+  <div class="section-intro">👔 <b>Directorio de jefes</b> — El bot actualiza este directorio automáticamente. Aquí puedes consultar qué jefe está asignado a cada sección y en qué piso está.</div>
   <div class="estado-bar ok" style="font-size:11px">
     💡 Solo vista. El bot actualiza el directorio automaticamente cada vez que descarga el CSV. Si un jefe cambia de seccion, el bot lo detecta y lo asigna a la nueva.
   </div>
@@ -297,6 +373,7 @@ input:checked + .slider:before { transform:translateX(22px); }
 
 <!-- ── RUTAS DE MENSAJES ── -->
 <div id="tab-routing" class="section" style="margin-top:1rem">
+  <div class="section-intro">📨 <b>Rutas de mensajes</b> — Decide a qué espacio de Google Chat se envía cada tipo de mensaje. Puedes activar o desactivar destinos sin afectar el resto del bot.</div>
   <div class="estado-bar warn" style="font-size:11px">
     💡 Decide a que espacio mandar cada tipo de mensaje. Puedes enviarlo a uno, varios o ninguno.
   </div>
@@ -387,6 +464,7 @@ input:checked + .slider:before { transform:translateX(22px); }
 
 <!-- ── ACCIONES RAPIDAS ── -->
 <div id="tab-acciones" class="section" style="margin-top:1rem">
+  <div class="section-intro">🔧 <b>Acciones rápidas</b> — Controles inmediatos del bot: pausar, reanudar o limpiar la cola de mensajes pendientes.</div>
   <div class="estado-bar ok" style="font-size:11px">
     💡 Acciones que se aplican inmediatamente o en la proxima ejecucion del bot.
   </div>
@@ -408,6 +486,7 @@ input:checked + .slider:before { transform:translateX(22px); }
 
 <!-- ── PRUEBAS DE MENSAJES ── -->
 <div id="tab-pruebas" class="section" style="margin-top:1rem">
+  <div class="section-intro">🧪 <b>Pruebas</b> — Envía mensajes de prueba a cualquier espacio para verificar que todo funcione. Los mensajes llevan la etiqueta PRUEBA para que el equipo sepa que no son reales.</div>
   <div class="estado-bar warn" style="font-size:11px">
     💡 Manda mensajes de prueba a cualquier espacio de Chat para verificar que los webhooks funcionan. El mensaje se envia de verdad — asegurate de que diga PRUEBA.
   </div>
@@ -455,6 +534,7 @@ input:checked + .slider:before { transform:translateX(22px); }
 
 <!-- ── FESTIVOS ── -->
 <div id="tab-festivos" class="section" style="margin-top:1rem">
+  <div class="section-intro">📅 <b>Días festivos</b> — Programa los días en que el bot no debe ejecutarse (días feriados, puentes, etc.).</div>
   <div class="cfg-card" style="margin-bottom:1rem">
     <h3>➕ Agregar dia festivo</h3>
     <div class="cfg-grid" style="margin-bottom:0">
@@ -478,6 +558,7 @@ input:checked + .slider:before { transform:translateX(22px); }
 
 <!-- ── LOGS ── -->
 <div id="tab-logs" class="section" style="margin-top:1rem">
+  <div class="section-intro">📜 <b>Logs</b> — Registro de las últimas ejecuciones con detalles de errores. Útil para diagnosticar problemas.</div>
   <div class="estado-bar warn" style="font-size:11px">
     💡 Ultimas 30 ejecuciones del bot con detalles de errores.
   </div>
@@ -490,6 +571,7 @@ input:checked + .slider:before { transform:translateX(22px); }
 
 <!-- ── HISTORICO SEMANAL ── -->
 <div id="tab-historico" class="section" style="margin-top:1rem">
+  <div class="section-intro">📤 <b>Histórico semanal</b> — Sube el archivo de XD una vez por semana para calcular los tiempos reales de atención por jefe de piso.</div>
   <div class="estado-bar warn" style="font-size:11px">
     💡 Sube el archivo <code>exportacion_historico.csv</code> que descargas de XD una vez por semana. El sistema calcula los tiempos reales de asignacion por jefe.
   </div>
