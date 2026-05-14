@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Liverpool Bot 456 — Información</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f7f6f2;color:#1a1a1a;line-height:1.6}
+
+/* HEADER */
+.hero{background:linear-gradient(135deg,#c9254e 0%,#E8416C 60%,#f06090 100%);color:#fff;padding:3.5rem 1.5rem 4rem;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+.hero-badge{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 16px;font-size:12px;letter-spacing:.5px;margin-bottom:1.25rem;backdrop-filter:blur(4px)}
+.hero h1{font-size:clamp(1.8rem,5vw,3rem);font-weight:700;margin-bottom:.75rem;letter-spacing:-0.5px}
+.hero p{font-size:1.05rem;opacity:.88;max-width:520px;margin:0 auto 2rem}
+.hero-stats{display:flex;justify-content:center;gap:2.5rem;flex-wrap:wrap;margin-top:1rem}
+.hero-stat{text-align:center}
+.hero-stat .n{font-size:1.9rem;font-weight:700;display:block}
+.hero-stat .l{font-size:11px;opacity:.8;text-transform:uppercase;letter-spacing:.5px}
+
+/* NAV */
+.nav-info{display:flex;background:#fff;border-bottom:1px solid rgba(0,0,0,.07);overflow-x:auto;position:sticky;top:0;z-index:10;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.nav-info a{flex-shrink:0;padding:12px 18px;font-size:13px;color:#666;text-decoration:none;border-bottom:2px solid transparent;white-space:nowrap;transition:.15s}
+.nav-info a:hover,.nav-info a.active{color:#E8416C;border-bottom-color:#E8416C}
+
+/* LAYOUT */
+.page{max-width:960px;margin:0 auto;padding:2.5rem 1.25rem}
+.section-title{font-size:1.4rem;font-weight:700;margin-bottom:.35rem;color:#111}
+.section-sub{font-size:14px;color:#777;margin-bottom:2rem}
+.divider{border:none;border-top:1px solid rgba(0,0,0,.07);margin:3rem 0}
+
+/* CÓMO FUNCIONA — timeline */
+.flow{display:flex;flex-direction:column;gap:0}
+.flow-item{display:flex;gap:1.25rem;padding-bottom:2rem;position:relative}
+.flow-item:not(:last-child)::before{content:'';position:absolute;left:20px;top:42px;bottom:0;width:2px;background:linear-gradient(180deg,#E8416C,rgba(232,65,108,.1))}
+.flow-icon{width:42px;height:42px;border-radius:50%;background:#E8416C;color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 2px 8px rgba(232,65,108,.35);z-index:1}
+.flow-body{padding-top:8px}
+.flow-body h3{font-size:15px;font-weight:600;margin-bottom:4px}
+.flow-body p{font-size:13px;color:#666;line-height:1.6}
+.flow-body .tag-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500}
+.tag-red{background:#fee;color:#c0392b}
+.tag-green{background:#eaf3de;color:#3b6d11}
+.tag-blue{background:#e6f1fb;color:#185fa5}
+.tag-orange{background:#faeeda;color:#854f0b}
+.tag-pink{background:#fbeaf0;color:#993556}
+.tag-teal{background:#e1f5ee;color:#0f6e56}
+.tag-gray{background:#f0eeea;color:#555}
+
+/* FEATURES GRID */
+.features-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;margin-bottom:2rem}
+.feature-card{background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:1.25rem;transition:.2s}
+.feature-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-1px)}
+.feature-card .icon{font-size:1.8rem;margin-bottom:.6rem}
+.feature-card h3{font-size:14px;font-weight:600;margin-bottom:.4rem}
+.feature-card p{font-size:12.5px;color:#666;line-height:1.55}
+
+/* ESPACIOS */
+.espacios{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;margin-bottom:2rem}
+.espacio-card{border-radius:14px;padding:1.25rem;color:#fff;position:relative;overflow:hidden}
+.espacio-card::after{content:'';position:absolute;right:-20px;bottom:-20px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.1)}
+.esp-reporte{background:linear-gradient(135deg,#c9254e,#E8416C)}
+.esp-jefes{background:linear-gradient(135deg,#1a6e4d,#1D9E75)}
+.esp-tiempos{background:linear-gradient(135deg,#1a4d8e,#2d7dd2)}
+.espacio-card h3{font-size:15px;font-weight:600;margin-bottom:.4rem}
+.espacio-card p{font-size:12.5px;opacity:.9;line-height:1.55}
+.espacio-card .msgs{margin-top:.75rem;display:flex;flex-wrap:wrap;gap:4px}
+.espacio-card .msg-chip{background:rgba(255,255,255,.2);border-radius:20px;padding:2px 10px;font-size:11px}
+
+/* ROADMAP */
+.roadmap{display:flex;flex-direction:column;gap:.75rem}
+.road-item{background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:12px;padding:1rem 1.25rem;display:flex;align-items:flex-start;gap:1rem}
+.road-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.dot-soon{background:#E8416C}
+.dot-med{background:#F5A623}
+.dot-later{background:#aaa}
+.road-body h4{font-size:13.5px;font-weight:600;margin-bottom:3px}
+.road-body p{font-size:12.5px;color:#666;line-height:1.5}
+.road-label{margin-left:auto;flex-shrink:0}
+
+/* SHEETS */
+.sheets-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.75rem;margin-bottom:2rem}
+.sheet-card{background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:.9rem 1rem}
+.sheet-card .sheet-name{font-size:13px;font-weight:600;color:#E8416C;margin-bottom:.35rem}
+.sheet-card p{font-size:12px;color:#666;line-height:1.5}
+
+/* CICLO */
+.ciclo-wrap{background:#fff;border-radius:14px;border:1px solid rgba(0,0,0,.08);padding:1.5rem;margin-bottom:2rem}
+.ciclo-row{display:flex;align-items:center;gap:.75rem;padding:.6rem 0;border-bottom:.5px solid rgba(0,0,0,.06);font-size:13px}
+.ciclo-row:last-child{border-bottom:none}
+.ciclo-hora{font-weight:600;color:#E8416C;min-width:70px;font-size:12.5px}
+.ciclo-desc{color:#444}
+
+/* FOOTER */
+.footer{background:#1a1a1a;color:#aaa;text-align:center;padding:2rem 1rem;font-size:12.5px;margin-top:3rem}
+.footer a{color:#E8416C;text-decoration:none}
+
+@media(max-width:600px){
+  .hero-stats{gap:1.5rem}
+  .hero-stat .n{font-size:1.5rem}
+}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">🤖 Automatización de operaciones</div>
+  <h1>Liverpool Bot 456</h1>
+  <p>Bot que monitorea remisiones en tiempo real, detecta retrasos y mantiene informado al equipo automáticamente.</p>
+  <div class="hero-stats">
+    <div class="hero-stat"><span class="n">15 min</span><span class="l">Ciclo de actualización</span></div>
+    <div class="hero-stat"><span class="n">3</span><span class="l">Espacios de Chat</span></div>
+    <div class="hero-stat"><span class="n">4</span><span class="l">Pisos monitoreados</span></div>
+    <div class="hero-stat"><span class="n">10:00</span><span class="l">Inicio — 21:30 cierre</span></div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav-info">
+  <a href="#como-funciona" class="active">⚙️ Cómo funciona</a>
+  <a href="#funcionalidades">✅ Funcionalidades</a>
+  <a href="#espacios">💬 Espacios Chat</a>
+  <a href="#sheets">📊 Google Sheets</a>
+  <a href="#horario">🕐 Horario</a>
+  <a href="#roadmap">🚀 Próximas mejoras</a>
+</nav>
+
+<div class="page">
+
+<!-- CÓMO FUNCIONA -->
+<section id="como-funciona">
+  <h2 class="section-title">⚙️ Cómo funciona</h2>
+  <p class="section-sub">Cada 15 minutos el bot ejecuta este flujo de forma automática y sin intervención manual.</p>
+
+  <div class="flow">
+
+    <div class="flow-item">
+      <div class="flow-icon">🌐</div>
+      <div class="flow-body">
+        <h3>1. Verificación de conexión y horario</h3>
+        <p>El bot comprueba que hay internet y que está dentro del horario activo (10:00 AM – 9:30 PM). Si está fuera de horario o la red falla, se detiene sin generar errores.</p>
+        <div class="tag-row">
+          <span class="tag tag-green">Lun – Dom</span>
+          <span class="tag tag-blue">10:00 – 21:30</span>
+          <span class="tag tag-gray">Configurable remotamente</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-item">
+      <div class="flow-icon">⬇️</div>
+      <div class="flow-body">
+        <h3>2. Descarga del reporte CSV desde Liverpool OMS</h3>
+        <p>El bot abre el sistema Liverpool OMS con Playwright (navegador automático), inicia sesión, selecciona el rango de fechas y descarga el reporte en formato CSV. Si falla, reintenta automáticamente.</p>
+        <div class="tag-row">
+          <span class="tag tag-pink">Playwright Chromium</span>
+          <span class="tag tag-orange">Reintentos automáticos</span>
+          <span class="tag tag-blue">Tiempos adaptativos</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-item">
+      <div class="flow-icon">📊</div>
+      <div class="flow-body">
+        <h3>3. Lectura y análisis del CSV</h3>
+        <p>Lee todas las remisiones del archivo. Para cada una extrae: estatus, sección, jefe de piso, vendedor, tipo de entrega y tiempo transcurrido. Clasifica las remisiones como <b>en tiempo</b>, <b>vencidas (+20 min)</b> o <b>de ayer</b>.</p>
+        <div class="tag-row">
+          <span class="tag tag-red">Mercancía en Espera</span>
+          <span class="tag tag-green">Etiqueta Generada</span>
+          <span class="tag tag-orange">Sin Asignar</span>
+          <span class="tag tag-gray">Rechazado</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-item">
+      <div class="flow-icon">🔄</div>
+      <div class="flow-body">
+        <h3>4. Actualización de Google Sheets</h3>
+        <p>Sube los datos a dos hojas de cálculo: la <b>Hoja 1 principal</b> con todos los registros, y la <b>APP 2.0</b> con vista filtrable por piso. También actualiza el <b>DIRECTORIO</b> de secciones y jefes, y registra los tiempos de asignación en la hoja <b>TIEMPOS</b>.</p>
+        <div class="tag-row">
+          <span class="tag tag-teal">Hoja 1 (bruta)</span>
+          <span class="tag tag-teal">APP 2.0 (filtros)</span>
+          <span class="tag tag-teal">DIRECTORIO</span>
+          <span class="tag tag-teal">TIEMPOS</span>
+          <span class="tag tag-teal">METRICAS</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-item">
+      <div class="flow-icon">💬</div>
+      <div class="flow-body">
+        <h3>5. Envío de mensajes a Google Chat</h3>
+        <p>Manda mensajes diferenciados a tres espacios. El espacio <b>Reporte</b> recibe los indicadores generales. El espacio <b>Jefes</b> recibe mensajes detallados por piso cada 30 min. El espacio <b>Tiempos</b> recibe el análisis de tiempos al cierre.</p>
+        <div class="tag-row">
+          <span class="tag tag-red">Espacio Reporte</span>
+          <span class="tag tag-green">Espacio Jefes</span>
+          <span class="tag tag-blue">Espacio Tiempos</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-item">
+      <div class="flow-icon">💾</div>
+      <div class="flow-body">
+        <h3>6. Registro en MONITOR y métricas</h3>
+        <p>Guarda en la hoja <b>MONITOR</b> el resultado de la ejecución (duración, total, vencidas, intentos, estado). Actualiza <b>METRICAS</b> con el resumen diario. Este historial alimenta el dashboard de control.</p>
+        <div class="tag-row">
+          <span class="tag tag-teal">MONITOR</span>
+          <span class="tag tag-teal">METRICAS</span>
+          <span class="tag tag-gray">health.json local</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- FUNCIONALIDADES -->
+<section id="funcionalidades">
+  <h2 class="section-title">✅ Funcionalidades actuales</h2>
+  <p class="section-sub">Todo lo que el bot hace hoy en producción.</p>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="icon">🌅</div>
+      <h3>Mensaje de apertura</h3>
+      <p>A las 10 AM manda un resumen del estado inicial del día con desglose de ayer vs hoy y lista de jefes con pendientes de ayer.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🏬</div>
+      <h3>Mensajes por piso</h3>
+      <p>Cada 30 min manda 4 mensajes al espacio Jefes — uno por piso — con desglose por jefe, sección, tiempo de espera y tipo de entrega.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🔴</div>
+      <h3>Detección de vencidas</h3>
+      <p>Identifica remisiones con más de 20 minutos sin atender. Umbral configurable desde el dashboard.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🌙</div>
+      <h3>Mensaje de cierre</h3>
+      <p>A las 9:30 PM envía el resumen final del día con los pendientes por jefe y sección al cerrar.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">⏰</div>
+      <h3>Recordatorio previo al cierre</h3>
+      <p>A las 8:30 PM avisa a los jefes con pendientes que queda 1 hora para resolver antes del cierre.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🏖️</div>
+      <h3>Gestión de descansos</h3>
+      <p>Si un jefe descansa, todas sus secciones se redirigen al jefe sustituto. Se configura desde el dashboard.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🏆</div>
+      <h3>Ranking al cierre</h3>
+      <p>Clasifica a los jefes por tiempo promedio de asignación del día. Manda podio y peores tiempos al espacio Tiempos.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">📈</div>
+      <h3>Comparativa semanal</h3>
+      <p>Los viernes al cierre manda el resumen de la semana: mejor día, peor día, promedios y detalle por jornada.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🚨</div>
+      <h3>Alerta de anomalía</h3>
+      <p>Si las vencidas suben 50% por encima del promedio del día, manda alerta urgente automáticamente al espacio Jefes.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🐕</div>
+      <h3>Watchdog</h3>
+      <p>Si el bot no corre en los últimos 30 minutos durante horario activo, manda alerta. Tiempo configurable.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">📖</div>
+      <h3>DIRECTORIO e HISTORIAL</h3>
+      <p>Mantiene actualizado el directorio de secciones con jefe asignado. Si un jefe cambia de sección lo detecta y lo registra en el historial.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">⚙️</div>
+      <h3>Config remota</h3>
+      <p>Horario, umbrales, días activos, festivos y destinos de mensajes se controlan desde el dashboard sin tocar ningún archivo.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">📅</div>
+      <h3>Días festivos</h3>
+      <p>El bot no corre en días festivos configurados en el dashboard. Se agrega la fecha y listo.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🔁</div>
+      <h3>Auto-reparación</h3>
+      <p>Un script paralelo detecta errores en el log, analiza la causa y reintenta el bot automáticamente. Manda diagnóstico al Chat si no puede reparar.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🕐</div>
+      <h3>Tiempos adaptativos</h3>
+      <p>Aprende cuánto tarda cada paso de la descarga y ajusta los tiempos de espera automáticamente para no fallar.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ESPACIOS DE CHAT -->
+<section id="espacios">
+  <h2 class="section-title">💬 Espacios de Google Chat</h2>
+  <p class="section-sub">El bot manda mensajes diferentes a cada espacio según el tipo de información.</p>
+
+  <div class="espacios">
+    <div class="espacio-card esp-reporte">
+      <h3>📢 Espacio Reporte</h3>
+      <p>Indicadores generales para supervisión. Resúmenes operativos sin saturar de detalles.</p>
+      <div class="msgs">
+        <span class="msg-chip">Apertura</span>
+        <span class="msg-chip">Indicadores</span>
+        <span class="msg-chip">Vencidas</span>
+        <span class="msg-chip">Alertas</span>
+        <span class="msg-chip">Comparativa semanal</span>
+        <span class="msg-chip">Watchdog</span>
+      </div>
+    </div>
+    <div class="espacio-card esp-jefes">
+      <h3>👔 Espacio Jefes</h3>
+      <p>Mensajes detallados para jefes de piso. Incluye cada sección con tiempos y tipos de entrega.</p>
+      <div class="msgs">
+        <span class="msg-chip">Por piso (c/30 min)</span>
+        <span class="msg-chip">Apertura</span>
+        <span class="msg-chip">Cierre</span>
+        <span class="msg-chip">Recordatorio</span>
+        <span class="msg-chip">Alertas urgentes</span>
+      </div>
+    </div>
+    <div class="espacio-card esp-tiempos">
+      <h3>⏱️ Espacio Tiempos</h3>
+      <p>Análisis de desempeño. Tiempos de asignación y ranking de jefes al final del día.</p>
+      <div class="msgs">
+        <span class="msg-chip">Resumen diario</span>
+        <span class="msg-chip">Ranking jefes</span>
+        <span class="msg-chip">Mejor/peor tiempo</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:12px;padding:1.25rem;font-size:13px;color:#555;line-height:1.8">
+    💡 <b>Los destinos son configurables.</b> Desde el dashboard puedes decidir a qué espacio va cada tipo de mensaje — o desactivarlos individualmente sin apagar el bot.
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- GOOGLE SHEETS -->
+<section id="sheets">
+  <h2 class="section-title">📊 Hojas de Google Sheets</h2>
+  <p class="section-sub">El bot mantiene actualizadas estas hojas automáticamente.</p>
+
+  <div class="sheets-grid">
+    <div class="sheet-card">
+      <div class="sheet-name">Hoja 1</div>
+      <p>Datos brutos del CSV. Se reemplaza completa en cada ciclo de 15 min.</p>
+    </div>
+    <div class="sheet-card">
+      <div class="sheet-name">APP 2.0</div>
+      <p>Vista filtrable con selector de piso. Solo remisiones activas (Espera + Etiqueta).</p>
+    </div>
+    <div class="sheet-card">
+      <div class="sheet-name">DIRECTORIO</div>
+      <p>Catálogo de secciones con jefe asignado, piso y nombre. Se actualiza automáticamente.</p>
+    </div>
+    <div class="sheet-card">
+      <div class="sheet-name">HISTORIAL</div>
+      <p>Registro histórico de qué jefe ha atendido cada sección. Para auto-completar asignaciones.</p>
+    </div>
+    <div class="sheet-card">
+      <div class="sheet-name">DESCANSOS</div>
+      <p>Jefes que descansan por día con su sustituto. El bot redirige las secciones automáticamente.</p>
+    </div>
+    <div class="sheet-card">
+      <div class="sheet-name">MONITOR</div>
+      <p>Historial de ejecuciones: fecha, hora, duración, total, vencidas, estado. Alimenta el dashboard.</p>
+    </div>
+    <div class="sheet-card">
+      <div class="sheet-name">METRICAS</div>
+      <p>Un registro por día con totales por tipo de estatus. Para comparativas semanales.</p>
+    </div>
+    <div class="sheet-card">
+      <div class="sheet-name">TIEMPOS</div>
+      <p>Tiempo en segundos que tarda cada remisión en ser asignada. Base del ranking de jefes.</p>
+    </div>
+    <div class="sheet-card">
+      <div class="sheet-name">CONFIG</div>
+      <p>Parámetros del bot (horario, umbrales, webhooks). Se edita desde el dashboard de control.</p>
+    </div>
+    <div class="sheet-card">
+      <div class="sheet-name">FESTIVOS</div>
+      <p>Fechas en las que el bot no debe ejecutarse. Se gestiona desde el dashboard.</p>
+    </div>
+    <div class="sheet-card">
+      <div class="sheet-name">PLANTILLAS</div>
+      <p>Textos personalizables de los mensajes que manda el bot al Chat.</p>
+    </div>
+    <div class="sheet-card">
+      <div class="sheet-name">MONITOR_ARCHIVO</div>
+      <p>Histórico de más de 6 meses. El bot mueve automáticamente los registros antiguos aquí.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- HORARIO -->
+<section id="horario">
+  <h2 class="section-title">🕐 Horario de operación</h2>
+  <p class="section-sub">Qué hace el bot en cada momento del día.</p>
+
+  <div class="ciclo-wrap">
+    <div class="ciclo-row">
+      <span class="ciclo-hora">10:00 AM</span>
+      <span class="ciclo-desc">🌅 <b>Apertura</b> — Primer mensaje del día con estado inicial, desglose y pendientes de ayer</span>
+    </div>
+    <div class="ciclo-row">
+      <span class="ciclo-hora">c/15 min</span>
+      <span class="ciclo-desc">📊 <b>Ciclo normal</b> — Descarga CSV, actualiza Sheets, manda indicadores al espacio Reporte</span>
+    </div>
+    <div class="ciclo-row">
+      <span class="ciclo-hora">c/30 min</span>
+      <span class="ciclo-desc">🏬 <b>Mensajes por piso</b> — Detalle por jefe a espacio Jefes (cada 2 ciclos = 30 min)</span>
+    </div>
+    <div class="ciclo-row">
+      <span class="ciclo-hora">8:30 PM</span>
+      <span class="ciclo-desc">⏰ <b>Recordatorio</b> — Aviso a jefes con pendientes: queda 1 hora para el cierre</span>
+    </div>
+    <div class="ciclo-row">
+      <span class="ciclo-hora">9:30 PM</span>
+      <span class="ciclo-desc">🌙 <b>Cierre</b> — Resumen final + ranking de jefes + resumen de tiempos del día</span>
+    </div>
+    <div class="ciclo-row">
+      <span class="ciclo-hora">Viernes</span>
+      <span class="ciclo-desc">📈 <b>Comparativa semanal</b> — Al cierre del viernes manda resumen de toda la semana</span>
+    </div>
+    <div class="ciclo-row">
+      <span class="ciclo-hora">Siempre</span>
+      <span class="ciclo-desc">🚨 <b>Alerta de anomalía</b> — Si vencidas suben 50% sobre el promedio del día, alerta inmediata</span>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ROADMAP -->
+<section id="roadmap">
+  <h2 class="section-title">🚀 Próximas mejoras</h2>
+  <p class="section-sub">Funcionalidades planeadas ordenadas por prioridad.</p>
+
+  <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:1.25rem;font-size:12.5px">
+    <span style="display:flex;align-items:center;gap:6px"><span class="road-dot dot-soon" style="width:10px;height:10px;border-radius:50%;display:inline-block"></span>Próximamente</span>
+    <span style="display:flex;align-items:center;gap:6px"><span class="road-dot dot-med" style="width:10px;height:10px;border-radius:50%;display:inline-block"></span>En evaluación</span>
+    <span style="display:flex;align-items:center;gap:6px"><span class="road-dot dot-later" style="width:10px;height:10px;border-radius:50%;display:inline-block"></span>A futuro</span>
+  </div>
+
+  <div class="roadmap">
+
+    <div class="road-item">
+      <span class="road-dot dot-soon"></span>
+      <div class="road-body">
+        <h4>⚡ Alerta inmediata para HD0D y CC0D</h4>
+        <p>Si una remisión de entrega mismo día lleva más de 10 minutos sin atender, mandar alerta urgente sin esperar el ciclo de 15 min.</p>
+      </div>
+      <span class="road-label"><span class="tag tag-red">Pronto</span></span>
+    </div>
+
+    <div class="road-item">
+      <span class="road-dot dot-soon"></span>
+      <div class="road-body">
+        <h4>📊 Delta entre ciclos</h4>
+        <p>Comparar el ciclo actual con el anterior y decir cuántas remisiones se resolvieron y cuántas entraron nuevas. El equipo sabrá si está ganando o perdiendo terreno.</p>
+      </div>
+      <span class="road-label"><span class="tag tag-red">Pronto</span></span>
+    </div>
+
+    <div class="road-item">
+      <span class="road-dot dot-soon"></span>
+      <div class="road-body">
+        <h4>🏬 Vista de remisiones activas en el dashboard</h4>
+        <p>Pestaña en el panel de control que muestre las remisiones pendientes ahora mismo leyendo directamente de la hoja APP 2.0, con filtros por piso y jefe.</p>
+      </div>
+      <span class="road-label"><span class="tag tag-red">Pronto</span></span>
+    </div>
+
+    <div class="road-item">
+      <span class="road-dot dot-soon"></span>
+      <div class="road-body">
+        <h4>🏆 Racha positiva</h4>
+        <p>Si hay 3 o más ciclos seguidos sin ninguna vencida, mandar un mensaje de reconocimiento al equipo. Refuerzo positivo automático.</p>
+      </div>
+      <span class="road-label"><span class="tag tag-red">Pronto</span></span>
+    </div>
+
+    <div class="road-item">
+      <span class="road-dot dot-med"></span>
+      <div class="road-body">
+        <h4>🔮 Predicción de cierre limpio</h4>
+        <p>Basándose en el ritmo de resolución actual, calcular si el equipo alcanzará a resolver todo antes de las 9:30 PM y avisar con anticipación si no va a lograrse.</p>
+      </div>
+      <span class="road-label"><span class="tag tag-orange">Evaluando</span></span>
+    </div>
+
+    <div class="road-item">
+      <span class="road-dot dot-med"></span>
+      <div class="road-body">
+        <h4>📅 Horario diferente por día</h4>
+        <p>Los lunes tienen muchos pendientes del fin de semana. Los viernes cierran diferente. Poder configurar horario de inicio/fin distinto para cada día de la semana.</p>
+      </div>
+      <span class="road-label"><span class="tag tag-orange">Evaluando</span></span>
+    </div>
+
+    <div class="road-item">
+      <span class="road-dot dot-med"></span>
+      <div class="road-body">
+        <h4>🔇 Modo silencioso por horas</h4>
+        <p>No mandar mensajes al Chat durante una ventana horaria configurable (por ejemplo hora de comida), aunque el bot siga corriendo y actualizando el Sheet.</p>
+      </div>
+      <span class="road-label"><span class="tag tag-orange">Evaluando</span></span>
+    </div>
+
+    <div class="road-item">
+      <span class="road-dot dot-med"></span>
+      <div class="road-body">
+        <h4>📍 Semáforo por jefe en el dashboard</h4>
+        <p>En la pestaña Jefes del panel de control, mostrar un indicador visual: verde (0 vencidas), amarillo (1–5), rojo (+5) actualizado en tiempo real.</p>
+      </div>
+      <span class="road-label"><span class="tag tag-orange">Evaluando</span></span>
+    </div>
+
+    <div class="road-item">
+      <span class="road-dot dot-med"></span>
+      <div class="road-body">
+        <h4>🔍 Sección con problema recurrente</h4>
+        <p>Si la misma sección aparece con vencidas en 3 o más ciclos consecutivos del día, mandar una alerta especial señalando esa sección específicamente.</p>
+      </div>
+      <span class="road-label"><span class="tag tag-orange">Evaluando</span></span>
+    </div>
+
+    <div class="road-item">
+      <span class="road-dot dot-later"></span>
+      <div class="road-body">
+        <h4>📦 Backup automático del CSV por fecha</h4>
+        <p>Guardar una copia de cada descarga con nombre de fecha en una carpeta de histórico, para poder revisar datos del pasado sin depender del Sheet.</p>
+      </div>
+      <span class="road-label"><span class="tag tag-gray">Futuro</span></span>
+    </div>
+
+    <div class="road-item">
+      <span class="road-dot dot-later"></span>
+      <div class="road-body">
+        <h4>📅 Resumen del lunes por la mañana</h4>
+        <p>Si el bot corrió el fin de semana, el lunes a las 10 AM mandar un resumen especial del desempeño del sábado y domingo.</p>
+      </div>
+      <span class="road-label"><span class="tag tag-gray">Futuro</span></span>
+    </div>
+
+    <div class="road-item">
+      <span class="road-dot dot-later"></span>
+      <div class="road-body">
+        <h4>📜 Historial de pausas del bot</h4>
+        <p>Registrar automáticamente cuándo se pausó el bot, cuánto tiempo estuvo pausado y desde qué cuenta se hizo. Visible en el dashboard.</p>
+      </div>
+      <span class="road-label"><span class="tag tag-gray">Futuro</span></span>
+    </div>
+
+  </div>
+</section>
+
+</div>
+
+<div class="footer">
+  Liverpool Bot 456 — Automatización de operaciones de piso<br>
+  <span style="opacity:.6;font-size:11px">Panel de control disponible para administradores del sistema</span>
+</div>
+
+<script>
+// Resaltar link activo al hacer scroll
+const sections = document.querySelectorAll('section[id]');
+const links = document.querySelectorAll('.nav-info a');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => {
+    if (window.scrollY >= s.offsetTop - 80) current = s.id;
+  });
+  links.forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+  });
+});
+
+// Scroll suave
+document.querySelectorAll('.nav-info a').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+</script>
+</body>
+</html>
