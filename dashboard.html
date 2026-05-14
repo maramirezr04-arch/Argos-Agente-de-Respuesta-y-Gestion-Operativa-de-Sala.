@@ -481,6 +481,9 @@ input:checked + .slider:before { transform:translateX(22px); }
     <button class="btn-action" onclick="accion('limpiar_cola')">
       <b>🧹 Limpiar cola de mensajes</b><span>Borra mensajes pendientes que no se pudieron mandar</span>
     </button>
+    <button class="btn-action" onclick="enviarKpiVendedores()">
+      <b>🏷️ Enviar reporte vendedores</b><span>Crea la señal para que el bot mande al espacio Tiempos cuanto tarda cada vendedor en generar etiqueta (T2→T3)</span>
+    </button>
   </div>
 </div>
 
@@ -935,6 +938,19 @@ async function accion(tipo){
     if(data.success)showToast('✅ '+(data.mensaje||'Hecho'),'ok');
     else throw new Error(data.error);
   }catch(e){showToast('❌ '+e.message,'err');}
+}
+
+// KPI VENDEDORES (manual)
+async function enviarKpiVendedores(){
+  if(!confirm('¿Enviar reporte de tiempos por vendedor al espacio Tiempos?\n\nEl bot lo procesara en la proxima ejecucion (maximo 15 min).'))return;
+  try{
+    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'kpi_vendedores'})});
+    const data=await r.json();
+    if(data.success)showToast('✅ Señal enviada — el bot mandara el reporte en la proxima ejecucion','ok');
+    else throw new Error(data.error||'Error desconocido');
+  }catch(e){
+    showToast('⚠️ Usa el archivo enviar_kpi_vendedores.bat en la PC del bot','warn');
+  }
 }
 
 // LOGS
