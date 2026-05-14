@@ -108,6 +108,7 @@ input:checked + .slider:before { transform:translateX(22px); }
   <button onclick="showTab('jefes',this)">👔 Jefes</button>
   <button onclick="showTab('routing',this)">📨 Rutas mensajes</button>
   <button onclick="showTab('acciones',this)">🔧 Acciones</button>
+  <button onclick="showTab('pruebas',this)">🧪 Pruebas</button>
   <button onclick="showTab('festivos',this)">📅 Festivos</button>
   <button onclick="showTab('logs',this)">📜 Logs</button>
   <button onclick="showTab('historico',this)">📤 Historico Semanal</button>
@@ -121,14 +122,46 @@ input:checked + .slider:before { transform:translateX(22px); }
       <option value="5">Ultimas 5</option><option value="10">Ultimas 10</option>
       <option value="20" selected>Ultimas 20</option><option value="9999">Todas</option>
     </select>
+    <select id="filtro-estado" onchange="renderAll()">
+      <option value="todos">Todos</option><option value="exitosa">Solo exitosas</option><option value="error">Solo errores</option>
+    </select>
     <button onclick="cargar()">🔄 Actualizar</button>
+    <button onclick="exportarCSV()" title="Descargar CSV">⬇️ CSV</button>
     <span style="font-size:12px;color:#aaa;margin-left:auto" id="ultima"></span>
+    <span style="font-size:12px;color:#aaa" id="refresh-countdown"></span>
   </div>
+  <div id="bot-status-bar" style="display:none;margin-bottom:1rem"></div>
+
+  <!-- Tarjetas de estatus actual (desde hoja METRICAS) -->
+  <div class="grid4" id="cards-metricas" style="margin-bottom:1rem">
+    <div class="metric" style="border-left:3px solid #E24B4A">
+      <div class="lbl">🔴 Mercancia en Espera</div>
+      <div class="val" id="m-espera">—</div>
+      <div class="sub" id="m-espera-sub">Cargando...</div>
+    </div>
+    <div class="metric" style="border-left:3px solid #3b6d11">
+      <div class="lbl">🏷️ Etiquetas Generadas</div>
+      <div class="val" id="m-etiquetas">—</div>
+      <div class="sub" id="m-etiquetas-sub"></div>
+    </div>
+    <div class="metric" style="border-left:3px solid #854f0b">
+      <div class="lbl">⚠️ Sin Asignar</div>
+      <div class="val" id="m-sin-asignar">—</div>
+      <div class="sub" id="m-sin-asignar-sub"></div>
+    </div>
+    <div class="metric" style="border-left:3px solid #E8416C">
+      <div class="lbl">🔥 Vencidas (+20 min)</div>
+      <div class="val" id="m-vencidas-hoy">—</div>
+      <div class="sub" id="m-vencidas-sub"></div>
+    </div>
+  </div>
+
   <div class="grid4" id="cards"></div>
   <div class="grid2">
-    <div class="card"><div class="card-title">Duracion por ejecucion</div><div style="position:relative;height:160px"><canvas id="cT"></canvas></div></div>
+    <div class="card"><div class="card-title">Duracion por ejecucion (seg)</div><div style="position:relative;height:160px"><canvas id="cT"></canvas></div></div>
     <div class="card"><div class="card-title">Intentos de descarga</div><div style="position:relative;height:160px"><canvas id="cI"></canvas></div></div>
   </div>
+  <div class="card"><div class="card-title">📈 Tendencia de vencidas (ultimas ejecuciones)</div><div style="position:relative;height:140px"><canvas id="cV"></canvas></div></div>
   <div class="card">
     <div class="card-title">Historial de ejecuciones</div>
     <table><thead><tr><th>#</th><th>Fecha</th><th>Hora</th><th>Duracion</th><th>Remisiones</th><th>Vencidas</th><th>Intentos</th><th>Estado</th></tr></thead>
@@ -373,6 +406,53 @@ input:checked + .slider:before { transform:translateX(22px); }
   </div>
 </div>
 
+<!-- ── PRUEBAS DE MENSAJES ── -->
+<div id="tab-pruebas" class="section" style="margin-top:1rem">
+  <div class="estado-bar warn" style="font-size:11px">
+    💡 Manda mensajes de prueba a cualquier espacio de Chat para verificar que los webhooks funcionan. El mensaje se envia de verdad — asegurate de que diga PRUEBA.
+  </div>
+  <div class="cfg-card" style="margin-bottom:1rem">
+    <h3>🧪 Enviar mensaje de prueba</h3>
+    <div class="cfg-row" style="margin-bottom:14px">
+      <label>📝 Tipo de mensaje</label>
+      <select onchange="cargarPrueba(this.value)">
+        <option value="">Selecciona para pre-llenar...</option>
+        <option value="apertura">🌅 Apertura (10 AM)</option>
+        <option value="cierre">🌙 Cierre (9:30 PM)</option>
+        <option value="vencidas">⚠️ Resumen vencidas</option>
+        <option value="alerta">🚨 Alerta de anomalia</option>
+        <option value="ranking">🏆 Ranking del dia</option>
+        <option value="tiempos">⏱️ Resumen de tiempos</option>
+      </select>
+    </div>
+    <div class="cfg-row" style="margin-bottom:14px">
+      <label>📲 Espacio destino</label>
+      <select id="prueba-espacio">
+        <option value="reporte">📢 Reporte</option>
+        <option value="jefes">👔 Jefes</option>
+        <option value="tiempos">⏱️ Tiempos</option>
+      </select>
+    </div>
+    <div class="cfg-row full" style="margin-bottom:14px">
+      <label>💬 Mensaje (editable)</label>
+      <textarea id="prueba-mensaje" style="min-height:200px;font-family:monospace;font-size:12px;line-height:1.6" placeholder="Selecciona un tipo de mensaje o escribe uno personalizado..."></textarea>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:11px;color:#854f0b">⚠️ Se envia al Chat de verdad</span>
+      <button class="btn-primary" onclick="mandarPrueba()">📤 Enviar prueba</button>
+    </div>
+  </div>
+  <div class="cfg-card">
+    <h3>🔌 Estado de webhooks</h3>
+    <div id="webhooks-status" style="font-size:12px;color:#666;line-height:2">
+      <div>📢 Reporte: <span id="wh-reporte-status" class="badge info">No verificado</span></div>
+      <div>👔 Jefes: <span id="wh-jefes-status" class="badge info">No verificado</span></div>
+      <div>⏱️ Tiempos: <span id="wh-tiempos-status" class="badge info">No verificado</span></div>
+    </div>
+    <button onclick="verificarWebhooks()" style="margin-top:10px">🔍 Verificar webhooks</button>
+  </div>
+</div>
+
 <!-- ── FESTIVOS ── -->
 <div id="tab-festivos" class="section" style="margin-top:1rem">
   <div class="cfg-card" style="margin-bottom:1rem">
@@ -437,9 +517,11 @@ input:checked + .slider:before { transform:translateX(22px); }
 <script>
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxBSox6hX-SfSemrq-CQAx_w_iCGP-4uUsMB1eKD8HCYJJC_Ul9BoEItLAAVNVm5ELtzA/exec";
 const SHEET_ID = "135lsymm5A67_ieYZLaKIfvPpkyqRWbUf9UV-mv3b7js";
-const URL_MONITOR = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=MONITOR";
-let todos=[],chartT,chartI;
+const URL_MONITOR  = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=MONITOR";
+const URL_METRICAS = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=METRICAS";
+let todos=[],chartT,chartI,chartV;
 let DIRECTORIO_SECCIONES = [], DIRECTORIO_JEFES = [];
+let countdownSeg = 30, countdownTimer;
 
 function showTab(id,btn){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');btn.classList.add('active');}
 function formatDur(seg){seg=Math.round(Number(seg)||0);const m=Math.floor(seg/60),s=seg%60;if(m===0)return s+'s';return m+'m '+(s<10?'0':'')+s+'s';}
@@ -452,14 +534,22 @@ async function cargar(){try{
   todos=(json.table.rows||[]).map(row=>({fecha:row.c[0]?.v||'',hora:row.c[1]?.v||'',duracion:Number(row.c[2]?.v)||0,total:Number(row.c[3]?.v)||0,vencidas:Number(row.c[4]?.v)||0,exito:(row.c[5]?.v||'').toLowerCase()==='exitosa',intentos:Number(row.c[6]?.v)||1}));
   document.getElementById('dot').className='dot dot-live';
   document.getElementById('status-txt').textContent='En vivo';
-  document.getElementById('ultima').textContent='Ultima: '+new Date().toLocaleTimeString('es-MX');
+  document.getElementById('ultima').textContent='Cargado: '+new Date().toLocaleTimeString('es-MX');
+  iniciarCountdown();
   renderAll();
 }catch(e){
   document.getElementById('dot').className='dot dot-off';
   document.getElementById('status-txt').textContent='Sin conexion';
 }}
 
-function filtrados(){return todos.slice(-parseInt(document.getElementById('filtro').value));}
+function filtrados(){
+  const n=parseInt(document.getElementById('filtro').value);
+  const est=document.getElementById('filtro-estado').value;
+  let base=todos;
+  if(est==='exitosa')base=todos.filter(e=>e.exito);
+  else if(est==='error')base=todos.filter(e=>!e.exito);
+  return base.slice(-n);
+}
 function prom(arr,key){const v=arr.filter(e=>e.exito).map(e=>e[key]);return v.length?Math.round(v.reduce((a,b)=>a+b,0)/v.length):0;}
 
 function renderCards(data){
@@ -490,7 +580,73 @@ function renderCharts(data){
   chartI=new Chart(document.getElementById('cI'),{type:'bar',data:{labels,datasets:[{data:data.map(e=>e.intentos),backgroundColor:data.map(e=>e.intentos===1?'#1D9E75':e.intentos<=3?'#F5A623':'#E24B4A')}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1,font:{size:10}}},x:{ticks:{font:{size:10},autoSkip:true,maxRotation:0}}}}});
 }
 
-function renderAll(){const d=filtrados();renderCards(d);renderTabla(d);renderCharts(d);}
+function renderVencidas(data){
+  const labels=data.map((_,i)=>'#'+(i+1));
+  if(chartV)chartV.destroy();
+  chartV=new Chart(document.getElementById('cV'),{
+    type:'line',
+    data:{labels,datasets:[{data:data.map(e=>e.vencidas),borderColor:'#E8416C',backgroundColor:'rgba(232,65,108,.1)',tension:.35,fill:true,pointRadius:3,pointHoverRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:5,font:{size:10}}},x:{ticks:{font:{size:10},autoSkip:true,maxRotation:0}}}}
+  });
+}
+
+function actualizarBotStatus(data){
+  if(!data.length)return;
+  const ul=data[data.length-1];
+  const bar=document.getElementById('bot-status-bar');
+  bar.style.display='flex';
+  bar.style.alignItems='center';
+  bar.style.gap='10px';
+  bar.style.padding='10px 14px';
+  bar.style.borderRadius='8px';
+  bar.style.fontSize='13px';
+  bar.style.marginBottom='1rem';
+  if(ul.exito){bar.style.background='#eaf3de';bar.style.color='#3b6d11';}
+  else{bar.style.background='#fcebeb';bar.style.color='#a32d2d';}
+  bar.innerHTML=(ul.exito?'✅':'❌')+' Ultima ejecucion: <b>'+ul.fecha+' '+ul.hora+'</b> — '+ul.total+' remisiones, '+ul.vencidas+' vencidas, '+formatDur(ul.duracion)+(ul.exito?'':' ⚠️ Con error');
+}
+
+function exportarCSV(){
+  if(!todos.length){showToast('Sin datos para exportar','err');return;}
+  const hdr=['Fecha','Hora','Duracion_seg','Total','Vencidas','Estado','Intentos'];
+  const filas=[hdr,...todos.map(e=>[e.fecha,e.hora,Math.round(e.duracion),e.total,e.vencidas,e.exito?'exitosa':'error',e.intentos])];
+  const csv=filas.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='monitor_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+
+function iniciarCountdown(){
+  clearInterval(countdownTimer);
+  countdownSeg=30;
+  countdownTimer=setInterval(()=>{
+    countdownSeg--;
+    const el=document.getElementById('refresh-countdown');
+    if(el)el.textContent='Actualiza en '+countdownSeg+'s';
+    if(countdownSeg<=0)countdownSeg=30;
+  },1000);
+}
+
+function renderAll(){const d=filtrados();renderCards(d);renderTabla(d);renderCharts(d);renderVencidas(d);actualizarBotStatus(d);}
+
+async function verificarWebhooks(){
+  const ids=['reporte','jefes','tiempos'];
+  for(const id of ids){
+    const el=document.getElementById('wh-'+id+'-status');
+    if(el){el.className='badge warn';el.textContent='Verificando...';}
+  }
+  for(const [id,url] of Object.entries(WEBHOOKS_MAP)){
+    const el=document.getElementById('wh-'+id+'-status');
+    if(!el)continue;
+    try{
+      await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:''})});
+      el.className='badge ok';el.textContent='OK';
+    }catch(e){
+      el.className='badge err';el.textContent='Error';
+    }
+  }
+}
 
 // CONFIG
 function actualizarResumen(){
@@ -948,7 +1104,8 @@ async function subirHistorico(){
   finally{btn.disabled=false;btn.textContent='📤 Procesar y subir';}
 }
 
-cargar();setInterval(cargar,30000);
+cargar();
+setInterval(()=>{cargar();},30000);
 cargarConfig();
 cargarDirectorio();
 cargarDescansos();
