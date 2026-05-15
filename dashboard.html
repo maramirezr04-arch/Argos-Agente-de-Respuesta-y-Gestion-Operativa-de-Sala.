@@ -7,7 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; color: #1a1a1a; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f7f6f3; color: #1a1a1a; }
 
 /* ── HEADER ── */
 .header {
@@ -29,7 +29,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   background-image: url("data:image/svg+xml,%3Csvg width='52' height='26' viewBox='0 0 52 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Cpath d='M10 10c0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6h2c0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4v2c-3.314 0-6-2.686-6-6 0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6zm25.464-1.95l8.486 8.486-1.414 1.414-8.486-8.486 1.414-1.414z' /%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   pointer-events: none;
 }
-.header h1 { font-size: 22px; font-weight: 700; letter-spacing: -.3px; position: relative; }
+.header h1 { font-size: 24px; font-weight: 800; letter-spacing: -.5px; position: relative; }
 .header .sub { font-size: 13px; opacity: .88; margin-top: 4px; font-weight: 400; position: relative; letter-spacing: .2px; }
 
 /* ── STATUS PILL ── */
@@ -40,13 +40,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .status-pill { display:flex;align-items:center;font-size:13px;background:rgba(255,255,255,.22);padding:6px 14px;border-radius:20px;font-weight:500;position:relative; }
 
 /* ── NAV TABS ── */
-.nav { display:flex;background:#fff;border-bottom:1px solid rgba(0,0,0,.08);overflow-x:auto;position:sticky;top:0;z-index:10;box-shadow:0 1px 4px rgba(0,0,0,.06); }
-.nav button { flex-shrink:0;padding:13px 16px;font-size:13px;background:none;border:none;cursor:pointer;color:#666;border-bottom:3px solid transparent;white-space:nowrap;transition:.15s;font-weight:400; }
-.nav button.active { color:#E8416C;border-bottom-color:#E8416C;font-weight:600;background:rgba(232,65,108,.04); }
-.nav button:hover:not(.active) { background:#f5f4f0;color:#333; }
+.nav { display:flex;background:#fff;border-bottom:2px solid rgba(0,0,0,.07);overflow-x:auto;position:sticky;top:0;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.08);padding:0 8px; }
+.nav button { flex-shrink:0;padding:14px 18px;font-size:13px;background:none;border:none;cursor:pointer;color:#888;border-bottom:3px solid transparent;white-space:nowrap;transition:.2s;font-weight:500;border-radius:8px 8px 0 0;margin:0 2px; }
+.nav button.active { color:#c9254e;border-bottom-color:#c9254e;font-weight:700;background:rgba(201,37,78,.05); }
+.nav button:hover:not(.active) { background:#f8f4f5;color:#444; }
 
 /* ── LAYOUT ── */
-.content { padding:1.5rem;max-width:1000px;margin:0 auto; }
+.content { padding:1.75rem;max-width:1100px;margin:0 auto; }
 .grid4 { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:1.25rem; }
 .grid2 { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:1.25rem; }
 .grid3 { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:1.25rem; }
@@ -56,23 +56,23 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 }
 
 /* ── METRIC CARDS ── */
-.metric { background:#fff;border-radius:14px;padding:1.25rem 1.1rem;box-shadow:0 2px 8px rgba(0,0,0,.07);transition:.2s; }
-.metric:hover { box-shadow:0 4px 14px rgba(0,0,0,.11);transform:translateY(-1px); }
-.metric .lbl { font-size:11px;color:#777;margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:.4px; }
-.metric .val { font-size:28px;font-weight:700;color:#1a1a1a;line-height:1; }
-.metric .sub { font-size:11px;color:#999;margin-top:6px; }
+.metric { background:#fff;border-radius:16px;padding:1.4rem 1.2rem;box-shadow:0 2px 12px rgba(0,0,0,.07);transition:.2s;border:1px solid rgba(0,0,0,.05); }
+.metric:hover { box-shadow:0 6px 20px rgba(0,0,0,.12);transform:translateY(-2px); }
+.metric .lbl { font-size:11px;color:#999;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.5px; }
+.metric .val { font-size:32px;font-weight:800;color:#1a1a1a;line-height:1; }
+.metric .sub { font-size:11px;color:#bbb;margin-top:8px; }
 
 /* ── CARDS ── */
-.card { background:#fff;border:.5px solid rgba(0,0,0,.08);border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;box-shadow:0 1px 4px rgba(0,0,0,.05); }
-.card-title { font-size:13px;font-weight:600;color:#444;margin-bottom:.9rem;display:flex;align-items:center;gap:6px; }
+.card { background:#fff;border:1px solid rgba(0,0,0,.07);border-radius:16px;padding:1.4rem 1.6rem;margin-bottom:1.4rem;box-shadow:0 2px 8px rgba(0,0,0,.05); }
+.card-title { font-size:13px;font-weight:700;color:#333;margin-bottom:1rem;display:flex;align-items:center;gap:8px;padding-bottom:.75rem;border-bottom:1px solid rgba(0,0,0,.06); }
 
 /* ── TABLES ── */
 table { width:100%;border-collapse:collapse;font-size:13px; }
-th { text-align:left;font-weight:600;color:#555;padding:8px 10px;border-bottom:2px solid #E8416C;font-size:12px;background:#fff;text-transform:uppercase;letter-spacing:.3px; }
-td { padding:8px 10px;border-bottom:.5px solid rgba(0,0,0,.06); }
+th { text-align:left;font-weight:700;color:#444;padding:10px 12px;border-bottom:2px solid #f0eeea;font-size:11px;background:#faf9f7;text-transform:uppercase;letter-spacing:.4px; }
+td { padding:10px 12px;border-bottom:.5px solid rgba(0,0,0,.05); }
 tr:last-child td { border-bottom:none; }
 tbody tr:nth-child(odd) td { background:#faf9f7; }
-tbody tr:hover td { background:#fef0f5; }
+tbody tr:hover td { background:#fff0f4; }
 
 /* ── BADGES ── */
 .badge { display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600; }
@@ -85,14 +85,14 @@ tbody tr:hover td { background:#fef0f5; }
 
 /* ── SECTION INTRO BOX ── */
 .section-intro {
-  background: linear-gradient(135deg, #e8f4fd 0%, #f0f8ff 100%);
-  border: 1px solid #c3dff5;
-  border-left: 4px solid #4a9fd4;
-  border-radius: 10px;
-  padding: 13px 16px;
+  background: linear-gradient(135deg, #fef0f5 0%, #fff5f8 100%);
+  border: 1px solid rgba(232,65,108,.2);
+  border-left: 4px solid #E8416C;
+  border-radius: 12px;
+  padding: 14px 18px;
   font-size: 13px;
-  color: #1a4a6b;
-  margin-bottom: 1.25rem;
+  color: #6b1a30;
+  margin-bottom: 1.4rem;
   line-height: 1.6;
 }
 .section-intro code { background: rgba(0,0,0,.07); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
@@ -113,9 +113,9 @@ button:hover { background:#f0f0f0; }
 /* ── CONFIG ── */
 .cfg-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:1rem; }
 @media (max-width: 700px) { .cfg-grid { grid-template-columns: 1fr; } }
-.cfg-card { background:#fff;border:1px solid rgba(0,0,0,.09);border-radius:14px;padding:1.1rem 1.25rem;transition:.15s; }
-.cfg-card:hover { border-color:rgba(232,65,108,.25);box-shadow:0 2px 10px rgba(232,65,108,.07); }
-.cfg-card h3 { font-size:13px;font-weight:600;color:#333;margin-bottom:.85rem;display:flex;align-items:center;gap:6px; }
+.cfg-card { background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:16px;padding:1.25rem 1.4rem;transition:.2s; }
+.cfg-card:hover { border-color:rgba(232,65,108,.3);box-shadow:0 4px 16px rgba(232,65,108,.08); }
+.cfg-card h3 { font-size:13px;font-weight:700;color:#222;margin-bottom:1rem;display:flex;align-items:center;gap:8px; }
 .cfg-row { display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;gap:10px; }
 .cfg-row label { color:#555; }
 .cfg-row input, .cfg-row select { width:140px;text-align:right; }
@@ -139,23 +139,23 @@ input:checked + .slider:before { transform:translateX(22px); }
 @keyframes slideUp { from { opacity:0; transform:translate(-50%, 20px); } to { opacity:1; transform:translate(-50%, 0); } }
 
 /* ── BUTTONS ── */
-.btn-primary { background:linear-gradient(135deg,#c9254e,#E8416C);color:#fff;border:none;padding:10px 26px;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;box-shadow:0 2px 8px rgba(232,65,108,.25); }
-.btn-primary:hover { background:linear-gradient(135deg,#b01f42,#d0325a);box-shadow:0 4px 12px rgba(232,65,108,.35); }
+.btn-primary { background:linear-gradient(135deg,#c9254e,#e8416c);color:#fff;border:none;padding:11px 28px;border-radius:24px;font-size:14px;font-weight:700;cursor:pointer;transition:.2s;box-shadow:0 3px 12px rgba(201,37,78,.3);letter-spacing:.2px; }
+.btn-primary:hover { background:linear-gradient(135deg,#a81f40,#c9254e);box-shadow:0 6px 18px rgba(201,37,78,.4);transform:translateY(-1px); }
 .btn-primary:disabled { opacity:.5;cursor:not-allowed; }
-.btn-action { width:100%;padding:16px;border-radius:12px;border:1.5px solid #e5e5e5;background:#fff;cursor:pointer;font-size:13px;text-align:left;transition:.15s;box-shadow:0 1px 3px rgba(0,0,0,.04); }
-.btn-action:hover { background:#fff5f8;border-color:#E8416C;box-shadow:0 3px 10px rgba(232,65,108,.1); }
-.btn-action b { display:block;color:#E8416C;margin-bottom:3px;font-size:14px; }
-.btn-action span { color:#777;font-size:11px; }
+.btn-action { width:100%;padding:18px;border-radius:14px;border:1.5px solid #eee;background:#fff;cursor:pointer;font-size:13px;text-align:left;transition:.2s;box-shadow:0 1px 4px rgba(0,0,0,.04); }
+.btn-action:hover { background:#fff5f8;border-color:#E8416C;box-shadow:0 4px 14px rgba(232,65,108,.12);transform:translateY(-1px); }
+.btn-action b { display:block;color:#c9254e;margin-bottom:4px;font-size:15px; }
+.btn-action span { color:#999;font-size:12px; }
 
 /* ── STATUS BARS ── */
-.estado-bar { padding:12px 16px;border-radius:10px;margin-bottom:1rem;font-size:13px;display:flex;align-items:center;gap:10px;font-weight:500; }
+.estado-bar { padding:14px 18px;border-radius:12px;margin-bottom:1rem;font-size:13px;display:flex;align-items:center;gap:10px;font-weight:500; }
 .estado-bar.ok   { background:#eaf3de;color:#3b6d11; }
 .estado-bar.warn { background:#faeeda;color:#854f0b; }
 .estado-bar.err  { background:#fcebeb;color:#a32d2d; }
 .msg-box { background:#f0eeea;border-radius:8px;padding:.75rem 1rem;font-size:12px;line-height:1.7;color:#333;font-family:monospace;white-space:pre-wrap;word-break:break-word;margin-top:8px; }
 .timeline { border-left:2px solid #E8416C;padding-left:1.25rem;margin:.5rem 0 .5rem .5rem; }
 .tl-item { position:relative;margin-bottom:1rem; }
-.tl-dot { position:absolute;left:-1.6rem;top:3px;width:9px;height:9px;border-radius:50%;background:#E8416C;border:2px solid #f5f4f0; }
+.tl-dot { position:absolute;left:-1.6rem;top:3px;width:10px;height:10px;border-radius:50%;background:#E8416C;border:2px solid #f7f6f3;box-shadow:0 0 0 2px rgba(232,65,108,.2); }
 .tl-time { font-size:12px;font-weight:600;color:#E8416C; }
 .tl-text { font-size:13px;color:#444;line-height:1.5;margin-top:2px; }
 .chip { display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;background:#f0eeea;color:#555;margin:2px; }
@@ -180,7 +180,6 @@ input:checked + .slider:before { transform:translateX(22px); }
   <button onclick="showTab('routing',this)">📨 Rutas mensajes</button>
   <button onclick="showTab('acciones',this)">🔧 Acciones</button>
   <button onclick="showTab('pruebas',this)">🧪 Pruebas</button>
-  <button onclick="showTab('festivos',this)">📅 Festivos</button>
   <button onclick="showTab('logs',this)">📜 Logs</button>
   <button onclick="showTab('historico',this)">📤 Historico Semanal</button>
 </div>
@@ -460,6 +459,19 @@ input:checked + .slider:before { transform:translateX(22px); }
   <div style="text-align:right;margin-bottom:1rem">
     <button class="btn-primary" onclick="guardarRouting()">💾 Guardar rutas</button>
   </div>
+
+  <!-- Webhooks personales por jefe -->
+  <div class="card" style="margin-top:1.5rem">
+    <div class="card-title">📱 Webhooks personales de jefes
+      <button onclick="cargarWebhooksJefes()" style="margin-left:auto;font-size:11px;padding:4px 10px;border-radius:8px">🔄 Actualizar</button>
+    </div>
+    <div style="font-size:12px;color:#888;margin-bottom:1rem">
+      Los jefes marcados con ✅ reciben su mensaje detallado personal cada 30 min. Los que tienen ❌ no tienen webhook configurado en la hoja <b>WEBHOOKS_JEFES</b>.
+    </div>
+    <div id="grid-webhooks-jefes" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px">
+      <div style="color:#aaa;font-size:13px;grid-column:1/-1;text-align:center;padding:1.5rem">Cargando...</div>
+    </div>
+  </div>
 </div>
 
 <!-- ── ACCIONES RAPIDAS ── -->
@@ -535,30 +547,6 @@ input:checked + .slider:before { transform:translateX(22px); }
   </div>
 </div>
 
-<!-- ── FESTIVOS ── -->
-<div id="tab-festivos" class="section" style="margin-top:1rem">
-  <div class="section-intro">📅 <b>Días festivos</b> — Programa los días en que el bot no debe ejecutarse (días feriados, puentes, etc.).</div>
-  <div class="cfg-card" style="margin-bottom:1rem">
-    <h3>➕ Agregar dia festivo</h3>
-    <div class="cfg-grid" style="margin-bottom:0">
-      <div class="cfg-row full"><label>📅 Fecha</label><input type="date" id="f-fecha"></div>
-      <div class="cfg-row full"><label>📝 Descripcion</label><input type="text" id="f-desc" placeholder="Ej: Navidad, Dia del Trabajo..."></div>
-    </div>
-    <div style="margin-top:12px;text-align:right">
-      <button class="btn-primary" onclick="agregarFestivo()">➕ Agregar</button>
-    </div>
-    <div style="font-size:11px;color:#854f0b;margin-top:10px;background:#fef9f0;padding:8px 12px;border-radius:6px">
-      ℹ️ En los dias festivos el bot no se ejecuta — no descarga ni manda mensajes.
-    </div>
-  </div>
-  <div class="card">
-    <div class="card-title">📋 Dias festivos programados</div>
-    <table><thead><tr><th>Fecha</th><th>Descripcion</th><th></th></tr></thead>
-      <tbody id="tabla-festivos"><tr><td colspan="3" style="text-align:center;color:#888;padding:1.5rem">Cargando...</td></tr></tbody>
-    </table>
-  </div>
-</div>
-
 <!-- ── LOGS ── -->
 <div id="tab-logs" class="section" style="margin-top:1rem">
   <div class="section-intro">📜 <b>Logs</b> — Registro de las últimas ejecuciones con detalles de errores. Útil para diagnosticar problemas.</div>
@@ -608,9 +596,37 @@ let todos=[],chartT,chartI,chartV;
 let DIRECTORIO_SECCIONES = [], DIRECTORIO_JEFES = [];
 let countdownSeg = 30, countdownTimer;
 
-function showTab(id,btn){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');btn.classList.add('active');}
+function showTab(id,btn){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');btn.classList.add('active');if(id==='routing')cargarWebhooksJefes();}
 function formatDur(seg){seg=Math.round(Number(seg)||0);const m=Math.floor(seg/60),s=seg%60;if(m===0)return s+'s';return m+'m '+(s<10?'0':'')+s+'s';}
 function showToast(msg, tipo){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+(tipo||'ok');setTimeout(()=>t.classList.remove('show'),3000);}
+
+async function cargarMetricas(){
+  try{
+    const r=await fetch(URL_METRICAS+'&t='+Date.now());
+    const txt=await r.text();
+    const json=JSON.parse(txt.replace(/^[^{]+/,'').replace(/[^}]+$/,''));
+    const rows=json.table.rows||[];
+    if(!rows.length) return;
+    // Ultima fila = datos mas recientes (col: Fecha,Total,Espera,Etiquetas,Sin_Asignar,Vencidas,Hora)
+    const last=rows[rows.length-1].c;
+    const espera   = Number(last[2]?.v)||0;
+    const etiquetas= Number(last[3]?.v)||0;
+    const sinAsig  = Number(last[4]?.v)||0;
+    const vencidas = Number(last[5]?.v)||0;
+    const hora     = last[6]?.v||'';
+    document.getElementById('m-espera').textContent      = espera;
+    document.getElementById('m-espera-sub').textContent  = 'Actualizado: '+hora;
+    document.getElementById('m-etiquetas').textContent   = etiquetas;
+    document.getElementById('m-etiquetas-sub').textContent = hora;
+    document.getElementById('m-sin-asignar').textContent = sinAsig;
+    document.getElementById('m-sin-asignar-sub').textContent = hora;
+    document.getElementById('m-vencidas-hoy').textContent= vencidas;
+    document.getElementById('m-vencidas-sub').textContent= hora;
+    // Color dinamico en vencidas
+    const cardVenc=document.querySelector('#m-vencidas-hoy').closest('.metric');
+    if(cardVenc) cardVenc.style.borderLeftColor = vencidas>20?'#E24B4A':vencidas>5?'#F5A623':'#1D9E75';
+  }catch(e){ console.warn('METRICAS no disponible:', e.message); }
+}
 
 async function cargar(){try{
   const r=await fetch(URL_MONITOR+'&t='+Date.now());
@@ -622,6 +638,7 @@ async function cargar(){try{
   document.getElementById('ultima').textContent='Cargado: '+new Date().toLocaleTimeString('es-MX');
   iniciarCountdown();
   renderAll();
+  cargarMetricas();
 }catch(e){
   document.getElementById('dot').className='dot dot-off';
   document.getElementById('status-txt').textContent='Sin conexion';
@@ -883,6 +900,65 @@ function renderJefes(){
 }
 
 function filtrarJefes(){renderJefes();}
+
+async function cargarWebhooksJefes(){
+  const grid=document.getElementById('grid-webhooks-jefes');
+  if(!grid)return;
+  grid.innerHTML='<div style="color:#aaa;font-size:13px;grid-column:1/-1;text-align:center;padding:1rem">Cargando...</div>';
+  try{
+    const r=await fetch(APPS_SCRIPT_URL+'?accion=webhooks_jefes');
+    const data=await r.json();
+    if(!data.success||!data.jefes||!data.jefes.length){
+      grid.innerHTML='<div style="color:#aaa;font-size:13px;grid-column:1/-1;text-align:center;padding:1rem">Sin datos — agrega webhooks en la hoja WEBHOOKS_JEFES</div>';
+      return;
+    }
+    const conWebhook=data.jefes.filter(j=>j.tiene_webhook&&j.activo!==false).length;
+    const sinWebhook=data.jefes.filter(j=>!j.tiene_webhook).length;
+    const desactivados=data.jefes.filter(j=>j.tiene_webhook&&j.activo===false).length;
+    grid.innerHTML=`
+      <div style="grid-column:1/-1;display:flex;gap:10px;margin-bottom:6px;flex-wrap:wrap">
+        <span style="font-size:12px;background:#eaf3de;color:#3b6d11;padding:4px 12px;border-radius:20px;font-weight:600">✅ Activos: ${conWebhook}</span>
+        ${desactivados>0?`<span style="font-size:12px;background:#faeeda;color:#854f0b;padding:4px 12px;border-radius:20px;font-weight:600">⏸️ Desactivados: ${desactivados}</span>`:''}
+        <span style="font-size:12px;background:#fcebeb;color:#a32d2d;padding:4px 12px;border-radius:20px;font-weight:600">❌ Sin webhook: ${sinWebhook}</span>
+      </div>
+      ${data.jefes.map(j=>{
+        const activo=j.tiene_webhook&&j.activo!==false;
+        const sinWH=!j.tiene_webhook;
+        return `<div id="card-jefe-${j.nombre.replace(/\s+/g,'_')}" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;border:1.5px solid ${activo?'rgba(29,158,117,.25)':sinWH?'rgba(0,0,0,.07)':'rgba(240,175,40,.3)'};background:${activo?'#f2fbf7':sinWH?'#faf9f7':'#fefbf0'};transition:.2s">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:#222;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${j.nombre}</div>
+            <div style="font-size:11px;color:${activo?'#1D9E75':sinWH?'#bbb':'#c08000'};margin-top:2px">${activo?'Recibe mensaje personal':sinWH?'Sin webhook configurado':'Webhook desactivado'}</div>
+          </div>
+          ${j.tiene_webhook?`<label class="toggle" title="${activo?'Desactivar':'Activar'}">
+            <input type="checkbox" ${activo?'checked':''} onchange="toggleWebhookJefe('${j.nombre}',this.checked,this)">
+            <span class="slider"></span>
+          </label>`:`<span style="font-size:18px;opacity:.4">❌</span>`}
+        </div>`;
+      }).join('')}`;
+  }catch(e){
+    grid.innerHTML='<div style="color:#a32d2d;font-size:13px;grid-column:1/-1;text-align:center;padding:1rem">Error al cargar — verifica que el Apps Script tenga el endpoint webhooks_jefes</div>';
+  }
+}
+
+async function toggleWebhookJefe(nombre,activo,checkbox){
+  checkbox.disabled=true;
+  try{
+    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'toggle_webhook_jefe',nombre,activo})});
+    const data=await r.json();
+    if(data.success){
+      showToast(activo?`✅ ${nombre} activado`:`⏸️ ${nombre} desactivado`,'ok');
+      cargarWebhooksJefes();
+    }else{
+      showToast('Error al guardar','err');
+      checkbox.checked=!activo;
+      checkbox.disabled=false;
+    }
+  }catch(e){
+    showToast('Error de conexión','err');
+    checkbox.checked=!activo;
+    checkbox.disabled=false;
+  }
+}
 
 async function actualizarJefe(el){
   const sec=el.dataset.sec;const tipo=el.dataset.tipo;const valor=el.value;
