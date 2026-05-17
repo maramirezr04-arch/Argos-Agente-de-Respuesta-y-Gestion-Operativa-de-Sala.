@@ -841,7 +841,7 @@ async function agregarDescanso(){
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'agregar_descanso',fecha,jefe_descansa:jefeDescansa,jefe_cubre:jefeCubre})});
     const data=await r.json();
-    if(data.success){showToast('✅ Descanso agregado','ok');document.getElementById('d-fecha').value='';document.getElementById('d-jefe-descansa').value='';document.getElementById('d-jefe-cubre').value='';cargarDescansos();}
+    if(data.success){const n=data.secciones_agregadas||0;showToast(`✅ Descanso agregado — ${n} sección${n===1?'':'es'} de ${jefeDescansa.split(' ')[0]} asignadas a ${jefeCubre.split(' ')[0]}`,'ok');document.getElementById('d-fecha').value='';document.getElementById('d-jefe-descansa').value='';document.getElementById('d-jefe-cubre').value='';cargarDescansos();}
     else throw new Error(data.error);
   }catch(e){showToast('❌ '+e.message,'err');}
 }
