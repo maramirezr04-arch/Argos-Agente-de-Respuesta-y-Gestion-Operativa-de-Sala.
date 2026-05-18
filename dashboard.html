@@ -175,7 +175,6 @@ input:checked + .slider:before { transform:translateX(22px); }
   <button class="active" onclick="showTab('monitor',this)">📊 Monitor</button>
   <button onclick="showTab('config',this)">⚙️ Configuracion</button>
   <button onclick="showTab('descansos',this)">🏖️ Descansos</button>
-  <button onclick="showTab('plantillas',this)">💬 Plantillas</button>
   <button onclick="showTab('jefes',this)">👔 Jefes</button>
   <button onclick="showTab('routing',this)">📨 Rutas mensajes</button>
   <button onclick="showTab('acciones',this)">🔧 Acciones</button>
@@ -343,17 +342,6 @@ input:checked + .slider:before { transform:translateX(22px); }
   </div>
 </div>
 
-<!-- ── PLANTILLAS DE MENSAJES ── -->
-<div id="tab-plantillas" class="section" style="margin-top:1rem">
-  <div class="section-intro">💬 <b>Plantillas de mensajes</b> — Personaliza los textos que el bot manda al Chat. Puedes usar <code>{total}</code> para insertar el número total de remisiones.</div>
-  <div class="estado-bar warn" style="font-size:11px">
-    💡 Edita los textos que el bot manda al Chat. Usa <code>{total}</code> donde quieras que aparezca el numero total.
-  </div>
-  <div id="plantillas-container"></div>
-  <div style="text-align:right;margin-bottom:1rem">
-    <button class="btn-primary" onclick="guardarPlantillas()">💾 Guardar plantillas</button>
-  </div>
-</div>
 
 <!-- ── GESTION DE JEFES ── -->
 <div id="tab-jefes" class="section" style="margin-top:1rem">
@@ -939,34 +927,6 @@ async function borrarDescanso(fecha,jefe){
   }catch(e){showToast('❌ '+e.message,'err');}
 }
 
-// PLANTILLAS
-async function cargarPlantillas(){
-  try{
-    const r=await fetch(APPS_SCRIPT_URL+'?accion=plantillas');
-    const data=await r.json();
-    if(!data.success)return;
-    const cont=document.getElementById('plantillas-container');
-    const labels={apertura_titulo:'🌅 Titulo de apertura',cierre_titulo:'🌙 Titulo de cierre',recordatorio_titulo:'⏰ Titulo de recordatorio',apertura_msg:'🌅 Mensaje de apertura',cierre_msg:'🌙 Mensaje de cierre',mensaje_con_tipos:'📦 Mensaje con tipos de entrega',mensaje_sin_tipos:'⚠️ Mensaje sin tipos'};
-    cont.innerHTML=Object.keys(data.plantillas).map(k=>`
-      <div class="cfg-card" style="margin-bottom:8px">
-        <div class="cfg-row full">
-          <label>${labels[k]||k}</label>
-          <textarea data-key="${k}">${data.plantillas[k]||''}</textarea>
-        </div>
-      </div>`).join('');
-  }catch(e){console.error(e);}
-}
-
-async function guardarPlantillas(){
-  const plantillas={};
-  document.querySelectorAll('#plantillas-container textarea').forEach(t=>{plantillas[t.dataset.key]=t.value;});
-  try{
-    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'guardar_plantillas',plantillas})});
-    const data=await r.json();
-    if(data.success)showToast('✅ Plantillas guardadas — '+data.cambios+' cambios','ok');
-    else throw new Error(data.error);
-  }catch(e){showToast('❌ '+e.message,'err');}
-}
 
 // JEFES
 function renderJefes(){
@@ -1366,7 +1326,6 @@ setInterval(()=>{cargar();},30000);
 cargarConfig();
 cargarDirectorio();
 cargarDescansos();
-cargarPlantillas();
 cargarFestivos();
 cargarLogs();
 cargarRouting();
