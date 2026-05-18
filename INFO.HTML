@@ -113,7 +113,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="hero-stat"><span class="n">15 min</span><span class="l">Ciclo de actualización</span></div>
     <div class="hero-stat"><span class="n">3</span><span class="l">Espacios de Chat</span></div>
     <div class="hero-stat"><span class="n">4</span><span class="l">Pisos monitoreados</span></div>
-    <div class="hero-stat"><span class="n">10:00</span><span class="l">Inicio — 21:30 cierre</span></div>
+    <div class="hero-stat"><span class="n">2</span><span class="l">Sistemas integrados</span></div>
+    <div class="hero-stat"><span class="n">100%</span><span class="l">Tasa de descarga</span></div>
+  </div>
+  <div style="margin-top:2rem;display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
+    <a href="dashboard.html" style="display:inline-block;background:#fff;color:#c9254e;font-weight:700;font-size:14px;padding:12px 28px;border-radius:24px;text-decoration:none;box-shadow:0 4px 16px rgba(0,0,0,.2);transition:.2s">📊 Abrir Dashboard</a>
+    <a href="#como-funciona" style="display:inline-block;background:rgba(255,255,255,.18);color:#fff;font-weight:600;font-size:14px;padding:12px 28px;border-radius:24px;text-decoration:none;border:1.5px solid rgba(255,255,255,.4)">⚙️ Cómo funciona</a>
   </div>
 </div>
 
@@ -121,9 +126,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <nav class="nav-info">
   <a href="#como-funciona" class="active">⚙️ Cómo funciona</a>
   <a href="#funcionalidades">✅ Funcionalidades</a>
+  <a href="#sistemas">🔗 Sistemas</a>
   <a href="#espacios">💬 Espacios Chat</a>
   <a href="#sheets">📊 Google Sheets</a>
   <a href="#horario">🕐 Horario</a>
+  <a href="#instalacion">💻 Instalación</a>
   <a href="#roadmap">🚀 Próximas mejoras</a>
 </nav>
 
@@ -152,12 +159,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="flow-item">
       <div class="flow-icon">⬇️</div>
       <div class="flow-body">
-        <h3>2. Descarga del reporte CSV desde Liverpool OMS</h3>
-        <p>El bot abre el sistema Liverpool OMS con Playwright (navegador automático), inicia sesión, selecciona el rango de fechas y descarga el reporte en formato CSV. Si falla, reintenta automáticamente.</p>
+        <h3>2. Descarga de reportes CSV</h3>
+        <p>El bot descarga automáticamente dos reportes en paralelo: el <b>reporte OMS</b> (indicadores de remisiones) y el <b>histórico XD</b> (remisiones del día anterior para tiempos T2→T3). Usa un navegador automatizado (Playwright) para entrar a cada sistema, autenticarse y descargar el archivo sin intervención humana.</p>
         <div class="tag-row">
           <span class="tag tag-pink">Playwright Chromium</span>
           <span class="tag tag-orange">Reintentos automáticos</span>
           <span class="tag tag-blue">Tiempos adaptativos</span>
+          <span class="tag tag-teal">OMS + XD</span>
         </div>
       </div>
     </div>
@@ -308,6 +316,41 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <hr class="divider">
 
+<!-- SISTEMAS INTEGRADOS -->
+<section id="sistemas">
+  <h2 class="section-title">🔗 Sistemas integrados</h2>
+  <p class="section-sub">El bot se conecta automáticamente a dos sistemas de Liverpool para descargar sus reportes.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-bottom:1.5rem">
+    <div style="background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:1.4rem;border-top:4px solid #c9254e">
+      <div style="font-size:1.6rem;margin-bottom:.6rem">🏬</div>
+      <h3 style="font-size:15px;font-weight:700;margin-bottom:.5rem">Liverpool OMS</h3>
+      <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:1rem">Sistema de gestión de órdenes. El bot descarga el reporte de indicadores cada 15 minutos para monitorear el estado de las remisiones en tiempo real.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <span class="tag tag-pink">Flutter Web App</span>
+        <span class="tag tag-blue">Indicadores de remisiones</span>
+        <span class="tag tag-green">Cada 15 min</span>
+      </div>
+    </div>
+    <div style="background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:1.4rem;border-top:4px solid #1D9E75">
+      <div style="font-size:1.6rem;margin-bottom:.6rem">📋</div>
+      <h3 style="font-size:15px;font-weight:700;margin-bottom:.5rem">Sistema XD</h3>
+      <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:1rem">Sistema de histórico de remisiones. El bot descarga el reporte del día anterior para calcular los tiempos T2→T3 (tiempo de generación de etiqueta por vendedor).</p>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <span class="tag tag-teal">Ionic Angular</span>
+        <span class="tag tag-blue">Histórico de remisiones</span>
+        <span class="tag tag-green">Al inicio del día</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:#f7f6f3;border:1px solid rgba(0,0,0,.07);border-radius:12px;padding:1.25rem;font-size:13px;color:#555;line-height:1.8">
+    🔒 <b>Seguridad:</b> Las credenciales de ambos sistemas se almacenan localmente en la PC del bot (<code>config.py</code>) y nunca se transmiten. Si cambia una contraseña, se actualiza en ese archivo y listo.
+  </div>
+</section>
+
+<hr class="divider">
+
 <!-- ESPACIOS DE CHAT -->
 <section id="espacios">
   <h2 class="section-title">💬 Espacios de Google Chat</h2>
@@ -402,8 +445,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <p>Fechas en las que el bot no debe ejecutarse. Se gestiona desde el dashboard.</p>
     </div>
     <div class="sheet-card">
-      <div class="sheet-name">PLANTILLAS</div>
-      <p>Textos personalizables de los mensajes que manda el bot al Chat.</p>
+      <div class="sheet-name">WEBHOOKS_JEFES</div>
+      <p>URLs personales de cada jefe para recibir su resumen individual cada 30 min. Se gestiona desde el dashboard.</p>
     </div>
     <div class="sheet-card">
       <div class="sheet-name">MONITOR_ARCHIVO</div>
@@ -448,6 +491,51 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <span class="ciclo-hora">Siempre</span>
       <span class="ciclo-desc">🚨 <b>Alerta de anomalía</b> — Si vencidas suben 50% sobre el promedio del día, alerta inmediata</span>
     </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- INSTALACIÓN -->
+<section id="instalacion">
+  <h2 class="section-title">💻 Instalación en una PC nueva</h2>
+  <p class="section-sub">Solo necesitas 2 archivos para dejar el bot funcionando desde cero.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;margin-bottom:1.5rem">
+    <div style="background:#fff;border:1.5px solid rgba(201,37,78,.2);border-radius:14px;padding:1.25rem;text-align:center">
+      <div style="font-size:2rem;margin-bottom:.5rem">⚙️</div>
+      <div style="font-weight:700;color:#c9254e;margin-bottom:.4rem">instalar.bat</div>
+      <p style="font-size:12.5px;color:#666;line-height:1.5">El instalador. Contiene el bot completo embebido. Lo hace todo solo.</p>
+    </div>
+    <div style="background:#fff;border:1.5px solid rgba(29,158,117,.2);border-radius:14px;padding:1.25rem;text-align:center">
+      <div style="font-size:2rem;margin-bottom:.5rem">🔑</div>
+      <div style="font-weight:700;color:#1D9E75;margin-bottom:.4rem">credentials.json</div>
+      <p style="font-size:12.5px;color:#666;line-height:1.5">Credenciales de Google. Debe estar en la misma carpeta que el instalador.</p>
+    </div>
+  </div>
+
+  <div class="ciclo-wrap">
+    <div class="ciclo-row">
+      <span class="ciclo-hora" style="min-width:30px;font-size:18px;text-align:center">1</span>
+      <span class="ciclo-desc">Coloca <b>instalar.bat</b> y <b>credentials.json</b> en la misma carpeta</span>
+    </div>
+    <div class="ciclo-row">
+      <span class="ciclo-hora" style="min-width:30px;font-size:18px;text-align:center">2</span>
+      <span class="ciclo-desc">Clic derecho en <b>instalar.bat</b> → <b>Ejecutar como administrador</b></span>
+    </div>
+    <div class="ciclo-row">
+      <span class="ciclo-hora" style="min-width:30px;font-size:18px;text-align:center">3</span>
+      <span class="ciclo-desc">El instalador descarga Python, Playwright, dependencias, crea carpetas y configura el Task Scheduler automáticamente</span>
+    </div>
+    <div class="ciclo-row">
+      <span class="ciclo-hora" style="min-width:30px;font-size:18px;text-align:center">4</span>
+      <span class="ciclo-desc">✅ Listo — el bot empieza a correr solo a las 10:00 AM</span>
+    </div>
+  </div>
+
+  <div style="background:#faeeda;border-radius:10px;padding:1rem 1.25rem;font-size:13px;color:#854f0b;line-height:1.7;margin-top:1rem">
+    ⚠️ <b>Requiere conexión a internet</b> durante la instalación para descargar Python y Playwright.<br>
+    ⚠️ <b>Siempre ejecutar como administrador</b> — sin eso el Task Scheduler no se configura.
   </div>
 </section>
 
@@ -581,7 +669,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div class="footer">
   Liverpool Bot 456 — Automatización de operaciones de piso<br>
-  <span style="opacity:.6;font-size:11px">Panel de control disponible para administradores del sistema</span>
+  <span style="opacity:.6;font-size:11px">Tienda 456 Parque Antenas</span><br><br>
+  <a href="dashboard.html" style="color:#E8416C;font-weight:600">📊 Abrir Dashboard de control</a>
 </div>
 
 <script>
