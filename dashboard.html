@@ -132,6 +132,66 @@ button:hover { background:#f0f0f0; }
 input:checked + .slider { background:#1D9E75; }
 input:checked + .slider:before { transform:translateX(22px); }
 
+/* ── GLOBAL STATUS BAR ── */
+.global-status {
+  position: sticky; top: 47px; z-index: 9;
+  background: #fff; border-bottom: 1px solid rgba(0,0,0,.07);
+  box-shadow: 0 2px 6px rgba(0,0,0,.06);
+  padding: 8px 1.75rem;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  font-size: 12px;
+}
+.global-status .gsb-pill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 20px;
+  font-weight: 600; font-size: 12px;
+}
+.gsb-ok   { background: #eaf3de; color: #3b6d11; }
+.gsb-err  { background: #fcebeb; color: #a32d2d; }
+.gsb-warn { background: #faeeda; color: #854f0b; }
+.gsb-info { background: #e6f1fb; color: #185fa5; }
+.gsb-sep  { color: #ddd; }
+.gsb-meta { color: #999; font-size: 11px; }
+
+/* ── TOOLTIPS ── */
+.tooltip-wrap { position: relative; display: inline-flex; align-items: center; gap: 5px; }
+.tooltip-icon { width: 15px; height: 15px; border-radius: 50%; background: #e0e0e0; color: #555;
+  font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
+  cursor: help; flex-shrink: 0; }
+.tooltip-icon:hover + .tooltip-box, .tooltip-box:hover { display: block; }
+.tooltip-box { display: none; position: absolute; left: 24px; top: -4px; z-index: 100;
+  background: #222; color: #fff; font-size: 11px; padding: 7px 11px; border-radius: 8px;
+  width: 220px; line-height: 1.5; box-shadow: 0 4px 12px rgba(0,0,0,.25); pointer-events: none; }
+.tooltip-box::before { content: ''; position: absolute; left: -5px; top: 10px;
+  border: 5px solid transparent; border-right-color: #222; border-left: none; }
+
+/* ── MODAL CONFIRMACION ── */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 500;
+  align-items: center; justify-content: center; }
+.modal-overlay.show { display: flex; }
+.modal-box { background: #fff; border-radius: 20px; padding: 2rem; max-width: 400px; width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25); animation: modalIn .2s; }
+@keyframes modalIn { from { opacity:0; transform: scale(.92); } to { opacity:1; transform: scale(1); } }
+.modal-icon { font-size: 40px; text-align: center; margin-bottom: 1rem; }
+.modal-title { font-size: 16px; font-weight: 800; color: #1a1a1a; text-align: center; margin-bottom: 8px; }
+.modal-desc { font-size: 13px; color: #666; text-align: center; line-height: 1.6; margin-bottom: 1.5rem; }
+.modal-btns { display: flex; gap: 10px; justify-content: center; }
+.modal-cancel { padding: 10px 24px; border-radius: 20px; border: 1.5px solid #ddd; background: #fff;
+  font-size: 13px; font-weight: 600; cursor: pointer; color: #666; }
+.modal-cancel:hover { background: #f5f5f5; }
+.modal-confirm { padding: 10px 24px; border-radius: 20px; border: none;
+  background: linear-gradient(135deg,#c9254e,#e8416c); color: #fff;
+  font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 3px 10px rgba(201,37,78,.3); }
+.modal-confirm:hover { background: linear-gradient(135deg,#a81f40,#c9254e); }
+
+/* ── KPI LEGEND ── */
+.kpi-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 1rem; font-size: 12px; }
+.kpi-legend-item { display: flex; align-items: center; gap: 5px; color: #666; }
+
+/* ── FECHA FILTER ── */
+.date-range { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #888; }
+.date-range input[type="date"] { padding: 5px 8px; font-size: 12px; border-radius: 6px; border: 1px solid #ddd; }
+
 /* ── TOAST ── */
 .toast { position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:13px 22px;border-radius:10px;font-size:13px;color:#fff;z-index:1000;display:none;animation:slideUp .3s;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,.2); }
 .toast.show { display:block; }
@@ -165,11 +225,26 @@ input:checked + .slider:before { transform:translateX(22px); }
 <div class="header">
   <div>
     <h1>🤖 Liverpool Bot 456</h1>
-    <div class="sub">Panel de control · Tienda 456 Parque Antenas</div>
+    <div class="sub">Panel de control · Tienda 456 Parque Antenas · <span id="hdr-fecha" style="opacity:.8"></span></div>
   </div>
-  <div style="display:flex;align-items:center;gap:12px">
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
     <div class="status-pill"><span class="dot dot-off" id="dot"></span><span id="status-txt">Cargando...</span></div>
+    <div style="font-size:12px;opacity:.8;background:rgba(255,255,255,.15);padding:4px 12px;border-radius:12px" id="hdr-ultima">—</div>
   </div>
+</div>
+
+<!-- ── BARRA DE ESTADO GLOBAL (visible desde cualquier pestaña) ── -->
+<div class="global-status" id="global-status-bar">
+  <div class="gsb-pill gsb-info" id="gsb-estado"><span class="dot" id="gsb-dot" style="background:#aaa"></span> Cargando...</div>
+  <span class="gsb-sep">|</span>
+  <span class="gsb-meta">🕐 Última ejecución: <b id="gsb-ultima">—</b></span>
+  <span class="gsb-sep">|</span>
+  <span class="gsb-meta">📦 Remisiones: <b id="gsb-total">—</b></span>
+  <span class="gsb-sep">|</span>
+  <span class="gsb-meta">🔥 Vencidas: <b id="gsb-vencidas" style="color:#E24B4A">—</b></span>
+  <span class="gsb-sep">|</span>
+  <span class="gsb-meta">⏱ Duración: <b id="gsb-dur">—</b></span>
+  <span style="margin-left:auto;font-size:11px;color:#ccc" id="gsb-refresh"></span>
 </div>
 <div class="nav">
   <button class="active" onclick="showTab('monitor',this)">📊 Monitor</button>
@@ -197,6 +272,13 @@ input:checked + .slider:before { transform:translateX(22px); }
     </select>
     <button onclick="cargar()">🔄 Actualizar</button>
     <button onclick="exportarCSV()" title="Descargar CSV">⬇️ CSV</button>
+    <div class="date-range">
+      <span>Del</span>
+      <input type="date" id="filtro-fecha-ini" onchange="renderAll()">
+      <span>al</span>
+      <input type="date" id="filtro-fecha-fin" onchange="renderAll()">
+      <button onclick="limpiarFiltroFecha()" style="font-size:11px;padding:4px 8px">✕ Limpiar</button>
+    </div>
     <span style="font-size:12px;color:#aaa;margin-left:auto" id="ultima"></span>
     <span style="font-size:12px;color:#aaa" id="refresh-countdown"></span>
   </div>
@@ -246,12 +328,24 @@ input:checked + .slider:before { transform:translateX(22px); }
   <div id="cfg-estado" class="estado-bar warn">⏳ Cargando...</div>
   <div class="cfg-grid">
     <div class="cfg-card"><h3>⏰ Horario</h3>
-      <div class="cfg-row"><label>Hora de inicio</label><input type="number" id="cfg-hora-inicio" min="0" max="23" value="10"></div>
-      <div class="cfg-row"><label>Hora de fin</label><input type="number" id="cfg-hora-fin" min="0" max="23" value="21"></div>
-      <div class="cfg-row"><label>Minuto de fin</label><input type="number" id="cfg-minuto-fin" min="0" max="59" value="30"></div>
+      <div class="cfg-row">
+        <label class="tooltip-wrap">Hora de inicio <span class="tooltip-icon">i</span><span class="tooltip-box">El bot empieza a correr a esta hora (formato 24h). Ej: 10 = 10:00 AM</span></label>
+        <input type="number" id="cfg-hora-inicio" min="0" max="23" value="10">
+      </div>
+      <div class="cfg-row">
+        <label class="tooltip-wrap">Hora de fin <span class="tooltip-icon">i</span><span class="tooltip-box">El bot deja de correr a esta hora. Combínala con el minuto de fin.</span></label>
+        <input type="number" id="cfg-hora-fin" min="0" max="23" value="21">
+      </div>
+      <div class="cfg-row">
+        <label class="tooltip-wrap">Minuto de fin <span class="tooltip-icon">i</span><span class="tooltip-box">El bot para exactamente a Hora:Minuto. Ej: hora 21, minuto 30 = 9:30 PM</span></label>
+        <input type="number" id="cfg-minuto-fin" min="0" max="59" value="30">
+      </div>
     </div>
     <div class="cfg-card"><h3>🔄 Estado del bot</h3>
-      <div class="cfg-row"><label>Pausa total</label><label class="toggle"><input type="checkbox" id="cfg-pausado"><span class="slider"></span></label></div>
+      <div class="cfg-row">
+        <label class="tooltip-wrap">Pausa total <span class="tooltip-icon">i</span><span class="tooltip-box">Al activar, el bot NO descarga datos ni manda mensajes. Útil para mantenimiento.</span></label>
+        <label class="toggle"><input type="checkbox" id="cfg-pausado"><span class="slider"></span></label>
+      </div>
       <div style="font-size:11px;color:#888;margin-top:8px;line-height:1.5">Activado: el bot no descarga ni manda mensajes</div>
     </div>
   </div>
@@ -265,14 +359,24 @@ input:checked + .slider:before { transform:translateX(22px); }
   </div>
   <div class="cfg-grid">
     <div class="cfg-card"><h3>⚠️ Umbrales</h3>
-      <div class="cfg-row"><label>Vencida (min)</label><input type="number" id="cfg-vencida" min="5" max="120" value="20"></div>
-      <div class="cfg-row"><label>Anomalia (factor)</label><input type="number" id="cfg-anomalia" step=".1" min="1" max="5" value="1.5"></div>
+      <div class="cfg-row">
+        <label class="tooltip-wrap">Vencida (min) <span class="tooltip-icon">i</span><span class="tooltip-box">Una remisión se marca como vencida si lleva más de X minutos sin atenderse. Default: 20 min.</span></label>
+        <input type="number" id="cfg-vencida" min="5" max="120" value="20">
+      </div>
+      <div class="cfg-row">
+        <label class="tooltip-wrap">Anomalia (factor) <span class="tooltip-icon">i</span><span class="tooltip-box">Se manda alerta si las vencidas superan el promedio × este factor. Ej: factor 1.5 = alerta si hay 50% más que lo normal.</span></label>
+        <input type="number" id="cfg-anomalia" step=".1" min="1" max="5" value="1.5">
+      </div>
     </div>
     <div class="cfg-card"><h3>🐕 Watchdog</h3>
-      <div class="cfg-row"><label>Watchdog activo</label>
+      <div class="cfg-row">
+        <label class="tooltip-wrap">Watchdog activo <span class="tooltip-icon">i</span><span class="tooltip-box">El watchdog vigila que el bot corra. Si no detecta actividad en X minutos, manda una alerta al Chat.</span></label>
         <label class="toggle"><input type="checkbox" id="cfg-watchdog-activo" checked><span class="slider"></span></label>
       </div>
-      <div class="cfg-row"><label>Alertar despues de</label><input type="number" id="cfg-watchdog" min="15" max="120" value="30" style="width:100px"> <span style="font-size:11px;color:#888">min</span></div>
+      <div class="cfg-row">
+        <label class="tooltip-wrap">Alertar después de <span class="tooltip-icon">i</span><span class="tooltip-box">Si el bot no se ejecuta en este tiempo (en minutos), el watchdog manda alerta. Recomendado: 30 min.</span></label>
+        <input type="number" id="cfg-watchdog" min="15" max="120" value="30" style="width:100px"> <span style="font-size:11px;color:#888">min</span>
+      </div>
       <div style="font-size:11px;color:#888;margin-top:8px">Si el bot no corre en X minutos, manda alerta</div>
     </div>
     <div class="cfg-card"><h3>📊 Resumen</h3>
@@ -469,19 +573,19 @@ input:checked + .slider:before { transform:translateX(22px); }
     💡 Acciones que se aplican inmediatamente o en la proxima ejecucion del bot.
   </div>
   <div class="grid2">
-    <button class="btn-action" onclick="accion('pausar')">
+    <button class="btn-action" onclick="confirmarAccion('pausar','⏸️ Pausar bot','¿Detener el envío de mensajes? El bot seguirá descargando datos pero no mandará nada al Chat.')">
       <b>⏸️ Pausar bot</b><span>Detiene el envio de mensajes pero el bot sigue corriendo</span>
     </button>
-    <button class="btn-action" onclick="accion('reanudar')">
+    <button class="btn-action" onclick="confirmarAccion('reanudar','▶️ Reanudar bot','¿Reanudar el envío de mensajes? El bot volverá a mandar normalmente en la próxima ejecución.')">
       <b>▶️ Reanudar bot</b><span>Si esta pausado, vuelve a mandar mensajes normalmente</span>
     </button>
-    <button class="btn-action" onclick="alert('Para correr el bot manualmente, abre la PC y ejecuta:\\ncorrer_ahora.bat')">
+    <button class="btn-action" onclick="mostrarModal('🚀','Correr bot ahora','Para forzar una ejecución inmediata, abre la PC del bot y ejecuta el archivo <b>correr_ahora.bat</b>',null,null,'Entendido')">
       <b>🚀 Correr bot ahora</b><span>Forzar ejecucion sin esperar 15 min — debes hacerlo en la PC</span>
     </button>
-    <button class="btn-action" onclick="accion('limpiar_cola')">
+    <button class="btn-action" onclick="confirmarAccion('limpiar_cola','🧹 Limpiar cola','¿Borrar todos los mensajes pendientes de la cola? Los mensajes que no se pudieron mandar se perderán.')">
       <b>🧹 Limpiar cola de mensajes</b><span>Borra mensajes pendientes que no se pudieron mandar</span>
     </button>
-    <button class="btn-action" onclick="enviarKpiVendedores()">
+    <button class="btn-action" onclick="confirmarKpiVendedores()">
       <b>🏷️ Enviar reporte vendedores</b><span>Crea la señal para que el bot mande al espacio Tiempos cuanto tarda cada vendedor en generar etiqueta (T2→T3)</span>
     </button>
   </div>
@@ -558,14 +662,20 @@ input:checked + .slider:before { transform:translateX(22px); }
       <button onclick="cargarKpiTiempos()" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #ddd;background:#faf9f7;cursor:pointer">🔄 Actualizar</button>
     </div>
     <div id="kpi-meta" style="font-size:12px;color:#888;margin-bottom:12px">Cargando...</div>
+    <div class="kpi-legend">
+      <div class="kpi-legend-item"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2ecc71;margin-right:4px"></span>0-5 min: Excelente</div>
+      <div class="kpi-legend-item"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f39c12;margin-right:4px"></span>5-20 min: Regular</div>
+      <div class="kpi-legend-item"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#e74c3c;margin-right:4px"></span>+20 min: Lento</div>
+      <span style="color:#bbb;font-size:11px;margin-left:auto">Tiempo desde que llega la remisión hasta que el jefe la asigna</span>
+    </div>
     <table>
       <thead>
         <tr>
           <th>#</th>
           <th>Jefe</th>
-          <th style="color:#2ecc71">🟢 Más rápido</th>
-          <th>⏱ Promedio</th>
-          <th style="color:#e74c3c">🔴 Más lento</th>
+          <th style="color:#2ecc71">🟢 Más rápido <span style="font-weight:400;font-size:10px;opacity:.7">(mejor tiempo)</span></th>
+          <th>⏱ Promedio <span style="font-weight:400;font-size:10px;opacity:.7">(tiempo típico)</span></th>
+          <th style="color:#e74c3c">🔴 Más lento <span style="font-weight:400;font-size:10px;opacity:.7">(peor caso)</span></th>
           <th>Remisiones</th>
         </tr>
       </thead>
@@ -584,6 +694,20 @@ input:checked + .slider:before { transform:translateX(22px); }
 </div>
 
 </div>
+
+<!-- ── MODAL DE CONFIRMACION ── -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-icon" id="modal-icon">⚠️</div>
+    <div class="modal-title" id="modal-title">¿Confirmar acción?</div>
+    <div class="modal-desc" id="modal-desc"></div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="cerrarModal()">Cancelar</button>
+      <button class="modal-confirm" id="modal-confirm-btn">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 <script>
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxBSox6hX-SfSemrq-CQAx_w_iCGP-4uUsMB1eKD8HCYJJC_Ul9BoEItLAAVNVm5ELtzA/exec";
@@ -595,6 +719,76 @@ let chartKpi = null;
 let todos=[],chartT,chartI,chartV;
 let DIRECTORIO_SECCIONES = [], DIRECTORIO_JEFES = [];
 let countdownSeg = 30, countdownTimer;
+
+// ── FECHA HEADER ──────────────────────────────────────────────────────
+(function(){
+  const d=new Date();
+  const dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const meses=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  document.getElementById('hdr-fecha').textContent=dias[d.getDay()]+' '+d.getDate()+' de '+meses[d.getMonth()]+' '+d.getFullYear();
+})();
+
+// ── MODAL ────────────────────────────────────────────────────────────
+let _modalCallback = null;
+function mostrarModal(icon, titulo, desc, callback, labelConfirm, labelCancel){
+  document.getElementById('modal-icon').textContent = icon || '⚠️';
+  document.getElementById('modal-title').textContent = titulo;
+  document.getElementById('modal-desc').innerHTML = desc;
+  const btn = document.getElementById('modal-confirm-btn');
+  if(callback){
+    btn.style.display='inline-block';
+    btn.textContent = labelConfirm || 'Confirmar';
+    _modalCallback = callback;
+  } else {
+    btn.style.display='none';
+    _modalCallback = null;
+  }
+  const cancel = document.querySelector('.modal-cancel');
+  cancel.textContent = labelCancel || 'Cancelar';
+  document.getElementById('modal-overlay').classList.add('show');
+}
+function cerrarModal(){ document.getElementById('modal-overlay').classList.remove('show'); _modalCallback=null; }
+document.getElementById('modal-overlay').addEventListener('click', function(e){ if(e.target===this) cerrarModal(); });
+document.getElementById('modal-confirm-btn').addEventListener('click', function(){
+  cerrarModal();
+  if(_modalCallback) _modalCallback();
+});
+
+function confirmarAccion(tipo, titulo, desc){
+  const iconos={pausar:'⏸️',reanudar:'▶️',limpiar_cola:'🧹'};
+  mostrarModal(iconos[tipo]||'⚙️', titulo, desc, ()=>accion(tipo), 'Sí, continuar');
+}
+function confirmarKpiVendedores(){
+  mostrarModal('🏷️','Enviar reporte vendedores','¿Enviar reporte de tiempos por vendedor al espacio Tiempos?<br><br>El bot lo procesará en la próxima ejecución (máximo 15 min).', enviarKpiVendedores, 'Sí, enviar');
+}
+
+// ── GLOBAL STATUS BAR ────────────────────────────────────────────────
+function actualizarGlobalStatus(ul){
+  if(!ul) return;
+  const estadoEl = document.getElementById('gsb-estado');
+  const dotEl    = document.getElementById('gsb-dot');
+  if(ul.exito){
+    estadoEl.className='gsb-pill gsb-ok';
+    estadoEl.innerHTML='<span class="dot dot-live" style="width:8px;height:8px;background:#3b6d11;margin-right:6px"></span>Bot activo';
+  } else {
+    estadoEl.className='gsb-pill gsb-err';
+    estadoEl.innerHTML='<span style="margin-right:6px">❌</span>Última ejecución con error';
+  }
+  document.getElementById('gsb-ultima').textContent = ul.fecha+' '+ul.hora;
+  document.getElementById('gsb-total').textContent  = ul.total;
+  const vEl = document.getElementById('gsb-vencidas');
+  vEl.textContent = ul.vencidas;
+  vEl.style.color = ul.vencidas>20?'#E24B4A':ul.vencidas>5?'#f39c12':'#3b6d11';
+  document.getElementById('gsb-dur').textContent = formatDur(ul.duracion);
+  document.getElementById('hdr-ultima').textContent = 'Última ejec: '+ul.hora;
+}
+
+// ── FILTRO DE FECHAS ─────────────────────────────────────────────────
+function limpiarFiltroFecha(){
+  document.getElementById('filtro-fecha-ini').value='';
+  document.getElementById('filtro-fecha-fin').value='';
+  renderAll();
+}
 
 function showTab(id,btn){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');btn.classList.add('active');if(id==='routing')cargarWebhooksJefes();if(id==='tiempos')cargarKpiTiempos();}
 
@@ -718,9 +912,13 @@ async function cargar(){try{
 function filtrados(){
   const n=parseInt(document.getElementById('filtro').value);
   const est=document.getElementById('filtro-estado').value;
+  const fIni=document.getElementById('filtro-fecha-ini').value;
+  const fFin=document.getElementById('filtro-fecha-fin').value;
   let base=todos;
   if(est==='exitosa')base=todos.filter(e=>e.exito);
   else if(est==='error')base=todos.filter(e=>!e.exito);
+  if(fIni){base=base.filter(e=>{const p=e.fecha.split('/');return p.length===3?new Date(p[2],p[1]-1,p[0])>=new Date(fIni):true;});}
+  if(fFin){base=base.filter(e=>{const p=e.fecha.split('/');return p.length===3?new Date(p[2],p[1]-1,p[0])<=new Date(fFin):true;});}
   return base.slice(-n);
 }
 function prom(arr,key){const v=arr.filter(e=>e.exito).map(e=>e[key]);return v.length?Math.round(v.reduce((a,b)=>a+b,0)/v.length):0;}
@@ -777,6 +975,9 @@ function actualizarBotStatus(data){
   if(ul.exito){bar.style.background='#eaf3de';bar.style.color='#3b6d11';}
   else{bar.style.background='#fcebeb';bar.style.color='#a32d2d';}
   bar.innerHTML=(ul.exito?'✅':'❌')+' Ultima ejecucion: <b>'+ul.fecha+' '+ul.hora+'</b> — '+ul.total+' remisiones, '+ul.vencidas+' vencidas, '+formatDur(ul.duracion)+(ul.exito?'':' ⚠️ Con error');
+  actualizarGlobalStatus(ul);
+  const gsb=document.getElementById('gsb-refresh');
+  if(gsb)gsb.textContent='Actualiza en '+countdownSeg+'s';
 }
 
 function exportarCSV(){
@@ -795,8 +996,11 @@ function iniciarCountdown(){
   countdownSeg=30;
   countdownTimer=setInterval(()=>{
     countdownSeg--;
+    const txt='Actualiza en '+countdownSeg+'s';
     const el=document.getElementById('refresh-countdown');
-    if(el)el.textContent='Actualiza en '+countdownSeg+'s';
+    if(el)el.textContent=txt;
+    const gsb=document.getElementById('gsb-refresh');
+    if(gsb)gsb.textContent=txt;
     if(countdownSeg<=0)countdownSeg=30;
   },1000);
 }
