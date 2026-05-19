@@ -4,9 +4,9 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 import gspread
 from google.oauth2.service_account import Credentials
-from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA
+from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 
 Path("logs").mkdir(exist_ok=True)
 logging.basicConfig(
@@ -357,6 +357,41 @@ def cargar_config_remota(gc):
 
 def bot_pausado_remoto():
     return CONFIG_REMOTA.get("pausado", "").lower() in ("si", "yes", "true", "1")
+
+def registrar_y_verificar_pc(gc):
+    """Registra esta PC en la hoja PCS y verifica si esta pausada.
+    Retorna True si el bot debe continuar, False si esta pausada."""
+    try:
+        ss = gc.open_by_key(GOOGLE["sheet_id"])
+        try:
+            hoja = ss.worksheet("PCS")
+        except gspread.WorksheetNotFound:
+            hoja = ss.add_worksheet("PCS", rows=50, cols=4)
+            hoja.update([["nombre", "estado", "ultima_conexion", "version"]], "A1")
+            log.info("Hoja PCS creada")
+
+        rows      = hoja.get_all_values()
+        nombres   = [r[0] for r in rows[1:]] if len(rows) > 1 else []
+        ahora_str = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+        if PC_NOMBRE in nombres:
+            idx    = nombres.index(PC_NOMBRE) + 2   # fila en sheet (1-based + header)
+            estado = rows[idx - 1][1] if len(rows[idx - 1]) > 1 else "activo"
+            # Actualizar ultima conexion y version
+            hoja.update([[ahora_str, VERSION]], f"C{idx}:D{idx}")
+            log.info(f"PC '{PC_NOMBRE}' registrada — estado: {estado}")
+            if estado.lower() == "pausado":
+                log.info(f"Esta PC ({PC_NOMBRE}) esta pausada remotamente. Bot detenido.")
+                return False
+        else:
+            # PC nueva — agregar fila
+            hoja.append_row([PC_NOMBRE, "activo", ahora_str, VERSION])
+            log.info(f"PC '{PC_NOMBRE}' registrada por primera vez en PCS")
+
+        return True
+    except Exception as e:
+        log.warning(f"Error en registrar_y_verificar_pc: {e} — continuando sin verificacion")
+        return True   # En caso de error, dejar correr el bot
 
 def dia_activo_hoy():
     """Verifica si hoy esta en la lista de dias activos."""
@@ -2403,6 +2438,11 @@ def main():
         # Cargar config remota desde hoja CONFIG
         cargar_config_remota(gc_global)
 
+        # Registrar PC y verificar si esta pausada individualmente
+        if not registrar_y_verificar_pc(gc_global):
+            liberar_lock()
+            return
+
         # Cargar webhooks personales de jefes (se repobla con nombres tras leer dir_dict)
         global WEBHOOKS_JEFES_CACHE
         WEBHOOKS_JEFES_CACHE = cargar_webhooks_jefes(gc_global)
@@ -2413,7 +2453,7 @@ def main():
             liberar_lock()
             return
 
-        # Verificar pausa remota
+        # Verificar pausa remota (todas las PCs)
         if bot_pausado_remoto():
             log.info("Bot pausado remotamente desde CONFIG. No se ejecuta.")
             liberar_lock()

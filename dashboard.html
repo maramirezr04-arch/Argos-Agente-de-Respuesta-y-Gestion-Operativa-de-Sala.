@@ -252,6 +252,7 @@ input:checked + .slider:before { transform:translateX(22px); }
   <button onclick="showTab('descansos',this)">🏖️ Descansos</button>
   <button onclick="showTab('jefes',this)">👔 Jefes</button>
   <button onclick="showTab('routing',this)">📨 Rutas mensajes</button>
+  <button onclick="showTab('pcs',this)">💻 PCs</button>
   <button onclick="showTab('acciones',this)">🔧 Acciones</button>
   <button onclick="showTab('pruebas',this)">🧪 Pruebas</button>
   <button onclick="showTab('logs',this)">📜 Logs</button>
@@ -566,6 +567,20 @@ input:checked + .slider:before { transform:translateX(22px); }
   </div>
 </div>
 
+<!-- ── PCS ── -->
+<div id="tab-pcs" class="section" style="margin-top:1rem">
+  <div class="section-intro">💻 <b>PCs</b> — Monitorea y pausa/reanuda cada PC de forma individual. Los cambios aplican en la próxima ejecución del bot (máx 15 min).</div>
+  <div class="card">
+    <div class="card-title" style="justify-content:space-between">
+      <span>🖥️ PCs registradas</span>
+      <button onclick="cargarPcs()" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #ddd;background:#faf9f7;cursor:pointer">🔄 Actualizar</button>
+    </div>
+    <div id="pcs-lista" style="margin-top:8px">
+      <div style="text-align:center;padding:2rem;color:#aaa">Cargando...</div>
+    </div>
+  </div>
+</div>
+
 <!-- ── ACCIONES RAPIDAS ── -->
 <div id="tab-acciones" class="section" style="margin-top:1rem">
   <div class="section-intro">🔧 <b>Acciones rápidas</b> — Controles inmediatos del bot: pausar, reanudar o limpiar la cola de mensajes pendientes.</div>
@@ -790,7 +805,47 @@ function limpiarFiltroFecha(){
   renderAll();
 }
 
-function showTab(id,btn){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');btn.classList.add('active');if(id==='routing')cargarWebhooksJefes();if(id==='tiempos')cargarKpiTiempos();}
+function showTab(id,btn){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');btn.classList.add('active');if(id==='routing')cargarWebhooksJefes();if(id==='tiempos')cargarKpiTiempos();if(id==='pcs')cargarPcs();}
+
+// ── PCS ──────────────────────────────────────────────────────────────
+async function cargarPcs(){
+  const div = document.getElementById('pcs-lista');
+  div.innerHTML = '<div style="text-align:center;padding:2rem;color:#aaa">Cargando...</div>';
+  try {
+    const r    = await fetch(APPS_SCRIPT_URL + '?action=getPcs&t=' + Date.now());
+    const data = await r.json();
+    if(!data.pcs || data.pcs.length === 0){
+      div.innerHTML = '<div style="text-align:center;padding:2rem;color:#aaa">No hay PCs registradas aún. Se registran automáticamente la primera vez que corre el bot.</div>';
+      return;
+    }
+    let html = '<table><thead><tr><th>PC</th><th>Estado</th><th>Última conexión</th><th>Versión</th><th>Acción</th></tr></thead><tbody>';
+    data.pcs.forEach(pc => {
+      const activo  = pc.estado.toLowerCase() !== 'pausado';
+      const badge   = activo
+        ? '<span style="background:#e8f5e9;color:#2e7d32;padding:3px 10px;border-radius:12px;font-size:12px">✅ Activo</span>'
+        : '<span style="background:#fdecea;color:#c62828;padding:3px 10px;border-radius:12px;font-size:12px">⏸️ Pausado</span>';
+      const btn     = activo
+        ? `<button onclick="togglePc('${pc.nombre}','pausado')" style="background:#fdecea;color:#c62828;border:1px solid #f5c6cb;padding:5px 12px;border-radius:8px;cursor:pointer;font-size:12px">⏸️ Pausar</button>`
+        : `<button onclick="togglePc('${pc.nombre}','activo')" style="background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;padding:5px 12px;border-radius:8px;cursor:pointer;font-size:12px">▶️ Reanudar</button>`;
+      html += `<tr><td><b>${pc.nombre}</b></td><td>${badge}</td><td style="color:#888;font-size:12px">${pc.ultima_conexion||'—'}</td><td style="color:#888;font-size:12px">${pc.version||'—'}</td><td>${btn}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    div.innerHTML = html;
+  } catch(e){
+    div.innerHTML = '<div style="color:red;padding:1rem">Error cargando PCs: ' + e + '</div>';
+  }
+}
+
+async function togglePc(nombre, nuevoEstado){
+  const accion = nuevoEstado === 'pausado' ? 'Pausar' : 'Reanudar';
+  if(!confirm(`¿${accion} la PC "${nombre}"?\n\nEl cambio aplica en máximo 15 minutos.`)) return;
+  try {
+    const r    = await fetch(APPS_SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'setPcEstado', nombre, estado: nuevoEstado}), headers:{'Content-Type':'application/json'}});
+    const data = await r.json();
+    if(data.ok) { cargarPcs(); }
+    else alert('Error: ' + (data.error || 'desconocido'));
+  } catch(e){ alert('Error: ' + e); }
+}
 
 // ── KPI TIEMPOS ──────────────────────────────────────────────────────
 function fmtMin(m){m=Math.round(Number(m)||0);const h=Math.floor(m/60),min=m%60;return h>0?h+'h '+min+'min':min+'min';}
