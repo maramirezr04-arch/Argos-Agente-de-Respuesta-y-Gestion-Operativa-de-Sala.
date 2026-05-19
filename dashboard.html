@@ -840,7 +840,7 @@ async function togglePc(nombre, nuevoEstado){
   const accion = nuevoEstado === 'pausado' ? 'Pausar' : 'Reanudar';
   if(!confirm(`¿${accion} la PC "${nombre}"?\n\nEl cambio aplica en máximo 15 minutos.`)) return;
   try {
-    const r    = await fetch(APPS_SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'setPcEstado', nombre, estado: nuevoEstado}), headers:{'Content-Type':'application/json'}});
+    const r    = await fetch(APPS_SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'setPcEstado', nombre, estado: nuevoEstado})});
     const data = await r.json();
     if(data.ok) { cargarPcs(); }
     else alert('Error: ' + (data.error || 'desconocido'));
