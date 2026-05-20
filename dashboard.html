@@ -1098,7 +1098,7 @@ async function cargarConfig(){
   try{
     const r=await fetch(APPS_SCRIPT_URL+'?accion=config');
     const data=await r.json();
-    if(!data.success)throw new Error(data.error);
+    if(!data.ok)throw new Error(data.error);
     const c=data.config;
     document.getElementById('cfg-hora-inicio').value=c.hora_inicio||'10';
     document.getElementById('cfg-hora-fin').value=c.hora_fin||'21';
@@ -1127,8 +1127,8 @@ async function guardarConfig(){
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'config',config:cfg})});
     const data=await r.json();
-    if(data.success)showToast('✅ Guardado — '+data.cambios+' cambios','ok');
-    else throw new Error(data.error);
+    if(data.ok)showToast('✅ Configuracion guardada','ok');
+    else throw new Error(data.error||'Error al guardar');
   }catch(e){showToast('❌ '+e.message,'err');}
   finally{btn.disabled=false;btn.textContent='💾 Guardar';}
 }
@@ -1141,7 +1141,7 @@ async function cargarDirectorio(){
   try{
     const r=await fetch(APPS_SCRIPT_URL+'?accion=directorio');
     const data=await r.json();
-    if(!data.success)return;
+    if(!data.ok)return;
     DIRECTORIO_SECCIONES=data.secciones;DIRECTORIO_JEFES=data.jefes;
     const opcionesJefes='<option value="">Selecciona jefe</option>'+data.jefes.map(j=>`<option value="${j}">${j}</option>`).join('');
     document.getElementById('d-jefe-descansa').innerHTML=opcionesJefes;
@@ -1171,7 +1171,7 @@ async function agregarDescanso(){
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'agregar_descanso',fecha,jefe_descansa:jefeDescansa,jefe_cubre:jefeCubre})});
     const data=await r.json();
-    if(data.success){const n=data.secciones_agregadas||0;showToast(`✅ Descanso agregado — ${n} sección${n===1?'':'es'} de ${jefeDescansa.split(' ')[0]} asignadas a ${jefeCubre.split(' ')[0]}`,'ok');document.getElementById('d-fecha').value='';document.getElementById('d-jefe-descansa').value='';document.getElementById('d-jefe-cubre').value='';cargarDescansos();}
+    if(data.ok){const n=data.secciones_agregadas||0;showToast(`✅ Descanso agregado — ${n} sección${n===1?'':'es'} de ${jefeDescansa.split(' ')[0]} asignadas a ${jefeCubre.split(' ')[0]}`,'ok');document.getElementById('d-fecha').value='';document.getElementById('d-jefe-descansa').value='';document.getElementById('d-jefe-cubre').value='';cargarDescansos();}
     else throw new Error(data.error);
   }catch(e){showToast('❌ '+e.message,'err');}
 }
@@ -1181,7 +1181,7 @@ async function borrarDescanso(fecha,jefe){
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'borrar_descanso',fecha,jefe_descansa:jefe})});
     const data=await r.json();
-    if(data.success){showToast('✅ Borrado','ok');cargarDescansos();}
+    if(data.ok){showToast('✅ Borrado','ok');cargarDescansos();}
     else throw new Error(data.error);
   }catch(e){showToast('❌ '+e.message,'err');}
 }
@@ -1210,7 +1210,7 @@ async function cargarWebhooksJefes(){
   try{
     const r=await fetch(APPS_SCRIPT_URL+'?accion=webhooks_jefes');
     const data=await r.json();
-    if(!data.success||!data.jefes||!data.jefes.length){
+    if(!data.ok||!data.jefes||!data.jefes.length){
       grid.innerHTML='<div style="color:#aaa;font-size:13px;grid-column:1/-1;text-align:center;padding:1rem">Sin datos — agrega webhooks en la hoja WEBHOOKS_JEFES</div>';
       return;
     }
@@ -1247,7 +1247,7 @@ async function toggleWebhookJefe(nombre,activo,checkbox){
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'toggle_webhook_jefe',nombre,activo})});
     const data=await r.json();
-    if(data.success){
+    if(data.ok){
       showToast(activo?`✅ ${nombre} activado`:`⏸️ ${nombre} desactivado`,'ok');
       cargarWebhooksJefes();
     }else{
@@ -1268,7 +1268,7 @@ async function actualizarJefe(el){
     const payload={accion:'actualizar_jefe',seccion:sec};payload[tipo]=valor;
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)});
     const data=await r.json();
-    if(data.success){showToast('✅ Actualizado','ok');const s=DIRECTORIO_SECCIONES.find(x=>x.seccion===sec);if(s)s[tipo]=valor;}
+    if(data.ok){showToast('✅ Actualizado','ok');const s=DIRECTORIO_SECCIONES.find(x=>x.seccion===sec);if(s)s[tipo]=valor;}
     else throw new Error(data.error);
   }catch(e){showToast('❌ '+e.message,'err');}
 }
@@ -1293,7 +1293,7 @@ async function agregarFestivo(){
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'agregar_festivo',fecha,descripcion:desc})});
     const data=await r.json();
-    if(data.success){showToast('✅ Festivo agregado','ok');document.getElementById('f-fecha').value='';document.getElementById('f-desc').value='';cargarFestivos();}
+    if(data.ok){showToast('✅ Festivo agregado','ok');document.getElementById('f-fecha').value='';document.getElementById('f-desc').value='';cargarFestivos();}
     else throw new Error(data.error);
   }catch(e){showToast('❌ '+e.message,'err');}
 }
@@ -1303,7 +1303,7 @@ async function borrarFestivo(fecha){
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'borrar_festivo',fecha})});
     const data=await r.json();
-    if(data.success){showToast('✅ Borrado','ok');cargarFestivos();}
+    if(data.ok){showToast('✅ Borrado','ok');cargarFestivos();}
     else throw new Error(data.error);
   }catch(e){showToast('❌ '+e.message,'err');}
 }
@@ -1314,7 +1314,7 @@ async function accion(tipo){
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'accion_rapida',tipo})});
     const data=await r.json();
-    if(data.success)showToast('✅ '+(data.mensaje||'Hecho'),'ok');
+    if(data.ok)showToast('✅ '+(data.mensaje||'Hecho'),'ok');
     else throw new Error(data.error);
   }catch(e){showToast('❌ '+e.message,'err');}
 }
@@ -1325,7 +1325,7 @@ async function enviarKpiVendedores(){
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'kpi_vendedores'})});
     const data=await r.json();
-    if(data.success)showToast('✅ Señal enviada — el bot mandara el reporte en la proxima ejecucion','ok');
+    if(data.ok)showToast('✅ Señal enviada — el bot mandara el reporte en la proxima ejecucion','ok');
     else throw new Error(data.error||'Error desconocido');
   }catch(e){
     showToast('⚠️ Usa el archivo enviar_kpi_vendedores.bat en la PC del bot','warn');
@@ -1352,7 +1352,7 @@ async function cargarRouting(){
   try{
     const r=await fetch(APPS_SCRIPT_URL+'?accion=config');
     const data=await r.json();
-    if(!data.success)return;
+    if(!data.ok)return;
     const c=data.config;
     document.querySelectorAll('#routing-container .cfg-card').forEach(card=>{
       const tipo=card.dataset.tipo;
@@ -1375,7 +1375,7 @@ async function guardarRouting(){
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'config',config:cfg})});
     const data=await r.json();
-    if(data.success)showToast('✅ Rutas guardadas — '+data.cambios+' cambios','ok');
+    if(data.ok)showToast('✅ Rutas guardadas — '+data.cambios+' cambios','ok');
     else throw new Error(data.error);
   }catch(e){showToast('❌ '+e.message,'err');}
 }
@@ -1387,7 +1387,7 @@ cargarConfig = async function(){
   try{
     const r=await fetch(APPS_SCRIPT_URL+'?accion=config');
     const data=await r.json();
-    if(data.success){
+    if(data.ok){
       document.getElementById('cfg-watchdog-activo').checked=(data.config.watchdog_activo||'si').toLowerCase()==='si';
     }
   }catch(e){}
@@ -1401,8 +1401,8 @@ guardarConfig = async function(){
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'config',config:cfg})});
     const data=await r.json();
-    if(data.success)showToast('✅ Guardado — '+data.cambios+' cambios','ok');
-    else throw new Error(data.error);
+    if(data.ok)showToast('✅ Configuracion guardada','ok');
+    else throw new Error(data.error||'Error al guardar');
   }catch(e){showToast('❌ '+e.message,'err');}
   finally{btn.disabled=false;btn.textContent='💾 Guardar';}
 };
@@ -1520,7 +1520,7 @@ async function cargarHistorico(){
   try{
     const r=await fetch(APPS_SCRIPT_URL+'?accion=historico');
     const data=await r.json();
-    if(!data.success)return;
+    if(!data.ok)return;
     document.getElementById('hist-meta').innerHTML=data.ultima_actualizacion?
       `📅 Ultima actualizacion: <b>${data.ultima_actualizacion}</b> · ${data.filas} filas en archivo · ${data.total_procesados||0} remisiones procesadas`:
       'Sin datos. Sube un archivo primero.';
@@ -1569,7 +1569,7 @@ async function subirHistorico(){
     // Subir en bloques si es muy grande
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'subir_historico',filas:filas})});
     const data=await r.json();
-    if(data.success){
+    if(data.ok){
       showToast('✅ Subido: '+data.filas+' filas','ok');
       document.getElementById('hist-file').value='';
       document.getElementById('hist-info').textContent='';
