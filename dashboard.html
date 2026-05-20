@@ -1279,9 +1279,10 @@ async function cargarFestivos(){
     const r=await fetch(APPS_SCRIPT_URL+'?accion=festivos');
     const data=await r.json();
     const tbody=document.getElementById('tabla-festivos');
+    if(!tbody)return;
     if(!data.festivos||!data.festivos.length){tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:#888;padding:1.5rem">Sin festivos</td></tr>';return;}
     tbody.innerHTML=data.festivos.map(f=>`<tr><td>${f.fecha}</td><td>${f.descripcion}</td><td><button onclick="borrarFestivo('${f.fecha}')" style="background:#fcebeb;color:#a32d2d;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px">🗑️</button></td></tr>`).join('');
-  }catch(e){document.getElementById('tabla-festivos').innerHTML='<tr><td colspan="3" style="text-align:center;color:#a32d2d;padding:1.5rem">Error</td></tr>';}
+  }catch(e){const el=document.getElementById('tabla-festivos');if(el)el.innerHTML='<tr><td colspan="3" style="text-align:center;color:#a32d2d;padding:1.5rem">Error</td></tr>';}
 }
 
 async function agregarFestivo(){
