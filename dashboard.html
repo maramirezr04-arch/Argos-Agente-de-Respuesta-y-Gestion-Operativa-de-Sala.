@@ -1143,9 +1143,12 @@ async function cargarDirectorio(){
   try{
     const r=await fetch(APPS_SCRIPT_URL+'?accion=directorio');
     const data=await r.json();
-    if(!data.ok)return;
-    DIRECTORIO_SECCIONES=data.secciones;DIRECTORIO_JEFES=data.jefes;
-    const opcionesJefes='<option value="">Selecciona jefe</option>'+data.jefes.map(j=>`<option value="${j}">${j}</option>`).join('');
+    if(!data.ok||!data.directorio)return;
+    DIRECTORIO_SECCIONES=data.directorio;
+    // Extraer jefes unicos del directorio
+    const jefesSet=new Set(data.directorio.map(d=>d.jefe).filter(j=>j&&j.trim()));
+    DIRECTORIO_JEFES=[...jefesSet].sort();
+    const opcionesJefes='<option value="">Selecciona jefe</option>'+DIRECTORIO_JEFES.map(j=>`<option value="${j}">${j}</option>`).join('');
     document.getElementById('d-jefe-descansa').innerHTML=opcionesJefes;
     document.getElementById('d-jefe-cubre').innerHTML=opcionesJefes;
     renderJefes();
