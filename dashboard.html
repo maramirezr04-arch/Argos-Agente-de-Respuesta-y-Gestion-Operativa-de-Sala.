@@ -1100,13 +1100,15 @@ async function cargarConfig(){
     const data=await r.json();
     if(!data.ok)throw new Error(data.error);
     const c=data.config;
-    document.getElementById('cfg-hora-inicio').value=c.hora_inicio||'10';
-    document.getElementById('cfg-hora-fin').value=c.hora_fin||'21';
-    document.getElementById('cfg-minuto-fin').value=c.minuto_fin||'30';
+    // Limpiar valores corruptos (ej: fechas en lugar de numeros)
+    const num = (v, def) => { const n=parseFloat(v); return isNaN(n)?def:n; };
+    document.getElementById('cfg-hora-inicio').value=num(c.hora_inicio,10);
+    document.getElementById('cfg-hora-fin').value=num(c.hora_fin,21);
+    document.getElementById('cfg-minuto-fin').value=num(c.minuto_fin,30);
     document.getElementById('cfg-pausado').checked=(c.pausado||'').toLowerCase()==='si';
-    document.getElementById('cfg-vencida').value=c.minutos_vencida||'20';
-    document.getElementById('cfg-anomalia').value=c.umbral_anomalia||'1.5';
-    document.getElementById('cfg-watchdog').value=c.watchdog_minutos||'30';
+    document.getElementById('cfg-vencida').value=num(c.minutos_vencida,20);
+    document.getElementById('cfg-anomalia').value=num(c.umbral_anomalia,1.5);
+    document.getElementById('cfg-watchdog').value=num(c.watchdog_minutos,30);
     document.getElementById('cfg-wh-reporte').value=c.webhook_reporte||'';
     document.getElementById('cfg-wh-jefes').value=c.webhook_jefes||'';
     document.getElementById('cfg-wh-tiempos').value=c.webhook_tiempos||'';
