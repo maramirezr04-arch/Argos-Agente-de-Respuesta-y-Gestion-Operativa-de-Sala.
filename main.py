@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.0.2"
+VERSION = "1.0.3"
 
 Path("logs").mkdir(exist_ok=True)
 logging.basicConfig(
@@ -139,14 +139,18 @@ def cargar_estructuras_sheets(ss):
         if len(results) >= 3 and results[2].get("values"):
             hoy_str = datetime.now().strftime("%d/%m/%Y")
             for row in results[2]["values"][1:]:
-                if row and len(row) >= 4 and row[0] == hoy_str:
-                    def _norm(s):
-                        s = str(s).strip().replace(".0","")
-                        try: return str(int(s))
-                        except: return s
-                    sec = _norm(row[1])
-                    descansos[sec]         = str(row[3]).strip().upper()
-                    jefes_en_descanso[sec] = str(row[2]).strip().upper() if len(row) > 2 else ""
+                if not row or len(row) < 3 or row[0] != hoy_str:
+                    continue
+                jefe_descansa = str(row[1]).strip().upper()
+                jefe_cubre    = str(row[2]).strip().upper()
+                if not jefe_descansa or not jefe_cubre:
+                    continue
+                # Mapear todas las secciones del jefe que descansa usando DIRECTORIO
+                for sec, info in dir_dict.items():
+                    if str(info.get("jefe","")).strip().upper() == jefe_descansa:
+                        descansos[sec]         = jefe_cubre
+                        jefes_en_descanso[sec] = jefe_descansa
+                log.info(f"Descanso hoy: {jefe_descansa} → cubierto por {jefe_cubre}")
     except Exception as e:
         log.warning(f"Error batch_get sheets: {e}")
     return dir_dict, hist_dict, descansos, jefes_en_descanso
