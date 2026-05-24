@@ -2381,6 +2381,85 @@ def enviar_recordatorio_cierre(datos, dir_dict):
     marcar_recordatorio_enviado()
     log.info("Recordatorio de cierre enviado ✅")
 
+# ── MENSAJES PROGRAMADOS ─────────────────────────────────────
+
+def procesar_mensajes_programados(gc):
+    """Lee hoja MENSAJES_PROGRAMADOS y envía los mensajes cuyo intervalo ya vencio."""
+    try:
+        ss = gc.open_by_key(GOOGLE["sheet_id"])
+        try:
+            hoja = ss.worksheet("MENSAJES_PROGRAMADOS")
+        except gspread.WorksheetNotFound:
+            hoja = ss.add_worksheet("MENSAJES_PROGRAMADOS", rows=200, cols=7)
+            hoja.update([["ID", "Texto", "Intervalo_min", "Destino", "Activo", "Ultimo_envio", "Creado"]], "A1")
+            log.info("Hoja MENSAJES_PROGRAMADOS creada ✅")
+            return
+
+        rows = hoja.get_all_values()
+        if len(rows) <= 1:
+            return
+
+        ahora = datetime.now()
+        WEBHOOKS_DESTINO = {
+            "reporte": WEBHOOK,
+            "jefes":   WEBHOOK_JEFES,
+            "tiempos": WEBHOOK_TIEMPOS,
+        }
+        FORMATOS_DT = ["%Y-%m-%d %H:%M:%S", "%d/%m/%Y %H:%M:%S", "%Y-%m-%dT%H:%M:%S"]
+
+        for i, row in enumerate(rows[1:], start=2):
+            if len(row) < 4:
+                continue
+            texto      = row[1] if len(row) > 1 else ""
+            try:
+                intervalo = int(float(row[2])) if len(row) > 2 and row[2] else 0
+            except (ValueError, TypeError):
+                intervalo = 0
+            destino    = (row[3] if len(row) > 3 else "reporte").strip()
+            activo     = (row[4] if len(row) > 4 else "si").strip().lower()
+            ultimo_env = (row[5] if len(row) > 5 else "").strip()
+
+            if activo not in ("si", "yes", "true", "1"):
+                continue
+            if not texto.strip() or intervalo <= 0:
+                continue
+
+            # Determinar si corresponde enviar
+            debe_enviar = False
+            if not ultimo_env:
+                debe_enviar = True
+            else:
+                for fmt in FORMATOS_DT:
+                    try:
+                        ultimo_dt   = datetime.strptime(ultimo_env, fmt)
+                        mins_pasados = (ahora - ultimo_dt).total_seconds() / 60
+                        debe_enviar  = mins_pasados >= intervalo
+                        break
+                    except ValueError:
+                        continue
+                else:
+                    debe_enviar = True
+
+            if not debe_enviar:
+                continue
+
+            enviado = False
+            for dest in [d.strip() for d in destino.split(",")]:
+                url = WEBHOOKS_DESTINO.get(dest)
+                if url and post_chat_con_reintento(url, {"text": texto}):
+                    enviado = True
+
+            if enviado:
+                try:
+                    hoja.update([[ahora.strftime("%Y-%m-%d %H:%M:%S")]], f"F{i}")
+                except Exception as upd_e:
+                    log.warning(f"Error actualizando Ultimo_envio fila {i}: {upd_e}")
+                log.info(f"Mensaje programado enviado (fila {i}): destino={destino}, cada {intervalo} min")
+
+    except Exception as e:
+        log.warning(f"Error procesando mensajes programados: {e}")
+
+
 # ── Main ──────────────────────────────────────────────────────
 
 def main():
@@ -2511,6 +2590,9 @@ def main():
 
         # Guardar tiempos de asignacion en hoja TIEMPOS
         guardar_tiempos_asignacion(gc_global, datos, dir_dict)
+
+        # Mensajes programados desde el dashboard
+        procesar_mensajes_programados(gc_global)
 
         # ── CIERRE YA ENVIADO: bot no manda más mensajes normales ───────────────
         if cierre_ya_enviado():

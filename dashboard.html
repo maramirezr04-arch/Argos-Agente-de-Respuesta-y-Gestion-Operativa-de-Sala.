@@ -254,6 +254,7 @@ input:checked + .slider:before { transform:translateX(22px); }
   <button onclick="showTab('routing',this)">📨 Rutas mensajes</button>
   <button onclick="showTab('pcs',this)">💻 PCs</button>
   <button onclick="showTab('acciones',this)">🔧 Acciones</button>
+  <button onclick="showTab('mensajes',this)">📅 Mensajes</button>
   <button onclick="showTab('pruebas',this)">🧪 Pruebas</button>
   <button onclick="showTab('logs',this)">📜 Logs</button>
   <button onclick="showTab('tiempos',this)">⏱ KPI Tiempos</button>
@@ -606,6 +607,86 @@ input:checked + .slider:before { transform:translateX(22px); }
   </div>
 </div>
 
+<!-- ── MENSAJES PROGRAMADOS ── -->
+<div id="tab-mensajes" class="section" style="margin-top:1rem">
+  <div class="section-intro">📅 <b>Mensajes programados</b> — Escribe un mensaje personalizado, elige cada cuántos minutos quieres que se mande y a qué espacio. El bot lo enviará automáticamente. Para detenerlo, solo bórralo.</div>
+
+  <div class="cfg-card" style="margin-bottom:1rem">
+    <h3>➕ Nuevo mensaje programado</h3>
+    <div class="cfg-row full" style="margin-bottom:14px">
+      <label>💬 Mensaje</label>
+      <textarea id="msg-texto" style="min-height:110px;font-family:monospace;font-size:12px;line-height:1.6" placeholder="Escribe aquí el mensaje que quieres que el bot mande automáticamente..."></textarea>
+    </div>
+    <div class="cfg-grid" style="margin-bottom:4px">
+      <div class="cfg-row">
+        <label class="tooltip-wrap">Cada cuántos minutos <span class="tooltip-icon">i</span><span class="tooltip-box">El bot lo enviará cada X minutos. Mínimo 5 min. Ej: 20 = cada 20 minutos.</span></label>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="number" id="msg-intervalo" min="5" max="480" value="20" style="width:80px">
+          <span style="font-size:12px;color:#888">min</span>
+        </div>
+      </div>
+      <div class="cfg-row">
+        <label>📲 Destino</label>
+        <select id="msg-destino" style="width:auto;text-align:left">
+          <option value="reporte">📢 Reporte</option>
+          <option value="jefes">👔 Jefes</option>
+          <option value="tiempos">⏱️ Tiempos</option>
+          <option value="reporte,jefes">📢 Reporte + 👔 Jefes</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <span style="font-size:11px;color:#888">El bot lo enviará en la próxima ejecución (máx ~15 min)</span>
+      <button class="btn-primary" onclick="agregarMensajeProgramado()">➕ Agregar mensaje</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="justify-content:space-between">
+      <span>📋 Mensajes programados activos</span>
+      <button onclick="cargarMensajesProgramados()" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #ddd;background:#faf9f7;cursor:pointer">🔄 Actualizar</button>
+    </div>
+    <div id="msgs-prog-lista">
+      <div style="text-align:center;padding:2rem;color:#aaa">Cargando...</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:1rem">
+    <div class="card-title">⚙️ Código para tu Apps Script</div>
+    <div style="font-size:12px;color:#666;margin-bottom:10px;line-height:1.6">
+      Agrega estos 3 casos en el <code>switch/if</code> de tu función <b>doPost</b> en el Apps Script para que el dashboard pueda crear, borrar y pausar mensajes:
+    </div>
+    <pre style="background:#1e1e1e;color:#d4d4d4;padding:14px;border-radius:10px;font-size:11px;overflow-x:auto;line-height:1.6">case 'agregar_mensaje_programado': {
+  var s = ss.getSheetByName('MENSAJES_PROGRAMADOS')
+         || ss.insertSheet('MENSAJES_PROGRAMADOS');
+  if (s.getLastRow() === 0)
+    s.appendRow(['ID','Texto','Intervalo_min','Destino','Activo','Ultimo_envio','Creado']);
+  s.appendRow([data.id, data.texto, data.intervalo_min,
+               data.destino, 'si', '', data.creado]);
+  return ok();
+}
+case 'borrar_mensaje_programado': {
+  var s = ss.getSheetByName('MENSAJES_PROGRAMADOS');
+  if (s) {
+    var vals = s.getDataRange().getValues();
+    for (var i = vals.length - 1; i >= 1; i--)
+      if (vals[i][0].toString() === data.id.toString()) { s.deleteRow(i+1); break; }
+  }
+  return ok();
+}
+case 'toggle_mensaje_programado': {
+  var s = ss.getSheetByName('MENSAJES_PROGRAMADOS');
+  if (s) {
+    var vals = s.getDataRange().getValues();
+    for (var i = 1; i < vals.length; i++)
+      if (vals[i][0].toString() === data.id.toString()) { s.getRange(i+1,5).setValue(data.activo); break; }
+  }
+  return ok();
+}</pre>
+    <div style="font-size:11px;color:#888;margin-top:8px">Donde <code>ss</code> es tu SpreadsheetApp y <code>ok()</code> retorna <code>JSON {ok:true}</code>.</div>
+  </div>
+</div>
+
 <!-- ── PRUEBAS DE MENSAJES ── -->
 <div id="tab-pruebas" class="section" style="margin-top:1rem">
   <div class="section-intro">🧪 <b>Pruebas</b> — Envía mensajes de prueba a cualquier espacio para verificar que todo funcione. Los mensajes llevan la etiqueta PRUEBA para que el equipo sepa que no son reales.</div>
@@ -805,7 +886,7 @@ function limpiarFiltroFecha(){
   renderAll();
 }
 
-function showTab(id,btn){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');btn.classList.add('active');if(id==='routing')cargarWebhooksJefes();if(id==='tiempos')cargarKpiTiempos();if(id==='pcs')cargarPcs();}
+function showTab(id,btn){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');btn.classList.add('active');if(id==='routing')cargarWebhooksJefes();if(id==='tiempos')cargarKpiTiempos();if(id==='pcs')cargarPcs();if(id==='mensajes')cargarMensajesProgramados();}
 
 // ── PCS ──────────────────────────────────────────────────────────────
 async function cargarPcs(){
@@ -1411,6 +1492,118 @@ guardarConfig = async function(){
   }catch(e){showToast('❌ '+e.message,'err');}
   finally{btn.disabled=false;btn.textContent='💾 Guardar';}
 };
+
+// MENSAJES PROGRAMADOS
+const URL_MSGS_PROG = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=MENSAJES_PROGRAMADOS";
+
+async function cargarMensajesProgramados(){
+  const div = document.getElementById('msgs-prog-lista');
+  div.innerHTML = '<div style="text-align:center;padding:2rem;color:#aaa">Cargando...</div>';
+  try {
+    const r   = await fetch(URL_MSGS_PROG + '&t=' + Date.now());
+    const txt = await r.text();
+    const json = JSON.parse(txt.replace(/^[^\(]+\(|\);?$/g,''));
+    const rows = json.table?.rows || [];
+    if (!rows.length) {
+      div.innerHTML = '<div style="text-align:center;padding:2rem;color:#aaa">Sin mensajes programados. Agrega el primero arriba.</div>';
+      return;
+    }
+    const DEST_LABEL = {reporte:'📢 Reporte', jefes:'👔 Jefes', tiempos:'⏱️ Tiempos', 'reporte,jefes':'📢 Reporte + 👔 Jefes'};
+    let html = '<table><thead><tr><th>Mensaje</th><th>Intervalo</th><th>Destino</th><th>Estado</th><th>Último envío</th><th></th></tr></thead><tbody>';
+    rows.forEach(row => {
+      const c        = row.c || [];
+      const id       = c[0]?.v?.toString() || '';
+      const texto    = c[1]?.v || '';
+      const intervalo= c[2]?.v || 0;
+      const destino  = c[3]?.v || 'reporte';
+      const activo   = ['si','yes','true','1'].includes((c[4]?.v || 'si').toString().toLowerCase());
+      const ultimo   = c[5]?.v || '';
+      const preview  = texto.length > 70 ? texto.substring(0,70) + '...' : texto;
+      const dLabel   = DEST_LABEL[destino] || destino;
+      html += `<tr>
+        <td style="max-width:300px;word-break:break-word;font-size:12px">${preview.replace(/\n/g,'<br>')}</td>
+        <td style="white-space:nowrap">cada <b>${intervalo} min</b></td>
+        <td><span class="badge info">${dLabel}</span></td>
+        <td><span class="badge ${activo?'ok':'warn'}">${activo?'✅ Activo':'⏸️ Pausado'}</span></td>
+        <td style="color:#888;font-size:11px;white-space:nowrap">${ultimo||'—'}</td>
+        <td style="white-space:nowrap">
+          <button onclick="toggleMensajeProgramado('${id}',${!activo})"
+            style="font-size:11px;padding:3px 9px;border-radius:6px;background:${activo?'#faeeda':'#eaf3de'};border:none;color:${activo?'#854f0b':'#3b6d11'};cursor:pointer">
+            ${activo?'⏸ Pausar':'▶ Activar'}
+          </button>
+          <button onclick="borrarMensajeProgramado('${id}')"
+            style="font-size:11px;padding:3px 9px;border-radius:6px;background:#fcebeb;border:none;color:#a32d2d;cursor:pointer;margin-left:4px">
+            🗑️ Borrar
+          </button>
+        </td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    div.innerHTML = html;
+  } catch(e) {
+    div.innerHTML = '<div style="text-align:center;padding:2rem;color:#aaa">La hoja MENSAJES_PROGRAMADOS aún no existe — el bot la crea en la primera ejecución, o agrega el primer mensaje.</div>';
+  }
+}
+
+async function agregarMensajeProgramado(){
+  const texto     = document.getElementById('msg-texto').value.trim();
+  const intervalo = parseInt(document.getElementById('msg-intervalo').value) || 0;
+  const destino   = document.getElementById('msg-destino').value;
+  if (!texto)          { showToast('⚠️ Escribe un mensaje','err'); return; }
+  if (intervalo < 5)   { showToast('⚠️ Intervalo mínimo: 5 minutos','err'); return; }
+  try {
+    const id     = Date.now().toString();
+    const creado = new Date().toISOString().replace('T',' ').substring(0,19);
+    const r    = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({accion:'agregar_mensaje_programado', id, texto, intervalo_min: intervalo, destino, creado})
+    });
+    const data = await r.json();
+    if (data.ok) {
+      showToast('✅ Mensaje programado agregado','ok');
+      document.getElementById('msg-texto').value    = '';
+      document.getElementById('msg-intervalo').value = '20';
+      cargarMensajesProgramados();
+    } else {
+      throw new Error(data.error || 'Error al guardar');
+    }
+  } catch(e) {
+    showToast('❌ ' + e.message,'err');
+  }
+}
+
+async function borrarMensajeProgramado(id){
+  if (!confirm('¿Eliminar este mensaje? Ya no se volverá a enviar.')) return;
+  try {
+    const r    = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({accion:'borrar_mensaje_programado', id})
+    });
+    const data = await r.json();
+    if (data.ok) { showToast('✅ Mensaje eliminado','ok'); cargarMensajesProgramados(); }
+    else throw new Error(data.error || 'Error al borrar');
+  } catch(e) {
+    showToast('❌ ' + e.message,'err');
+  }
+}
+
+async function toggleMensajeProgramado(id, nuevoActivo){
+  try {
+    const r    = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({accion:'toggle_mensaje_programado', id, activo: nuevoActivo ? 'si' : 'no'})
+    });
+    const data = await r.json();
+    if (data.ok) {
+      showToast(nuevoActivo ? '✅ Mensaje activado' : '⏸️ Mensaje pausado','ok');
+      cargarMensajesProgramados();
+    } else {
+      throw new Error(data.error || 'Error');
+    }
+  } catch(e) {
+    showToast('❌ ' + e.message,'err');
+  }
+}
 
 // MENSAJES DE PRUEBA
 const PLANTILLAS_PRUEBA = {
