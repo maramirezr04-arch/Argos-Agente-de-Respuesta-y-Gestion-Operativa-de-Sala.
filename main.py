@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.0.7"
+VERSION = "1.0.8"
 
 Path("logs").mkdir(exist_ok=True)
 logging.basicConfig(
@@ -171,6 +171,10 @@ MAX_EJECUCION_SEG     = 600    # 10 min max por ejecucion
 HORA_INICIO     = 10
 HORA_FIN        = 21
 MINUTO_FIN      = 30
+# ── Frecuencia de mensajes — configurable desde dashboard ─────
+CICLOS_JEFES       = 2       # ciclos entre mensajes al espacio Jefes
+CICLOS_REPORTE     = 1       # ciclos entre mensajes al espacio Reporte
+HORA_RECORDATORIO  = "20:30" # hora objetivo del recordatorio (HH:MM)
 # ── Archivos ─────────────────────────────────────────────────
 TIEMPOS_FILE      = "tiempos.json"
 CONTADOR_FILE     = "contador_jefes.json"
@@ -293,7 +297,7 @@ CONFIG_CACHE_FILE = "config_remota_cache.json"
 
 def cargar_config_remota(gc):
     """Lee la hoja CONFIG del Sheet 1 y actualiza valores globales."""
-    global HORA_INICIO, HORA_FIN, MINUTO_FIN, MINUTOS_VENCIDA, UMBRAL_ANOMALIA, WATCHDOG_MINUTOS, CONFIG_REMOTA
+    global HORA_INICIO, HORA_FIN, MINUTO_FIN, MINUTOS_VENCIDA, UMBRAL_ANOMALIA, WATCHDOG_MINUTOS, CONFIG_REMOTA, CICLOS_JEFES, CICLOS_REPORTE, HORA_RECORDATORIO
     try:
         ss = gc.open_by_key(GOOGLE["sheet_id"])
         try:
@@ -314,6 +318,9 @@ def cargar_config_remota(gc):
                 ["webhook_reporte", WEBHOOK],
                 ["webhook_jefes", WEBHOOK_JEFES],
                 ["webhook_tiempos", WEBHOOK_TIEMPOS],
+                ["ciclos_jefes", "2"],
+                ["ciclos_reporte", "1"],
+                ["hora_recordatorio", "20:30"],
             ]
             hoja.update(defaults, "A1")
             log.info("Hoja CONFIG creada con valores por defecto")
@@ -339,6 +346,12 @@ def cargar_config_remota(gc):
         except: pass
         if cfg.get("watchdog_minutos", "").isdigit():
             WATCHDOG_MINUTOS = int(cfg["watchdog_minutos"])
+        if cfg.get("ciclos_jefes", "").isdigit():
+            CICLOS_JEFES = max(1, int(cfg["ciclos_jefes"]))
+        if cfg.get("ciclos_reporte", "").isdigit():
+            CICLOS_REPORTE = max(1, int(cfg["ciclos_reporte"]))
+        if cfg.get("hora_recordatorio"):
+            HORA_RECORDATORIO = cfg["hora_recordatorio"].strip()
 
         CONFIG_REMOTA = cfg
 
@@ -2339,9 +2352,15 @@ def enviar_ranking_jefes(gc):
 RECORDATORIO_FILE = "recordatorio_estado.json"
 
 def es_hora_recordatorio():
-    """8:30 PM — 1 hora antes del cierre."""
+    """Verifica si el ciclo actual cae dentro de la ventana del recordatorio configurable."""
     ahora = datetime.now()
-    return ahora.hour == 20 and 25 <= ahora.minute < 45
+    try:
+        partes   = HORA_RECORDATORIO.split(":")
+        objetivo = ahora.replace(hour=int(partes[0]), minute=int(partes[1]), second=0, microsecond=0)
+        mins_diff = (ahora - objetivo).total_seconds() / 60
+        return 0 <= mins_diff < 20  # ventana de 20 min para no perderse el ciclo
+    except Exception:
+        return ahora.hour == 20 and 25 <= ahora.minute < 45
 
 def recordatorio_ya_enviado():
     try:
@@ -2640,22 +2659,27 @@ def main():
         if es_anom:
             mandar_alerta_anomalia(len(vencidas), prom_venc)
 
-        # ── Mensajes normales — espacio REPORTE ───────────────────────────────
+        # ── Mensajes — espacio REPORTE ────────────────────────────────────────
         enviar_notificaciones_vencidas(vencidas)
-        enviar_chat(resumen, exito=True)
-
-        # ── Mensajes por piso cada 30 min — espacio JEFES ────────────────────
-        # Incluye pendientes de ayer hasta que no quede ninguno
         contador = leer_contador()
+        contador["reporte_count"] = contador.get("reporte_count", 0) + 1
+        if contador["reporte_count"] >= CICLOS_REPORTE:
+            enviar_chat(resumen, exito=True)
+            contador["reporte_count"] = 0
+            log.info(f"Reporte enviado, contador reiniciado (cada {CICLOS_REPORTE} ciclo(s))")
+        else:
+            log.info(f"Contador reporte: {contador['reporte_count']}/{CICLOS_REPORTE}")
+
+        # ── Mensajes por piso — espacio JEFES ────────────────────────────────
         contador["count"] = contador.get("count", 0) + 1
-        if contador["count"] >= 2:
+        if contador["count"] >= CICLOS_JEFES:
             _WEBHOOKS_YA_ENVIADOS.clear()
             enviar_mensaje_jefes(datos, dir_dict, hist_dict, descansos, jefes_en_descanso)
             enviar_pendientes_ayer(datos, dir_dict, descansos)
             contador["count"] = 0
-            log.info("Mensajes por piso + pendientes de ayer enviados, contador reiniciado")
+            log.info(f"Mensajes jefes enviados, contador reiniciado (cada {CICLOS_JEFES} ciclo(s))")
         else:
-            log.info("Contador jefes: " + str(contador["count"]) + "/2")
+            log.info(f"Contador jefes: {contador['count']}/{CICLOS_JEFES}")
         guardar_contador(contador)
 
         guardar_metricas_dia(gc_global, resumen, len(vencidas))
