@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.0.5"
+VERSION = "1.0.6"
 
 Path("logs").mkdir(exist_ok=True)
 logging.basicConfig(
@@ -174,6 +174,7 @@ MINUTO_FIN      = 30
 # ── Archivos ─────────────────────────────────────────────────
 TIEMPOS_FILE      = "tiempos.json"
 CONTADOR_FILE     = "contador_jefes.json"
+CONTADOR_MSGS_FILE = "contador_mensajes.json"
 APERTURA_FILE     = "apertura.json"
 CIERRE_FILE       = "cierre.json"
 LOCK_FILE         = "bot.lock"
@@ -504,6 +505,22 @@ def leer_contador():
 def guardar_contador(c):
     try:
         with open(CONTADOR_FILE, "w") as f:
+            json.dump(c, f)
+    except Exception:
+        pass
+
+def leer_contador_msgs():
+    try:
+        if os.path.exists(CONTADOR_MSGS_FILE):
+            with open(CONTADOR_MSGS_FILE, "r") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
+
+def guardar_contador_msgs(c):
+    try:
+        with open(CONTADOR_MSGS_FILE, "w") as f:
             json.dump(c, f)
     except Exception:
         pass
@@ -2384,7 +2401,7 @@ def enviar_recordatorio_cierre(datos, dir_dict):
 # ── MENSAJES PROGRAMADOS ─────────────────────────────────────
 
 def procesar_mensajes_programados(gc):
-    """Lee hoja MENSAJES_PROGRAMADOS y envía los mensajes cuyo intervalo ya vencio."""
+    """Envía mensajes programados usando contador de ciclos (igual que contador_jefes)."""
     try:
         ss = gc.open_by_key(GOOGLE["sheet_id"])
         try:
@@ -2405,58 +2422,46 @@ def procesar_mensajes_programados(gc):
             "jefes":   WEBHOOK_JEFES,
             "tiempos": WEBHOOK_TIEMPOS,
         }
-        FORMATOS_DT = ["%Y-%m-%d %H:%M:%S", "%d/%m/%Y %H:%M:%S", "%Y-%m-%dT%H:%M:%S"]
+
+        contadores = leer_contador_msgs()
 
         for i, row in enumerate(rows[1:], start=2):
             if len(row) < 4:
                 continue
-            texto      = row[1] if len(row) > 1 else ""
-            CICLO_MINUTOS = 15
+            msg_id  = (row[0] if len(row) > 0 else "").strip()
+            texto   = (row[1] if len(row) > 1 else "").strip()
             try:
                 intervalo_ciclos = int(float(row[2])) if len(row) > 2 and row[2] else 0
             except (ValueError, TypeError):
                 intervalo_ciclos = 0
-            intervalo_min  = intervalo_ciclos * CICLO_MINUTOS
-            destino    = (row[3] if len(row) > 3 else "reporte").strip()
-            activo     = (row[4] if len(row) > 4 else "si").strip().lower()
-            ultimo_env = (row[5] if len(row) > 5 else "").strip()
+            destino = (row[3] if len(row) > 3 else "reporte").strip()
+            activo  = (row[4] if len(row) > 4 else "si").strip().lower()
 
             if activo not in ("si", "yes", "true", "1"):
                 continue
-            if not texto.strip() or intervalo_ciclos <= 0:
+            if not texto or intervalo_ciclos <= 0 or not msg_id:
                 continue
 
-            # Determinar si corresponde enviar
-            debe_enviar = False
-            if not ultimo_env:
-                debe_enviar = True
-            else:
-                for fmt in FORMATOS_DT:
+            contadores[msg_id] = contadores.get(msg_id, 0) + 1
+            ciclo_actual = contadores[msg_id]
+
+            if ciclo_actual >= intervalo_ciclos:
+                enviado = False
+                for dest in [d.strip() for d in destino.split(",")]:
+                    url = WEBHOOKS_DESTINO.get(dest)
+                    if url and post_chat_con_reintento(url, {"text": texto}):
+                        enviado = True
+                if enviado:
+                    contadores[msg_id] = 0
                     try:
-                        ultimo_dt    = datetime.strptime(ultimo_env, fmt)
-                        mins_pasados = (ahora - ultimo_dt).total_seconds() / 60
-                        debe_enviar  = mins_pasados >= intervalo_min
-                        break
-                    except ValueError:
-                        continue
-                else:
-                    debe_enviar = True
+                        hoja.update([[ahora.strftime("%Y-%m-%d %H:%M:%S")]], f"F{i}")
+                    except Exception as upd_e:
+                        log.warning(f"Error actualizando Ultimo_envio fila {i}: {upd_e}")
+                    log.info(f"Mensaje programado enviado (fila {i}): destino={destino}, cada {intervalo_ciclos} ciclo(s)")
+            else:
+                log.info(f"Msg programado fila {i}: {ciclo_actual}/{intervalo_ciclos} ciclos")
 
-            if not debe_enviar:
-                continue
-
-            enviado = False
-            for dest in [d.strip() for d in destino.split(",")]:
-                url = WEBHOOKS_DESTINO.get(dest)
-                if url and post_chat_con_reintento(url, {"text": texto}):
-                    enviado = True
-
-            if enviado:
-                try:
-                    hoja.update([[ahora.strftime("%Y-%m-%d %H:%M:%S")]], f"F{i}")
-                except Exception as upd_e:
-                    log.warning(f"Error actualizando Ultimo_envio fila {i}: {upd_e}")
-                log.info(f"Mensaje programado enviado (fila {i}): destino={destino}, cada {intervalo_ciclos} ciclo(s) (~{intervalo_min} min)")
+        guardar_contador_msgs(contadores)
 
     except Exception as e:
         log.warning(f"Error procesando mensajes programados: {e}")
