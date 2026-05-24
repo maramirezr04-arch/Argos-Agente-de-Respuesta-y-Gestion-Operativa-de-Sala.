@@ -225,7 +225,7 @@ input:checked + .slider:before { transform:translateX(22px); }
 <div class="header">
   <div>
     <h1>🤖 Liverpool Bot 456</h1>
-    <div class="sub">Panel de control · Tienda 456 Parque Antenas · <span style="opacity:.7">v1.0.6</span> · <span id="hdr-fecha" style="opacity:.8"></span></div>
+    <div class="sub">Panel de control · Tienda 456 Parque Antenas · <span style="opacity:.7">v1.0.7</span> · <span id="hdr-fecha" style="opacity:.8"></span></div>
   </div>
   <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
     <div class="status-pill"><span class="dot dot-off" id="dot"></span><span id="status-txt">Cargando...</span></div>
@@ -753,9 +753,14 @@ case 'toggle_mensaje_programado': {
   <div class="section-intro">⏱ <b>KPI Tiempos de asignación</b> — Se actualiza automáticamente al cierre del turno. Mide cuánto tarda cada jefe en asignar remisiones a vendedores desde que llegan a tienda.</div>
 
   <div class="card">
-    <div class="card-title" style="justify-content:space-between">
-      <span>📊 Tiempos por jefe — último cierre</span>
-      <button onclick="cargarKpiTiempos()" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #ddd;background:#faf9f7;cursor:pointer">🔄 Actualizar</button>
+    <div class="card-title" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <span>📊 Tiempos por jefe</span>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <select id="kpi-dia-sel" onchange="filtrarKpiPorDia()" style="font-size:12px;border-radius:8px;border:1px solid #ddd;padding:5px 10px;background:#faf9f7;cursor:pointer">
+          <option value="">Cargando...</option>
+        </select>
+        <button onclick="cargarKpiTiempos()" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #ddd;background:#faf9f7;cursor:pointer">🔄 Actualizar</button>
+      </div>
     </div>
     <div id="kpi-meta" style="font-size:12px;color:#888;margin-bottom:12px">Cargando...</div>
     <div class="kpi-legend">
@@ -810,7 +815,7 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxBSox6hX-SfSem
 const SHEET_ID = "135lsymm5A67_ieYZLaKIfvPpkyqRWbUf9UV-mv3b7js";
 const URL_MONITOR  = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=MONITOR";
 const URL_METRICAS = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=METRICAS";
-const URL_TIEMPOS  = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=TIEMPOS";
+const URL_KPI_TIEMPOS = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=KPI_TIEMPOS";
 let chartKpi = null;
 let todos=[],chartT,chartI,chartV;
 let DIRECTORIO_SECCIONES = [], DIRECTORIO_JEFES = [];
@@ -932,71 +937,98 @@ async function togglePc(nombre, nuevoEstado){
 function fmtMin(m){m=Math.round(Number(m)||0);const h=Math.floor(m/60),min=m%60;return h>0?h+'h '+min+'min':min+'min';}
 function semaforoColor(p){if(p<=5)return '#2ecc71';if(p<=20)return '#f39c12';return '#e74c3c';}
 
+let _kpiTodos = []; // todos los registros históricos
+
 async function cargarKpiTiempos(){
   const tbody = document.getElementById('tabla-kpi-tiempos');
   const meta  = document.getElementById('kpi-meta');
-  const footer= document.getElementById('kpi-footer');
+  const sel   = document.getElementById('kpi-dia-sel');
   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#aaa">Cargando...</td></tr>';
   try {
-    const r    = await fetch(URL_TIEMPOS + '&t=' + Date.now());
+    const r    = await fetch(URL_KPI_TIEMPOS + '&t=' + Date.now());
     const txt  = await r.text();
     const json = JSON.parse(txt.replace(/^[^\(]+\(|\);?$/g,''));
-    const rows = json.table.rows;
-    if(!rows || rows.length === 0){
+    const rows = json.table?.rows || [];
+    if(!rows.length){
       tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#aaa;padding:2rem">Sin datos — el bot aún no ha enviado el KPI de cierre.</td></tr>';
       meta.textContent='Sin datos aún';
       return;
     }
-    // Fila 0 = cabecera (Jefe, Min, Prom, Max, Remisiones, Fecha)
-    // Leer datos desde fila 1
-    const datos = rows.slice(1).map(r=>({
-      jefe : r.c[0]?.v || '',
-      min  : Number(r.c[1]?.v || 0),
-      prom : Number(r.c[2]?.v || 0),
-      max  : Number(r.c[3]?.v || 0),
-      rem  : Number(r.c[4]?.v || 0),
-      fecha: r.c[5]?.v || '',
-    })).filter(d=>d.jefe).sort((a,b)=>a.prom-b.prom);
+    // Schema: Dia(0) Jefe(1) Min(2) Prom(3) Max(4) Remisiones(5) Hora_cierre(6)
+    _kpiTodos = rows.slice(1).map(r=>({
+      dia  : r.c[0]?.v || '',
+      jefe : r.c[1]?.v || '',
+      min  : Number(r.c[2]?.v || 0),
+      prom : Number(r.c[3]?.v || 0),
+      max  : Number(r.c[4]?.v || 0),
+      rem  : Number(r.c[5]?.v || 0),
+      hora : r.c[6]?.v || '',
+    })).filter(d=>d.jefe && d.dia);
 
-    const fechaUlt = datos[0]?.fecha || '';
-    meta.textContent = `Último cierre: ${fechaUlt} — ${datos.length} jefes`;
-
-    tbody.innerHTML = datos.map((d,i)=>{
-      const color = semaforoColor(d.prom);
-      const dot   = `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${color};margin-right:6px"></span>`;
-      return `<tr>
-        <td style="color:#aaa;font-size:11px">${i+1}</td>
-        <td><b>${d.jefe}</b></td>
-        <td style="color:#2ecc71;font-weight:600">${fmtMin(d.min)}</td>
-        <td>${dot}<b>${fmtMin(d.prom)}</b></td>
-        <td style="color:#e74c3c">${fmtMin(d.max)}</td>
-        <td style="color:#888">${d.rem} rem</td>
-      </tr>`;
-    }).join('');
-
-    // Promedio general
-    const promGral = Math.round(datos.reduce((s,d)=>s+d.prom,0)/datos.length);
-    footer.textContent = `Promedio general: ${fmtMin(promGral)}`;
-
-    // Gráfica
-    const labels = datos.map(d=>d.jefe.split(' ').slice(0,2).join(' '));
-    const proms  = datos.map(d=>d.prom);
-    const colors = proms.map(p=>semaforoColor(p));
-    const ctx    = document.getElementById('chart-kpi').getContext('2d');
-    if(chartKpi) chartKpi.destroy();
-    chartKpi = new Chart(ctx, {
-      type:'bar',
-      data:{labels, datasets:[{label:'Promedio (min)',data:proms,backgroundColor:colors,borderRadius:6}]},
-      options:{
-        responsive:true,
-        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmtMin(c.raw)}}},
-        scales:{y:{ticks:{callback:v=>fmtMin(v)},grid:{color:'rgba(0,0,0,.05)'}},x:{ticks:{font:{size:10}}}}
-      }
+    // Días únicos, más reciente primero
+    const dias = [...new Set(_kpiTodos.map(d=>d.dia))].sort((a,b)=>{
+      const p = s=>s.split('/').reverse().join('');
+      return p(b).localeCompare(p(a));
     });
+
+    sel.innerHTML = dias.map((d,i)=>
+      `<option value="${d}">${d}${i===0?' (más reciente)':''}</option>`
+    ).join('');
+
+    filtrarKpiPorDia();
   } catch(e){
-    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#e74c3c;padding:2rem">Error cargando datos: '+e.message+'</td></tr>';
+    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#e74c3c;padding:2rem">Error: '+e.message+'</td></tr>';
     meta.textContent='Error';
   }
+}
+
+function filtrarKpiPorDia(){
+  const tbody  = document.getElementById('tabla-kpi-tiempos');
+  const meta   = document.getElementById('kpi-meta');
+  const footer = document.getElementById('kpi-footer');
+  const dia    = document.getElementById('kpi-dia-sel').value;
+  if(!dia || !_kpiTodos.length) return;
+
+  const datos = _kpiTodos.filter(d=>d.dia===dia).sort((a,b)=>a.prom-b.prom);
+  if(!datos.length){
+    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#aaa;padding:2rem">Sin datos para este día.</td></tr>';
+    meta.textContent=dia;
+    return;
+  }
+
+  const hora = datos[0]?.hora || '';
+  meta.textContent = `📅 ${dia}  ·  cierre: ${hora}  ·  ${datos.length} jefes`;
+
+  tbody.innerHTML = datos.map((d,i)=>{
+    const color = semaforoColor(d.prom);
+    const dot   = `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${color};margin-right:6px"></span>`;
+    return `<tr>
+      <td style="color:#aaa;font-size:11px">${i+1}</td>
+      <td><b>${d.jefe}</b></td>
+      <td style="color:#2ecc71;font-weight:600">${fmtMin(d.min)}</td>
+      <td>${dot}<b>${fmtMin(d.prom)}</b></td>
+      <td style="color:#e74c3c">${fmtMin(d.max)}</td>
+      <td style="color:#888">${d.rem} rem</td>
+    </tr>`;
+  }).join('');
+
+  const promGral = Math.round(datos.reduce((s,d)=>s+d.prom,0)/datos.length);
+  footer.textContent = `Promedio general del día: ${fmtMin(promGral)}`;
+
+  const labels = datos.map(d=>d.jefe.split(' ').slice(0,2).join(' '));
+  const proms  = datos.map(d=>d.prom);
+  const colors = proms.map(p=>semaforoColor(p));
+  const ctx    = document.getElementById('chart-kpi').getContext('2d');
+  if(chartKpi) chartKpi.destroy();
+  chartKpi = new Chart(ctx, {
+    type:'bar',
+    data:{labels, datasets:[{label:'Promedio (min)',data:proms,backgroundColor:colors,borderRadius:6}]},
+    options:{
+      responsive:true,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmtMin(c.raw)}}},
+      scales:{y:{ticks:{callback:v=>fmtMin(v)},grid:{color:'rgba(0,0,0,.05)'}},x:{ticks:{font:{size:10}}}}
+    }
+  });
 }
 function formatDur(seg){seg=Math.round(Number(seg)||0);const m=Math.floor(seg/60),s=seg%60;if(m===0)return s+'s';return m+'m '+(s<10?'0':'')+s+'s';}
 function showToast(msg, tipo){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+(tipo||'ok');setTimeout(()=>t.classList.remove('show'),3000);}

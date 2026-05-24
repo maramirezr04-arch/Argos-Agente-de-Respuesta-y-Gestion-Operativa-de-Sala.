@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════
 //  Liverpool Bot 456 — Google Apps Script
-//  Versión: 1.0.6
+//  Versión: 1.0.7
 //  Última actualización: 2026-05-24
 //
 //  CÓMO USAR:

@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.0.6"
+VERSION = "1.0.7"
 
 Path("logs").mkdir(exist_ok=True)
 logging.basicConfig(
@@ -3193,36 +3193,43 @@ def enviar_kpi_jefes_tiempos(csv_oms=None, csv_xd=None, dir_dict=None):
         post_chat_con_reintento(WEBHOOK_TIEMPOS, {"text": "\n".join(lineas)})
         log.info("KPI jefes tiempos enviado al espacio Tiempos ✅")
 
-        # ── Escribir KPI en hoja TIEMPOS del Sheet para el dashboard ──
+        # ── Escribir KPI en hoja KPI_TIEMPOS (histórico por día) ──────────
         try:
             from config import GOOGLE
             creds2 = Credentials.from_service_account_file(
                 GOOGLE["credentials"],
                 scopes=["https://www.googleapis.com/auth/spreadsheets"]
             )
-            gc2 = gspread.authorize(creds2)
-            ss2 = gc2.open_by_key(GOOGLE["sheet_id"])
+            gc2    = gspread.authorize(creds2)
+            ss2    = gc2.open_by_key(GOOGLE["sheet_id"])
             try:
-                hoja_t = ss2.worksheet("TIEMPOS")
+                hoja_t = ss2.worksheet("KPI_TIEMPOS")
             except Exception:
-                hoja_t = ss2.add_worksheet("TIEMPOS", rows=200, cols=10)
+                hoja_t = ss2.add_worksheet("KPI_TIEMPOS", rows=5000, cols=7)
 
-            filas_sheet = [["Jefe", "Min (min)", "Promedio (min)", "Max (min)", "Remisiones", "Fecha"]]
-            fecha_hoy   = datetime.now().strftime("%d/%m/%Y %H:%M")
+            if hoja_t.row_count == 0 or not hoja_t.get("A1"):
+                hoja_t.update(
+                    [["Dia", "Jefe", "Min (min)", "Promedio (min)", "Max (min)", "Remisiones", "Hora_cierre"]],
+                    "A1"
+                )
+
+            dia_hoy   = datetime.now().strftime("%d/%m/%Y")
+            hora_hoy  = datetime.now().strftime("%d/%m/%Y %H:%M")
+            filas_nuevas = []
             for jefe, d in sorted(jefes.items(), key=lambda x: x[1]["prom_mins"]):
-                filas_sheet.append([
+                filas_nuevas.append([
+                    dia_hoy,
                     jefe.title(),
                     d["min_mins"],
                     d["prom_mins"],
                     d["max_mins"],
                     d["total_rem"],
-                    fecha_hoy,
+                    hora_hoy,
                 ])
-            hoja_t.clear()
-            hoja_t.update(filas_sheet, value_input_option="RAW")
-            log.info(f"KPI tiempos escrito en hoja TIEMPOS ({len(jefes)} jefes) ✅")
+            hoja_t.append_rows(filas_nuevas, value_input_option="RAW")
+            log.info(f"KPI tiempos guardado en KPI_TIEMPOS ({len(jefes)} jefes, día {dia_hoy}) ✅")
         except Exception as e2:
-            log.warning(f"No se pudo escribir KPI en Sheets: {e2}")
+            log.warning(f"No se pudo escribir KPI en KPI_TIEMPOS: {e2}")
 
     except Exception as e:
         log.error(f"Error enviando KPI jefes tiempos: {e}")
