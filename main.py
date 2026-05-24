@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.0.8"
+VERSION = "1.0.9"
 
 Path("logs").mkdir(exist_ok=True)
 logging.basicConfig(
@@ -2447,7 +2447,11 @@ def procesar_mensajes_programados(gc):
         for i, row in enumerate(rows[1:], start=2):
             if len(row) < 4:
                 continue
-            msg_id  = (row[0] if len(row) > 0 else "").strip()
+            raw_id  = (row[0] if len(row) > 0 else "").strip()
+            try:
+                msg_id = str(int(float(raw_id))) if raw_id else ""
+            except (ValueError, TypeError):
+                msg_id = raw_id
             texto   = (row[1] if len(row) > 1 else "").strip()
             try:
                 intervalo_ciclos = int(float(row[2])) if len(row) > 2 and row[2] else 0
