@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.0.3"
+VERSION = "1.0.4"
 
 Path("logs").mkdir(exist_ok=True)
 logging.basicConfig(
