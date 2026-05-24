@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.0.4"
+VERSION = "1.0.5"
 
 Path("logs").mkdir(exist_ok=True)
 logging.basicConfig(
@@ -2391,7 +2391,7 @@ def procesar_mensajes_programados(gc):
             hoja = ss.worksheet("MENSAJES_PROGRAMADOS")
         except gspread.WorksheetNotFound:
             hoja = ss.add_worksheet("MENSAJES_PROGRAMADOS", rows=200, cols=7)
-            hoja.update([["ID", "Texto", "Intervalo_min", "Destino", "Activo", "Ultimo_envio", "Creado"]], "A1")
+            hoja.update([["ID", "Texto", "Intervalo_ciclos", "Destino", "Activo", "Ultimo_envio", "Creado"]], "A1")
             log.info("Hoja MENSAJES_PROGRAMADOS creada ✅")
             return
 
@@ -2411,17 +2411,19 @@ def procesar_mensajes_programados(gc):
             if len(row) < 4:
                 continue
             texto      = row[1] if len(row) > 1 else ""
+            CICLO_MINUTOS = 15
             try:
-                intervalo = int(float(row[2])) if len(row) > 2 and row[2] else 0
+                intervalo_ciclos = int(float(row[2])) if len(row) > 2 and row[2] else 0
             except (ValueError, TypeError):
-                intervalo = 0
+                intervalo_ciclos = 0
+            intervalo_min  = intervalo_ciclos * CICLO_MINUTOS
             destino    = (row[3] if len(row) > 3 else "reporte").strip()
             activo     = (row[4] if len(row) > 4 else "si").strip().lower()
             ultimo_env = (row[5] if len(row) > 5 else "").strip()
 
             if activo not in ("si", "yes", "true", "1"):
                 continue
-            if not texto.strip() or intervalo <= 0:
+            if not texto.strip() or intervalo_ciclos <= 0:
                 continue
 
             # Determinar si corresponde enviar
@@ -2431,9 +2433,9 @@ def procesar_mensajes_programados(gc):
             else:
                 for fmt in FORMATOS_DT:
                     try:
-                        ultimo_dt   = datetime.strptime(ultimo_env, fmt)
+                        ultimo_dt    = datetime.strptime(ultimo_env, fmt)
                         mins_pasados = (ahora - ultimo_dt).total_seconds() / 60
-                        debe_enviar  = mins_pasados >= intervalo
+                        debe_enviar  = mins_pasados >= intervalo_min
                         break
                     except ValueError:
                         continue
@@ -2454,7 +2456,7 @@ def procesar_mensajes_programados(gc):
                     hoja.update([[ahora.strftime("%Y-%m-%d %H:%M:%S")]], f"F{i}")
                 except Exception as upd_e:
                     log.warning(f"Error actualizando Ultimo_envio fila {i}: {upd_e}")
-                log.info(f"Mensaje programado enviado (fila {i}): destino={destino}, cada {intervalo} min")
+                log.info(f"Mensaje programado enviado (fila {i}): destino={destino}, cada {intervalo_ciclos} ciclo(s) (~{intervalo_min} min)")
 
     except Exception as e:
         log.warning(f"Error procesando mensajes programados: {e}")

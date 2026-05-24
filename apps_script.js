@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════
 //  Liverpool Bot 456 — Google Apps Script
-//  Versión: 1.0.4
+//  Versión: 1.0.5
 //  Última actualización: 2026-05-24
 //
 //  CÓMO USAR:
@@ -173,7 +173,7 @@ function doGet(e) {
   }
 
   // ── MENSAJES PROGRAMADOS — listar ────────────────────────
-  // Columnas: ID(0) Texto(1) Intervalo_min(2) Destino(3)
+  // Columnas: ID(0) Texto(1) Intervalo_ciclos(2) Destino(3)
   //           Activo(4) Ultimo_envio(5) Creado(6)
   if (accion === "mensajes_programados") {
     var hoja = ss.getSheetByName("MENSAJES_PROGRAMADOS");
@@ -184,7 +184,7 @@ function doGet(e) {
       if (rows[i][0]) datos.push({
         id:           rows[i][0],
         texto:        rows[i][1],
-        intervalo_min:rows[i][2],
+        intervalo_ciclos:rows[i][2],
         destino:      rows[i][3],
         activo:       rows[i][4],
         ultimo_envio: rows[i][5],
@@ -372,9 +372,9 @@ function doPost(e) {
     var hoja = ss.getSheetByName("MENSAJES_PROGRAMADOS");
     if (!hoja) {
       hoja = ss.insertSheet("MENSAJES_PROGRAMADOS");
-      hoja.appendRow(["ID", "Texto", "Intervalo_min", "Destino", "Activo", "Ultimo_envio", "Creado"]);
+      hoja.appendRow(["ID", "Texto", "Intervalo_ciclos", "Destino", "Activo", "Ultimo_envio", "Creado"]);
     }
-    hoja.appendRow([body.id, body.texto, body.intervalo_min, body.destino, "si", "", body.creado]);
+    hoja.appendRow([body.id, body.texto, body.intervalo_ciclos, body.destino, "si", "", body.creado]);
     return json({ ok: true });
   }
 

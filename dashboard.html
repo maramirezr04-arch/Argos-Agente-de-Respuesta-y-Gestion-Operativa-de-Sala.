@@ -225,7 +225,7 @@ input:checked + .slider:before { transform:translateX(22px); }
 <div class="header">
   <div>
     <h1>🤖 Liverpool Bot 456</h1>
-    <div class="sub">Panel de control · Tienda 456 Parque Antenas · <span style="opacity:.7">v1.0.4</span> · <span id="hdr-fecha" style="opacity:.8"></span></div>
+    <div class="sub">Panel de control · Tienda 456 Parque Antenas · <span style="opacity:.7">v1.0.5</span> · <span id="hdr-fecha" style="opacity:.8"></span></div>
   </div>
   <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
     <div class="status-pill"><span class="dot dot-off" id="dot"></span><span id="status-txt">Cargando...</span></div>
@@ -609,7 +609,7 @@ input:checked + .slider:before { transform:translateX(22px); }
 
 <!-- ── MENSAJES PROGRAMADOS ── -->
 <div id="tab-mensajes" class="section" style="margin-top:1rem">
-  <div class="section-intro">📅 <b>Mensajes programados</b> — Escribe un mensaje personalizado, elige cada cuántos minutos quieres que se mande y a qué espacio. El bot lo enviará automáticamente. Para detenerlo, solo bórralo.</div>
+  <div class="section-intro">📅 <b>Mensajes programados</b> — Escribe un mensaje personalizado, elige cada cuántos ciclos quieres que se mande y a qué espacio. Cada ciclo dura ~15 min. El bot lo enviará automáticamente. Para detenerlo, solo bórralo.</div>
 
   <div class="cfg-card" style="margin-bottom:1rem">
     <h3>➕ Nuevo mensaje programado</h3>
@@ -619,10 +619,10 @@ input:checked + .slider:before { transform:translateX(22px); }
     </div>
     <div class="cfg-grid" style="margin-bottom:4px">
       <div class="cfg-row">
-        <label class="tooltip-wrap">Cada cuántos minutos <span class="tooltip-icon">i</span><span class="tooltip-box">El bot lo enviará cada X minutos. Mínimo 5 min. Ej: 20 = cada 20 minutos.</span></label>
+        <label class="tooltip-wrap">Cada cuántos ciclos <span class="tooltip-icon">i</span><span class="tooltip-box">El bot lo enviará cada X ciclos. 1 ciclo ≈ 15 min. Ej: 2 = cada ~30 min, 4 = cada ~1 hora.</span></label>
         <div style="display:flex;align-items:center;gap:6px">
-          <input type="number" id="msg-intervalo" min="5" max="480" value="20" style="width:80px">
-          <span style="font-size:12px;color:#888">min</span>
+          <input type="number" id="msg-intervalo" min="1" max="96" value="1" style="width:80px" oninput="actualizarEtiquetaCiclos(this.value)">
+          <span style="font-size:12px;color:#888" id="ciclos-label">ciclo (~15 min)</span>
         </div>
       </div>
       <div class="cfg-row">
@@ -660,8 +660,8 @@ input:checked + .slider:before { transform:translateX(22px); }
   var s = ss.getSheetByName('MENSAJES_PROGRAMADOS')
          || ss.insertSheet('MENSAJES_PROGRAMADOS');
   if (s.getLastRow() === 0)
-    s.appendRow(['ID','Texto','Intervalo_min','Destino','Activo','Ultimo_envio','Creado']);
-  s.appendRow([data.id, data.texto, data.intervalo_min,
+    s.appendRow(['ID','Texto','Intervalo_ciclos','Destino','Activo','Ultimo_envio','Creado']);
+  s.appendRow([data.id, data.texto, data.intervalo_ciclos,
                data.destino, 'si', '', data.creado]);
   return ok();
 }
@@ -1522,7 +1522,7 @@ async function cargarMensajesProgramados(){
       const dLabel   = DEST_LABEL[destino] || destino;
       html += `<tr>
         <td style="max-width:300px;word-break:break-word;font-size:12px">${preview.replace(/\n/g,'<br>')}</td>
-        <td style="white-space:nowrap">cada <b>${intervalo} min</b></td>
+        <td style="white-space:nowrap">cada <b>${intervalo} ciclo${intervalo==1?'':'s'}</b><br><span style="color:#888;font-size:10px">≈${intervalo*15} min</span></td>
         <td><span class="badge info">${dLabel}</span></td>
         <td><span class="badge ${activo?'ok':'warn'}">${activo?'✅ Activo':'⏸️ Pausado'}</span></td>
         <td style="color:#888;font-size:11px;white-space:nowrap">${ultimo||'—'}</td>
@@ -1545,24 +1545,31 @@ async function cargarMensajesProgramados(){
   }
 }
 
+function actualizarEtiquetaCiclos(v){
+  const n = parseInt(v) || 1;
+  const el = document.getElementById('ciclos-label');
+  if (el) el.textContent = n === 1 ? 'ciclo (~15 min)' : `ciclos (~${n*15} min)`;
+}
+
 async function agregarMensajeProgramado(){
   const texto     = document.getElementById('msg-texto').value.trim();
   const intervalo = parseInt(document.getElementById('msg-intervalo').value) || 0;
   const destino   = document.getElementById('msg-destino').value;
   if (!texto)          { showToast('⚠️ Escribe un mensaje','err'); return; }
-  if (intervalo < 5)   { showToast('⚠️ Intervalo mínimo: 5 minutos','err'); return; }
+  if (intervalo < 1)   { showToast('⚠️ Mínimo 1 ciclo (~15 min)','err'); return; }
   try {
     const id     = Date.now().toString();
     const creado = new Date().toISOString().replace('T',' ').substring(0,19);
     const r    = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
-      body: JSON.stringify({accion:'agregar_mensaje_programado', id, texto, intervalo_min: intervalo, destino, creado})
+      body: JSON.stringify({accion:'agregar_mensaje_programado', id, texto, intervalo_ciclos: intervalo, destino, creado})
     });
     const data = await r.json();
     if (data.ok) {
       showToast('✅ Mensaje programado agregado','ok');
       document.getElementById('msg-texto').value    = '';
-      document.getElementById('msg-intervalo').value = '20';
+      document.getElementById('msg-intervalo').value = '1';
+      actualizarEtiquetaCiclos(1);
       cargarMensajesProgramados();
     } else {
       throw new Error(data.error || 'Error al guardar');
