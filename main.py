@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.0.9"
+VERSION = "1.1.0"
 
 Path("logs").mkdir(exist_ok=True)
 logging.basicConfig(
@@ -1612,10 +1612,12 @@ def actualizar_sheets(gc, datos):
         hoja2 = ss2.worksheet(GOOGLE["sheet2_hoja"])
     except gspread.WorksheetNotFound:
         hoja2 = ss2.add_worksheet(GOOGLE["sheet2_hoja"], rows=5000, cols=50)
-    # Borrar rango V2:AS hacia abajo antes de pegar datos nuevos
+    # Borrar solo hasta la última fila con datos en columna V (no siempre 5000)
     try:
-        hoja2.batch_clear(["V2:AS5000"])
-        log.info("Sheet 2 rango V2:AS limpiado ✅")
+        col_v = hoja2.col_values(22)  # columna V = índice 22
+        ultima_fila = max(len(col_v), int(GOOGLE.get("sheet2_fila", 2)))
+        hoja2.batch_clear([f"V2:AS{ultima_fila}"])
+        log.info(f"Sheet 2 rango V2:AS{ultima_fila} limpiado ✅")
     except Exception as e:
         log.warning(f"No se pudo limpiar Sheet 2: {e}")
 
