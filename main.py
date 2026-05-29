@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.1.1"
+VERSION = "1.1.2"
 
 Path("logs").mkdir(exist_ok=True)
 logging.basicConfig(
@@ -1625,34 +1625,25 @@ def actualizar_sheets(gc, datos):
     hoja2.update([[datetime.now().strftime("%d/%m/%Y %H:%M:%S")]], f"{GOOGLE['timestamp_col']}{GOOGLE['timestamp_fila']}")
     log.info("Sheet 2 actualizado ✅")
 
-    # Copiar fórmulas de columnas A–U desde la fila template hacia abajo
+    # Copiar fórmulas de columnas específicas (A, F, I, J, K, U) hacia abajo
     try:
         fila_inicio = int(GOOGLE.get("sheet2_fila", 2))
         num_filas   = len(datos_limpios)
         if num_filas > 1:
-            ss2.batch_update({"requests": [{
-                "copyPaste": {
-                    "source": {
-                        "sheetId":        hoja2.id,
-                        "startRowIndex":  fila_inicio - 1,   # fila template (0-based)
-                        "endRowIndex":    fila_inicio,        # solo esa fila
-                        "startColumnIndex": 0,                # columna A
-                        "endColumnIndex":   21                # hasta U (exclusive)
-                    },
-                    "destination": {
-                        "sheetId":        hoja2.id,
-                        "startRowIndex":  fila_inicio,                   # fila siguiente
-                        "endRowIndex":    fila_inicio - 1 + num_filas,   # hasta última fila
-                        "startColumnIndex": 0,
-                        "endColumnIndex":   21
-                    },
-                    "pasteType":        "PASTE_FORMULA",
-                    "pasteOrientation": "NORMAL"
-                }
-            }]})
-            log.info(f"Fórmulas A:U copiadas hasta fila {fila_inicio + num_filas - 1} ✅")
+            # Columnas con fórmula (0-based start, exclusive end): A, F, I-K, U
+            formula_cols = [(0,1), (5,6), (8,11), (20,21)]
+            dest_end     = fila_inicio - 1 + num_filas
+            requests     = []
+            for start_col, end_col in formula_cols:
+                requests.append({"copyPaste": {
+                    "source":      {"sheetId": hoja2.id, "startRowIndex": fila_inicio - 1, "endRowIndex": fila_inicio,   "startColumnIndex": start_col, "endColumnIndex": end_col},
+                    "destination": {"sheetId": hoja2.id, "startRowIndex": fila_inicio,     "endRowIndex": dest_end, "startColumnIndex": start_col, "endColumnIndex": end_col},
+                    "pasteType": "PASTE_FORMULA", "pasteOrientation": "NORMAL"
+                }})
+            ss2.batch_update({"requests": requests})
+            log.info(f"Fórmulas A,F,I,J,K,U copiadas hasta fila {fila_inicio + num_filas - 1} ✅")
     except Exception as e:
-        log.warning(f"No se pudo copiar fórmulas A:U: {e}")
+        log.warning(f"No se pudo copiar fórmulas: {e}")
 
     dir_dict  = {}
     hist_dict = {}
