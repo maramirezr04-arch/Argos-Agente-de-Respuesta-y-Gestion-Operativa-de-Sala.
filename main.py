@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 
 Path("logs").mkdir(exist_ok=True)
 logging.basicConfig(
@@ -1624,6 +1624,35 @@ def actualizar_sheets(gc, datos):
     hoja2.update(datos_limpios, f"{GOOGLE['sheet2_col']}{GOOGLE['sheet2_fila']}", value_input_option="USER_ENTERED")
     hoja2.update([[datetime.now().strftime("%d/%m/%Y %H:%M:%S")]], f"{GOOGLE['timestamp_col']}{GOOGLE['timestamp_fila']}")
     log.info("Sheet 2 actualizado ✅")
+
+    # Copiar fórmulas de columnas A–U desde la fila template hacia abajo
+    try:
+        fila_inicio = int(GOOGLE.get("sheet2_fila", 2))
+        num_filas   = len(datos_limpios)
+        if num_filas > 1:
+            ss2.batch_update({"requests": [{
+                "copyPaste": {
+                    "source": {
+                        "sheetId":        hoja2.id,
+                        "startRowIndex":  fila_inicio - 1,   # fila template (0-based)
+                        "endRowIndex":    fila_inicio,        # solo esa fila
+                        "startColumnIndex": 0,                # columna A
+                        "endColumnIndex":   21                # hasta U (exclusive)
+                    },
+                    "destination": {
+                        "sheetId":        hoja2.id,
+                        "startRowIndex":  fila_inicio,                   # fila siguiente
+                        "endRowIndex":    fila_inicio - 1 + num_filas,   # hasta última fila
+                        "startColumnIndex": 0,
+                        "endColumnIndex":   21
+                    },
+                    "pasteType":        "PASTE_FORMULA",
+                    "pasteOrientation": "NORMAL"
+                }
+            }]})
+            log.info(f"Fórmulas A:U copiadas hasta fila {fila_inicio + num_filas - 1} ✅")
+    except Exception as e:
+        log.warning(f"No se pudo copiar fórmulas A:U: {e}")
 
     dir_dict  = {}
     hist_dict = {}
