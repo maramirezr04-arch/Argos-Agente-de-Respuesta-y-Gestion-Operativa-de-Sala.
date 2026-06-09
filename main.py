@@ -1037,7 +1037,7 @@ def detectar_vencidas(datos, dir_dict, hist_dict, descansos):
     ESTATUS_PENDIENTE = ["Etiqueta Generada", "Mercancia en Espera de Entrega"]
     COL_REMISION=1; COL_DESCRIPCION=3; COL_SECCION=5
     COL_FECHA_ASIG=7; COL_STATUS=8; COL_NOMBRE_VEN=13
-    COL_ID_JEFE=15; COL_JEFE=17; COL_TIPO_ENTREGA=19
+    COL_ID_JEFE=15; COL_JEFE=17; COL_TIPO_ENTREGA=22
 
     vencidas = []
     for row in datos:
@@ -1229,6 +1229,9 @@ def _es_cc(tipo):
     t = tipo.upper()
     return any(k in t for k in _CC_KEYS)
 
+# Tipos que requieren alerta de prioridad (columna W del CSV)
+_TIPOS_ALERTA = {"c&c", "c&c expreso", "xd expreso"}
+
 def generar_linea_jefe(jefe, info_j):
     """Genera las lineas del jefe: mencion + colores + alerta C&C si aplica."""
     verde_jefe    = sum(ds["count"] for ds in info_j["en_tiempo"].values())
@@ -1251,26 +1254,19 @@ def generar_linea_jefe(jefe, info_j):
     if rojo_jefe > 0:     partes_color.append("🔴 *" + str(rojo_jefe) + "* rem")
     if sin_asignar > 0:   partes_color.append("⚠️ *" + str(sin_asignar) + "* sin vendedor")
 
-    # Conteo de C&C por subtipo
-    tipo_counts = info_j.get("tipo_counts", {})
-    cc_por_tipo = {k: v for k, v in tipo_counts.items() if _es_cc(k)}
-    cc_total    = sum(cc_por_tipo.values())
+    # Tipos con alerta de prioridad: C&C, C&C Expreso, XD Expreso
+    tipo_counts  = info_j.get("tipo_counts", {})
+    alerta_tipos = {k: v for k, v in tipo_counts.items() if k.strip().lower() in _TIPOS_ALERTA}
+    alerta_total = sum(alerta_tipos.values())
 
     lineas = [get_mencion(jefe)]
     if partes_color:
         lineas.append("  ".join(partes_color))
-    if cc_total > 0:
-        # Etiqueta corta por subtipo: "CC0D - Mismo dia" → "mismo día", etc.
-        _alias = {
-            "CC0D - Mismo dia":   "mismo día",
-            "CC1D - Manana":      "mañana",
-            "C&C Misma Tienda":   "retiro tienda",
-        }
+    if alerta_total > 0:
         detalle = []
-        for tipo, cnt in sorted(cc_por_tipo.items(), key=lambda x: -x[1]):
-            etiq = _alias.get(tipo, tipo.split(" - ")[-1] if " - " in tipo else tipo)
-            detalle.append("*" + str(cnt) + "* " + etiq)
-        lineas.append("  🚨 *C&C: " + str(cc_total) + "* — " + " · ".join(detalle) + " — *DAR PRIORIDAD*")
+        for tipo, cnt in sorted(alerta_tipos.items(), key=lambda x: -x[1]):
+            detalle.append(tipo + ": *" + str(cnt) + "*")
+        lineas.append("  🚨 " + " · ".join(detalle) + " — *DAR PRIORIDAD*")
     return lineas
 
 
@@ -1376,7 +1372,7 @@ def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes
         jefes_en_descanso = {}
     ESTATUS_ACTIVOS = ["Etiqueta Generada", "Mercancia en Espera de Entrega"]
     COL_STATUS=8; COL_SECCION=5; COL_FECHA_ASIG=7; COL_JEFE=17
-    COL_NOMBRE_VEN=13; COL_TIPO_ENTREGA=19
+    COL_NOMBRE_VEN=13; COL_TIPO_ENTREGA=22
 
     fecha_now = datetime.now().strftime("%d/%m/%Y %H:%M")
     por_piso  = {}
@@ -1431,13 +1427,8 @@ def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes
 
         info_j = por_piso[p_idx]["jefes"][jefe]
         if tipo_entrega:
-            # Normalizar contra TIPOS_PRIORIDAD; si no hay match usar el raw
-            tipo_key = tipo_entrega
-            for tp in TIPOS_PRIORIDAD:
-                if tp.lower() in tipo_entrega.lower():
-                    tipo_key = tp
-                    break
-            info_j["tipo_counts"][tipo_key] = info_j["tipo_counts"].get(tipo_key, 0) + 1
+            # Usar el valor tal como viene en columna W (C&C, C&C Expreso, XD, XD Expreso)
+            info_j["tipo_counts"][tipo_entrega] = info_j["tipo_counts"].get(tipo_entrega, 0) + 1
 
         grp = info_j["de_ayer"] if es_ayer else (info_j["vencidas"] if vencida else info_j["en_tiempo"])
 
