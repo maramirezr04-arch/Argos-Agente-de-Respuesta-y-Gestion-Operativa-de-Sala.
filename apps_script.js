@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════════════════════
-//  Liverpool Bot 456 — Google Apps Script
-//  Versión: 1.1.2
-//  Última actualización: 2026-05-24
+//  Argos — Google Apps Script
+//  Versión: 1.1.3
+//  Última actualización: 2026-06-09
 //
 //  CÓMO USAR:
 //  1. Abre tu proyecto en script.google.com

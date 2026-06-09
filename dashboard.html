@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Liverpool Bot 456 — Panel de Control</title>
+<title>Argos — Panel de Control</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -224,8 +224,8 @@ input:checked + .slider:before { transform:translateX(22px); }
 <body>
 <div class="header">
   <div>
-    <h1>🤖 Liverpool Bot 456</h1>
-    <div class="sub">Panel de control · Tienda 456 Parque Antenas · <span style="opacity:.7">v1.1.2</span> · <span id="hdr-fecha" style="opacity:.8"></span></div>
+    <h1>🤖 Argos</h1>
+    <div class="sub">Panel de control · Tienda 456 Parque Antenas · <span style="opacity:.7">v1.1.3</span> · <span id="hdr-fecha" style="opacity:.8"></span></div>
   </div>
   <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
     <div class="status-pill"><span class="dot dot-off" id="dot"></span><span id="status-txt">Cargando...</span></div>
@@ -760,6 +760,35 @@ case 'toggle_mensaje_programado': {
     </div>
     <button onclick="verificarWebhooks()" style="margin-top:10px">🔍 Verificar webhooks</button>
   </div>
+
+  <!-- Modo Demo -->
+  <div class="cfg-card" style="margin-top:1rem;border:2px solid #c9254e20;background:#fff5f7">
+    <h3>🎯 Modo Demo</h3>
+    <p style="font-size:12px;color:#666;margin-bottom:14px">Ejecuta el bot completo con el navegador visible y redirige todos los mensajes a los webhooks de demo configurados aquí. Ideal para mostrar el sistema en funcionamiento sin afectar los espacios reales.</p>
+    <div class="cfg-row" style="margin-bottom:10px">
+      <label>📲 Webhook Demo 1 (Reporte)</label>
+      <input type="url" id="cfg-wh-demo1" placeholder="https://chat.googleapis.com/..." style="font-size:12px">
+    </div>
+    <div class="cfg-row" style="margin-bottom:10px">
+      <label>📲 Webhook Demo 2 (Jefes)</label>
+      <input type="url" id="cfg-wh-demo2" placeholder="https://chat.googleapis.com/..." style="font-size:12px">
+    </div>
+    <div class="cfg-row" style="margin-bottom:10px">
+      <label>📲 Webhook Demo 3 (Tiempos)</label>
+      <input type="url" id="cfg-wh-demo3" placeholder="https://chat.googleapis.com/..." style="font-size:12px">
+    </div>
+    <div class="cfg-row" style="margin-bottom:14px">
+      <label>⏱ Intervalo entre ejecuciones demo (minutos)</label>
+      <input type="number" id="cfg-intervalo-demo" value="15" min="1" max="60" style="width:80px">
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <span style="font-size:11px;color:#854f0b">⚠️ Los mensajes demo llegan a los webhooks configurados arriba</span>
+      <div style="display:flex;gap:8px">
+        <button onclick="guardarDemo()" style="background:#c9254e;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600">💾 Guardar config demo</button>
+      </div>
+    </div>
+    <div id="demo-estado" style="margin-top:10px;font-size:12px"></div>
+  </div>
 </div>
 
 <!-- ── LOGS ── -->
@@ -1266,6 +1295,11 @@ async function cargarConfig(){
     document.getElementById('cfg-hora-record').value=c.hora_recordatorio||'20:30';
     actualizarLabelCiclos('cfg-ciclos-jefes','lbl-ciclos-jefes');
     actualizarLabelCiclos('cfg-ciclos-reporte','lbl-ciclos-reporte');
+    // Demo fields
+    if(document.getElementById('cfg-wh-demo1'))document.getElementById('cfg-wh-demo1').value=c.webhook_demo_1||'';
+    if(document.getElementById('cfg-wh-demo2'))document.getElementById('cfg-wh-demo2').value=c.webhook_demo_2||'';
+    if(document.getElementById('cfg-wh-demo3'))document.getElementById('cfg-wh-demo3').value=c.webhook_demo_3||'';
+    if(document.getElementById('cfg-intervalo-demo'))document.getElementById('cfg-intervalo-demo').value=num(c.intervalo_demo,15);
     const dias=(c.dias_activos||'lun,mar,mie,jue,vie,sab,dom').split(',').map(d=>d.trim());
     document.querySelectorAll('.dia-chip').forEach(chip=>{if(dias.includes(chip.dataset.dia))chip.classList.add('active');else chip.classList.remove('active');});
     estado.className='estado-bar ok';estado.textContent='✅ Cargada';
@@ -1288,6 +1322,23 @@ async function guardarConfig(){
 
 document.querySelectorAll('.dia-chip').forEach(chip=>{chip.addEventListener('click',()=>{chip.classList.toggle('active');actualizarResumen();});});
 document.querySelectorAll('#cfg-hora-inicio,#cfg-hora-fin,#cfg-minuto-fin,#cfg-pausado,#cfg-vencida').forEach(el=>el.addEventListener('change',actualizarResumen));
+
+async function guardarDemo(){
+  const el=document.getElementById('demo-estado');
+  el.textContent='⏳ Guardando...';
+  const cfg={
+    webhook_demo_1:document.getElementById('cfg-wh-demo1').value,
+    webhook_demo_2:document.getElementById('cfg-wh-demo2').value,
+    webhook_demo_3:document.getElementById('cfg-wh-demo3').value,
+    intervalo_demo:document.getElementById('cfg-intervalo-demo').value
+  };
+  try{
+    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'config',config:cfg})});
+    const data=await r.json();
+    if(data.ok){el.textContent='✅ Configuración demo guardada';showToast('✅ Config demo guardada','ok');}
+    else throw new Error(data.error||'Error al guardar');
+  }catch(e){el.textContent='❌ '+e.message;showToast('❌ '+e.message,'err');}
+}
 
 // DESCANSOS
 async function cargarDirectorio(){

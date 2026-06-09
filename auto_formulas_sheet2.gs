@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════
 //  Auto Fórmulas — Sheet 2 (hoja de datos del OMS)
-//  Versión: 1.1.2
+//  Versión: 1.1.3
 //
 //  CÓMO USAR:
 //  1. Abre el Sheet 2 (la hoja donde el bot pega los datos crudos)

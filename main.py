@@ -6,7 +6,52 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.1.2"
+VERSION = "1.1.3"
+
+# ── Auto-update desde GitHub ─────────────────────────────────
+_UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
+_UPDATE_VERSION_URL = _UPDATE_BASE + "/version.txt"
+_UPDATE_MAIN_URL    = _UPDATE_BASE + "/main.py"
+
+def verificar_y_actualizar():
+    """
+    Compara VERSION local con version.txt del repo.
+    Si difiere: descarga main.py, reemplaza el archivo local y relanza el proceso.
+    Silencioso en caso de error (no interrumpe el bot si hay problema de red).
+    """
+    import sys as _sys
+    # No actualizar en modos de prueba ni demo
+    if any(f in _sys.argv for f in ("--dry-run", "test", "--demo", "--no-update")):
+        return
+    try:
+        resp = requests.get(_UPDATE_VERSION_URL, timeout=8)
+        if resp.status_code != 200:
+            return
+        version_remota = resp.text.strip()
+        if not version_remota or version_remota == VERSION:
+            return
+
+        log.info(f"🔄 Nueva versión disponible: v{version_remota} (instalada: v{VERSION}). Descargando...")
+        resp2 = requests.get(_UPDATE_MAIN_URL, timeout=45)
+        if resp2.status_code != 200:
+            log.warning(f"No se pudo descargar main.py (status {resp2.status_code})")
+            return
+
+        ruta = Path(__file__).resolve()
+        # Backup del archivo actual
+        ruta.with_name("main.bak").write_bytes(ruta.read_bytes())
+        # Escribir nueva versión
+        ruta.write_bytes(resp2.content)
+        log.info(f"✅ Actualizado a v{version_remota} — relanzando...")
+
+        import subprocess
+        subprocess.Popen([_sys.executable] + _sys.argv)
+        _sys.exit(0)
+
+    except SystemExit:
+        raise  # dejar que el sys.exit() propague
+    except Exception as e:
+        log.warning(f"Auto-update omitido: {e}")
 
 Path("logs").mkdir(exist_ok=True)
 logging.basicConfig(
@@ -175,6 +220,11 @@ MINUTO_FIN      = 30
 CICLOS_JEFES       = 2       # ciclos entre mensajes al espacio Jefes
 CICLOS_REPORTE     = 1       # ciclos entre mensajes al espacio Reporte
 HORA_RECORDATORIO  = "20:30" # hora objetivo del recordatorio (HH:MM)
+# ── Demo mode ────────────────────────────────────────────────
+WEBHOOK_DEMO_1  = ""
+WEBHOOK_DEMO_2  = ""
+WEBHOOK_DEMO_3  = ""
+INTERVALO_DEMO  = 15  # minutos entre ejecuciones demo
 # ── Archivos ─────────────────────────────────────────────────
 TIEMPOS_FILE      = "tiempos.json"
 CONTADOR_FILE     = "contador_jefes.json"
@@ -297,7 +347,7 @@ CONFIG_CACHE_FILE = "config_remota_cache.json"
 
 def cargar_config_remota(gc):
     """Lee la hoja CONFIG del Sheet 1 y actualiza valores globales."""
-    global HORA_INICIO, HORA_FIN, MINUTO_FIN, MINUTOS_VENCIDA, UMBRAL_ANOMALIA, WATCHDOG_MINUTOS, CONFIG_REMOTA, CICLOS_JEFES, CICLOS_REPORTE, HORA_RECORDATORIO
+    global HORA_INICIO, HORA_FIN, MINUTO_FIN, MINUTOS_VENCIDA, UMBRAL_ANOMALIA, WATCHDOG_MINUTOS, CONFIG_REMOTA, CICLOS_JEFES, CICLOS_REPORTE, HORA_RECORDATORIO, WEBHOOK_DEMO_1, WEBHOOK_DEMO_2, WEBHOOK_DEMO_3, INTERVALO_DEMO
     try:
         ss = gc.open_by_key(GOOGLE["sheet_id"])
         try:
@@ -321,6 +371,10 @@ def cargar_config_remota(gc):
                 ["ciclos_jefes", "2"],
                 ["ciclos_reporte", "1"],
                 ["hora_recordatorio", "20:30"],
+                ["webhook_demo_1", ""],
+                ["webhook_demo_2", ""],
+                ["webhook_demo_3", ""],
+                ["intervalo_demo", "15"],
             ]
             hoja.update(defaults, "A1")
             log.info("Hoja CONFIG creada con valores por defecto")
@@ -352,6 +406,14 @@ def cargar_config_remota(gc):
             CICLOS_REPORTE = max(1, int(cfg["ciclos_reporte"]))
         if cfg.get("hora_recordatorio"):
             HORA_RECORDATORIO = cfg["hora_recordatorio"].strip()
+        if cfg.get("webhook_demo_1"):
+            WEBHOOK_DEMO_1 = cfg["webhook_demo_1"].strip()
+        if cfg.get("webhook_demo_2"):
+            WEBHOOK_DEMO_2 = cfg["webhook_demo_2"].strip()
+        if cfg.get("webhook_demo_3"):
+            WEBHOOK_DEMO_3 = cfg["webhook_demo_3"].strip()
+        if cfg.get("intervalo_demo", "").isdigit():
+            INTERVALO_DEMO = max(1, int(cfg["intervalo_demo"]))
 
         CONFIG_REMOTA = cfg
 
@@ -662,7 +724,7 @@ def calcular_tiempo_espera_str(minutos):
 
 # ── Descarga CSV con 3 navegadores en paralelo ────────────────
 
-def descargar_csv():
+def descargar_csv(visible=False):
     Path(CARPETA_DESCARGA).mkdir(parents=True, exist_ok=True)
     fecha_ayer, fecha_hoy = get_fechas()
     log.info(f"Descargando reporte {fecha_ayer} -> {fecha_hoy}")
@@ -743,7 +805,7 @@ def descargar_csv():
         try:
             with sync_playwright() as p:
                 browser = p.chromium.launch(
-                    headless=True,
+                    headless=not visible,
                     args=["--disable-extensions", "--no-sandbox", "--disable-dev-shm-usage"]
                 )
                 try:
@@ -1093,7 +1155,7 @@ def enviar_apertura(datos, dir_dict, hist_dict):
             lineas.append("    📍 " + " | ".join(nom_secs))
 
     lineas.append("")
-    lineas.append("_Liverpool Bot 456 — " + fecha_now + "_")
+    lineas.append("_Argos — " + fecha_now + "_")
 
     mensaje = "\n".join(lineas)
     post_chat_con_reintento(WEBHOOK, {"text": mensaje})
@@ -1161,15 +1223,20 @@ def enviar_chat(resumen, exito=True, error=""):
 
 # ── Mensajes espacio JEFES ────────────────────────────────────
 
+_CC_KEYS = ("CC0D", "CC1D", "C&C")   # palabras clave para detectar C&C
+
+def _es_cc(tipo):
+    t = tipo.upper()
+    return any(k in t for k in _CC_KEYS)
+
 def generar_linea_jefe(jefe, info_j):
-    """Genera las 2 lineas del jefe: mencion + colores en una linea."""
+    """Genera las lineas del jefe: mencion + colores + alerta C&C si aplica."""
     verde_jefe    = sum(ds["count"] for ds in info_j["en_tiempo"].values())
     vencidas_jefe = sum(ds["count"] for ds in info_j["vencidas"].values())
     ayer_jefe     = sum(ds["count"] for ds in info_j["de_ayer"].values())
     sin_asignar   = sum(
-        ds["sin_vendedor"]
-        for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]]
-        for ds in grp.values()
+        ds["count"] for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]]
+        for ven, ds in grp.items() if ven == "Sin asignar"
     )
     amarillo_jefe = sum(
         ds["count"] for ds in info_j["en_tiempo"].values()
@@ -1182,11 +1249,28 @@ def generar_linea_jefe(jefe, info_j):
     if verde_puro > 0:    partes_color.append("🟢 *" + str(verde_puro) + "* rem")
     if amarillo_jefe > 0: partes_color.append("🟡 *" + str(amarillo_jefe) + "* rem")
     if rojo_jefe > 0:     partes_color.append("🔴 *" + str(rojo_jefe) + "* rem")
-    if sin_asignar > 0:   partes_color.append("⚠️ *" + str(sin_asignar) + "* sin asignar")
+    if sin_asignar > 0:   partes_color.append("⚠️ *" + str(sin_asignar) + "* sin vendedor")
+
+    # Conteo de C&C por subtipo
+    tipo_counts = info_j.get("tipo_counts", {})
+    cc_por_tipo = {k: v for k, v in tipo_counts.items() if _es_cc(k)}
+    cc_total    = sum(cc_por_tipo.values())
 
     lineas = [get_mencion(jefe)]
     if partes_color:
         lineas.append("  ".join(partes_color))
+    if cc_total > 0:
+        # Etiqueta corta por subtipo: "CC0D - Mismo dia" → "mismo día", etc.
+        _alias = {
+            "CC0D - Mismo dia":   "mismo día",
+            "CC1D - Manana":      "mañana",
+            "C&C Misma Tienda":   "retiro tienda",
+        }
+        detalle = []
+        for tipo, cnt in sorted(cc_por_tipo.items(), key=lambda x: -x[1]):
+            etiq = _alias.get(tipo, tipo.split(" - ")[-1] if " - " in tipo else tipo)
+            detalle.append("*" + str(cnt) + "* " + etiq)
+        lineas.append("  🚨 *C&C: " + str(cc_total) + "* — " + " · ".join(detalle) + " — *DAR PRIORIDAD*")
     return lineas
 
 
@@ -1247,6 +1331,15 @@ def enviar_mensaje_jefe_individual(jefe, info_j, ubicacion, fecha_now, dir_dict,
 
     total_jefe = sum(ds["count"] for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]] for ds in grp.values())
 
+    def _lineas_vendedores(grp):
+        """Devuelve líneas ordenadas por tiempo más atrasado (mayor primero)."""
+        lineas = []
+        for ven, ds in sorted(grp.items(), key=lambda x: -x[1]["max_min"]):
+            sufijo = " | más atrasado: " + calcular_tiempo_espera_str(ds["max_min"]) if ds["max_min"] > 0 else ""
+            icono  = "⚠️" if ven == "Sin asignar" else "👤"
+            lineas.append("    " + icono + " " + ven + " — *" + str(ds["count"]) + "* rem" + sufijo)
+        return lineas
+
     partes = []
     partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
     partes.append("🏬 *" + ubicacion + "* — " + fecha_now)
@@ -1256,32 +1349,21 @@ def enviar_mensaje_jefe_individual(jefe, info_j, ubicacion, fecha_now, dir_dict,
     partes.append(get_mencion(jefe))
     partes.append("")
 
-    if info_j["en_tiempo"]:
-        partes.append("  ⏰ *En tiempo:*")
-        for sec_label, ds in sorted(info_j["en_tiempo"].items()):
-            linea = "    " + sec_label + " — " + calcular_tiempo_espera_str(ds["max_min"]) + " | " + str(ds["count"]) + " remisiones"
-            if ds["sin_vendedor"] > 0:
-                linea += " | ⚠️ *" + str(ds["sin_vendedor"]) + "* sin vendedor"
-            partes.append(linea)
+    if info_j["de_ayer"]:
+        partes.append("  📅 *De ayer sin atender:*")
+        partes.extend(_lineas_vendedores(info_j["de_ayer"]))
 
     if info_j["vencidas"]:
         partes.append("  🔴 *Vencidas (+20 min):*")
-        for sec_label, ds in sorted(info_j["vencidas"].items()):
-            linea = "    " + sec_label + " — " + calcular_tiempo_espera_str(ds["max_min"]) + " | " + str(ds["count"]) + " remisiones"
-            if ds["sin_vendedor"] > 0:
-                linea += " | ⚠️ *" + str(ds["sin_vendedor"]) + "* sin vendedor"
-            partes.append(linea)
+        partes.extend(_lineas_vendedores(info_j["vencidas"]))
 
-    if info_j["de_ayer"]:
-        partes.append("  📅 *De ayer sin atender:*")
-        for sec_label, ds in sorted(info_j["de_ayer"].items()):
-            linea = "    " + sec_label + " — " + calcular_tiempo_espera_str(ds["max_min"]) + " | " + str(ds["count"]) + " remisiones"
-            if ds["sin_vendedor"] > 0:
-                linea += " | ⚠️ *" + str(ds["sin_vendedor"]) + "* sin vendedor"
-            partes.append(linea)
+    if info_j["en_tiempo"]:
+        partes.append("  ⏰ *En tiempo:*")
+        partes.extend(_lineas_vendedores(info_j["en_tiempo"]))
 
+    partes.append("")
     partes.append("  🟢 *Total: " + str(total_jefe) + " remisiones*")
-    partes.append("_Liverpool Bot 456 — " + fecha_now + "_")
+    partes.append("_Argos — " + fecha_now + "_")
     partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
 
     post_chat_con_reintento(webhook_jefe, {"text": "\n".join(partes)})
@@ -1317,8 +1399,6 @@ def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes
         nom_jefe     = str(row[COL_JEFE]).strip() if len(row) > COL_JEFE else ""
         nom_vendedor = str(row[COL_NOMBRE_VEN]).strip() if len(row) > COL_NOMBRE_VEN else ""
         tipo_entrega = str(row[COL_TIPO_ENTREGA]).strip() if len(row) > COL_TIPO_ENTREGA else ""
-        nom_sec      = dir_dict.get(sec, {}).get("nombre_seccion", "") or dir_dict.get(sec_raw, {}).get("nombre_seccion", "")
-        sec_label    = "Seccion " + sec + (" " + nom_sec if nom_sec else "")
         es_ayer      = es_de_ayer(fecha_asig)
         vencida      = minutos >= MINUTOS_VENCIDA
 
@@ -1344,23 +1424,28 @@ def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes
             # jefe_original = quién descansa (para fallback de webhook)
             jefe_original = nom_jefe if sustituto else ""
             por_piso[p_idx]["jefes"][jefe] = {
-                "en_tiempo": {}, "vencidas": {}, "de_ayer": {}, "tipos": [],
+                "en_tiempo": {}, "vencidas": {}, "de_ayer": {}, "tipo_counts": {},
                 "jefe_original": jefe_original,
                 "es_sustituto": bool(sustituto),
             }
 
         info_j = por_piso[p_idx]["jefes"][jefe]
         if tipo_entrega:
-            info_j["tipos"].append(tipo_entrega)
+            # Normalizar contra TIPOS_PRIORIDAD; si no hay match usar el raw
+            tipo_key = tipo_entrega
+            for tp in TIPOS_PRIORIDAD:
+                if tp.lower() in tipo_entrega.lower():
+                    tipo_key = tp
+                    break
+            info_j["tipo_counts"][tipo_key] = info_j["tipo_counts"].get(tipo_key, 0) + 1
 
         grp = info_j["de_ayer"] if es_ayer else (info_j["vencidas"] if vencida else info_j["en_tiempo"])
 
-        if sec_label not in grp:
-            grp[sec_label] = {"count": 0, "max_min": 0, "sin_vendedor": 0}
-        grp[sec_label]["count"]   += 1
-        grp[sec_label]["max_min"]  = max(grp[sec_label]["max_min"], minutos)
-        if not nom_vendedor:
-            grp[sec_label]["sin_vendedor"] += 1
+        ven_key = nom_vendedor.strip().title() if nom_vendedor.strip() else "Sin asignar"
+        if ven_key not in grp:
+            grp[ven_key] = {"count": 0, "max_min": 0}
+        grp[ven_key]["count"]  += 1
+        grp[ven_key]["max_min"] = max(grp[ven_key]["max_min"], minutos)
 
     if not por_piso:
         log.info("Sin remisiones activas para mensaje de jefes")
@@ -1370,20 +1455,11 @@ def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes
         info_piso = por_piso[p_idx]
         ubicacion = info_piso["ubicacion"]
 
-        total_piso  = 0
-        tipos_piso  = {}
-        tiene_tipos = False
-
+        total_piso = 0
         for info_j in info_piso["jefes"].values():
             for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]]:
                 for ds in grp.values():
                     total_piso += ds["count"]
-            for te in info_j["tipos"]:
-                for tp in TIPOS_PRIORIDAD:
-                    if tp.lower() in te.lower():
-                        tipos_piso[tp] = tipos_piso.get(tp, 0) + 1
-                        tiene_tipos = True
-                        break
 
         partes = []
         partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
@@ -1398,7 +1474,7 @@ def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes
             partes.append("")
 
         partes.append("📋 *Total " + ubicacion + ": " + str(total_piso) + " remisiones*")
-        partes.append("_Liverpool Bot 456 — " + fecha_now + "_")
+        partes.append("_Argos — " + fecha_now + "_")
         partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
 
         post_chat_con_reintento(WEBHOOK_JEFES, {"text": "\n".join(partes)})
@@ -1465,7 +1541,7 @@ def enviar_cierre(datos, dir_dict):
                 lineas.append("    📍 " + sec_key + " — " + calcular_tiempo_espera_str(max(minutos_list)))
 
     lineas.append("")
-    lineas.append("_Liverpool Bot 456 — " + fecha_now + "_")
+    lineas.append("_Argos — " + fecha_now + "_")
 
     # ── Mensaje buenas noches → espacio Jefes ────────────────────────
     post_chat_con_reintento(WEBHOOK_JEFES, {"text": "\n".join(lineas)})
@@ -1557,7 +1633,7 @@ def enviar_pendientes_ayer(datos, dir_dict, descansos=None):
             lineas.append(linea)
         lineas.append("")
 
-    lineas.append("_Liverpool Bot 456 — " + fecha_now + "_")
+    lineas.append("_Argos — " + fecha_now + "_")
     lineas.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
 
     post_chat_con_reintento(WEBHOOK_JEFES, {"text": "\n".join(lineas)})
@@ -1930,7 +2006,7 @@ def enviar_resumen_tiempos(gc):
             lineas.append("  📋 Remisiones: *" + str(len(segs)) + "*")
             lineas.append("")
 
-        lineas.append("_Liverpool Bot 456 — " + fecha_now + "_")
+        lineas.append("_Argos — " + fecha_now + "_")
 
         post_chat_con_reintento(WEBHOOK_TIEMPOS, {"text": "\n".join(lineas)})
         log.info("Resumen tiempos enviado al espacio tiempos ✅")
@@ -2151,7 +2227,7 @@ def verificar_watchdog(gc):
         diff_min  = (datetime.now() - ultima_dt).total_seconds() / 60
         if diff_min > 30 and dentro_de_horario():
             fecha_now = datetime.now().strftime("%d/%m/%Y %H:%M")
-            msg = "🚨 *Watchdog — Bot inactivo*\n\nUltima ejecucion exitosa: " + ultima[1] + " (hace " + str(int(diff_min)) + " min)\n\n_Favor de verificar la PC_\n_Liverpool Bot 456 — " + fecha_now + "_"
+            msg = "🚨 *Watchdog — Bot inactivo*\n\nUltima ejecucion exitosa: " + ultima[1] + " (hace " + str(int(diff_min)) + " min)\n\n_Favor de verificar la PC_\n_Argos — " + fecha_now + "_"
             post_chat_con_reintento(WEBHOOK, {"text": msg})
             log.warning("⚠️ Watchdog: bot inactivo mas de 30 min")
     except Exception as e:
@@ -2252,7 +2328,7 @@ def enviar_comparativa_semanal(gc):
         for d in dias_semana:
             lineas.append("  " + d["dia"] + " " + d["fecha"] + " — " + str(d["total"]) + " remisiones | " + str(d["vencidas"]) + " vencidas")
 
-        lineas.append("\n_Liverpool Bot 456 — " + fecha_now + "_")
+        lineas.append("\n_Argos — " + fecha_now + "_")
 
         post_chat_con_reintento(WEBHOOK, {"text": "\n".join(lineas)})
         post_chat_con_reintento(WEBHOOK_JEFES, {"text": "\n".join(lineas)})
@@ -2362,7 +2438,7 @@ def enviar_ranking_jefes(gc):
                 lineas.append("  " + jefe + " — " + seg_a_str(prom))
             lineas.append("")
 
-        lineas.append("_Liverpool Bot 456 — " + fecha_now + "_")
+        lineas.append("_Argos — " + fecha_now + "_")
 
         post_chat_con_reintento(WEBHOOK_TIEMPOS, {"text": "\n".join(lineas)})
         log.info("Ranking de jefes enviado ✅")
@@ -2433,7 +2509,7 @@ def enviar_recordatorio_cierre(datos, dir_dict):
         lineas.append(get_mencion(jefe) + " — *" + str(count) + "* pendientes")
 
     lineas.append("")
-    lineas.append("_Liverpool Bot 456 — " + fecha_now + "_")
+    lineas.append("_Argos — " + fecha_now + "_")
 
     post_chat_con_reintento(WEBHOOK_JEFES, {"text": "\n".join(lineas)})
     marcar_recordatorio_enviado()
@@ -2519,10 +2595,14 @@ def main():
     DRY_RUN   = "--dry-run" in sys.argv or "test" in sys.argv
     TEST_MODE = "test" in sys.argv
     FORZAR    = "--forzar" in sys.argv
+    DEMO_MODE = "--demo" in sys.argv
 
     log.info("=" * 50)
     if DRY_RUN: log.info("🧪 MODO DRY-RUN — no se mandaran mensajes ni se actualizaran Sheets")
-    log.info("Iniciando automatizacion Liverpool")
+    log.info("Iniciando Argos")
+
+    # Auto-update — verifica versión y relanza si hay nueva antes de continuar
+    verificar_y_actualizar()
 
     # Verificar lock
     if not verificar_lock():
@@ -2573,6 +2653,20 @@ def main():
         # Cargar config remota desde hoja CONFIG
         cargar_config_remota(gc_global)
 
+        # Modo demo — redirigir webhooks y abrir browser visible
+        if DEMO_MODE:
+            global WEBHOOK, WEBHOOK_JEFES, WEBHOOK_TIEMPOS
+            log.info("🎯 MODO DEMO activado — webhooks redirigidos a canales demo")
+            if WEBHOOK_DEMO_1:
+                WEBHOOK = WEBHOOK_DEMO_1
+                log.info(f"  WEBHOOK → demo_1")
+            if WEBHOOK_DEMO_2:
+                WEBHOOK_JEFES = WEBHOOK_DEMO_2
+                log.info(f"  WEBHOOK_JEFES → demo_2")
+            if WEBHOOK_DEMO_3:
+                WEBHOOK_TIEMPOS = WEBHOOK_DEMO_3
+                log.info(f"  WEBHOOK_TIEMPOS → demo_3")
+
         # Registrar PC y verificar si esta pausada individualmente
         if not registrar_y_verificar_pc(gc_global):
             liberar_lock()
@@ -2594,7 +2688,7 @@ def main():
             liberar_lock()
             return
 
-        ruta, intentos_descarga        = descargar_csv()
+        ruta, intentos_descarga        = descargar_csv(visible=DEMO_MODE)
 
         # Validar CSV
         es_valido, info_csv = validar_csv(ruta)
@@ -3155,7 +3249,7 @@ def enviar_kpi_jefes_tiempos(csv_oms=None, csv_xd=None, dir_dict=None):
                 log.info(f"KPI jefes: usando XD de hoy: {csv_xd}")
             else:
                 log.info("KPI jefes: descargando historico XD...")
-                csv_xd = descargar_historico_xd()
+                csv_xd = descargar_historico_xd(visible=DEMO_MODE)
 
         # ── DIRECTORIO ────────────────────────────────────────────
         if not dir_dict:
@@ -3237,7 +3331,7 @@ def enviar_kpi_jefes_tiempos(csv_oms=None, csv_xd=None, dir_dict=None):
             lineas.append(f"📊 *Promedio general del turno: {_formato_min(p_gral)}*")
 
         lineas.append("")
-        lineas.append(f"_Liverpool Bot 456 — {fecha_now}_")
+        lineas.append(f"_Argos — {fecha_now}_")
         lineas.append("━━━━━━━━━━━━━━━━━━━━━━━━━")
 
         post_chat_con_reintento(WEBHOOK_TIEMPOS, {"text": "\n".join(lineas)})
@@ -3325,7 +3419,7 @@ def enviar_kpi_vendedores_tiempos(csv_oms=None, csv_xd=None):
             nombre = " ".join(w.capitalize() for w in ven.split()[:2])
             lineas.append(f"{emoji} *{nombre}* — {_formato_min(p)} | {datos['total']} rem")
 
-        lineas.append(f"\n_Liverpool Bot 456 — {fecha_now}_")
+        lineas.append(f"\n_Argos — {fecha_now}_")
         lineas.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
 
         post_chat_con_reintento(WEBHOOK_TIEMPOS, {"text": "\n".join(lineas)})
