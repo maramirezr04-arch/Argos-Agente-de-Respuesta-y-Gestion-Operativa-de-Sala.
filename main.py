@@ -8,6 +8,51 @@ from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
 VERSION = "1.1.3"
 
+# ── Auto-update desde GitHub ─────────────────────────────────
+_UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
+_UPDATE_VERSION_URL = _UPDATE_BASE + "/version.txt"
+_UPDATE_MAIN_URL    = _UPDATE_BASE + "/main.py"
+
+def verificar_y_actualizar():
+    """
+    Compara VERSION local con version.txt del repo.
+    Si difiere: descarga main.py, reemplaza el archivo local y relanza el proceso.
+    Silencioso en caso de error (no interrumpe el bot si hay problema de red).
+    """
+    import sys as _sys
+    # No actualizar en modos de prueba ni demo
+    if any(f in _sys.argv for f in ("--dry-run", "test", "--demo", "--no-update")):
+        return
+    try:
+        resp = requests.get(_UPDATE_VERSION_URL, timeout=8)
+        if resp.status_code != 200:
+            return
+        version_remota = resp.text.strip()
+        if not version_remota or version_remota == VERSION:
+            return
+
+        log.info(f"🔄 Nueva versión disponible: v{version_remota} (instalada: v{VERSION}). Descargando...")
+        resp2 = requests.get(_UPDATE_MAIN_URL, timeout=45)
+        if resp2.status_code != 200:
+            log.warning(f"No se pudo descargar main.py (status {resp2.status_code})")
+            return
+
+        ruta = Path(__file__).resolve()
+        # Backup del archivo actual
+        ruta.with_name("main.bak").write_bytes(ruta.read_bytes())
+        # Escribir nueva versión
+        ruta.write_bytes(resp2.content)
+        log.info(f"✅ Actualizado a v{version_remota} — relanzando...")
+
+        import subprocess
+        subprocess.Popen([_sys.executable] + _sys.argv)
+        _sys.exit(0)
+
+    except SystemExit:
+        raise  # dejar que el sys.exit() propague
+    except Exception as e:
+        log.warning(f"Auto-update omitido: {e}")
+
 Path("logs").mkdir(exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
@@ -2555,6 +2600,9 @@ def main():
     log.info("=" * 50)
     if DRY_RUN: log.info("🧪 MODO DRY-RUN — no se mandaran mensajes ni se actualizaran Sheets")
     log.info("Iniciando Argos")
+
+    # Auto-update — verifica versión y relanza si hay nueva antes de continuar
+    verificar_y_actualizar()
 
     # Verificar lock
     if not verificar_lock():
