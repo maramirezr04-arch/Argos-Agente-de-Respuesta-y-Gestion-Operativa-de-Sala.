@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="660" viewBox="0 0 1160 660" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1D9E75"/>
+    </marker>
+    <marker id="arrowGray" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#9aa0a6"/>
+    </marker>
+    <style>
+      .title  { font-size: 30px; font-weight: 700; fill: #1f2a24; }
+      .sub    { font-size: 15px; fill: #6b7280; }
+      .box     { rx: 16; fill: #ffffff; stroke: #e4e2dc; stroke-width: 2; }
+      .boxname { font-size: 17px; font-weight: 700; fill: #1f2a24; }
+      .boxdesc { font-size: 12.5px; fill: #6b7280; }
+      .stage   { font-size: 12px; font-weight: 700; fill: #1D9E75; letter-spacing: 1px; }
+      .pill    { font-size: 12.5px; fill: #3b6d11; font-weight: 600; }
+      .footer  { font-size: 12px; fill: #9aa0a6; }
+    </style>
+  </defs>
+
+  <rect width="1160" height="660" fill="#faf9f7"/>
+
+  <text x="48" y="56" class="title">🤖 Argos — Arquitectura del sistema</text>
+  <text x="48" y="82" class="sub">Monitoreo automático de remisiones · Tienda 456 Parque Antenas</text>
+
+  <!-- STAGE 1: Fuentes -->
+  <text x="60" y="138" class="stage">1 · FUENTES</text>
+  <rect x="48" y="150" width="200" height="80" class="box"/>
+  <text x="72" y="186" class="boxname">📥 OMS Liverpool</text>
+  <text x="72" y="208" class="boxdesc">Remisiones y estatus</text>
+
+  <rect x="48" y="250" width="200" height="80" class="box"/>
+  <text x="72" y="286" class="boxname">📦 Sistema XD</text>
+  <text x="72" y="308" class="boxdesc">Histórico de eventos</text>
+
+  <!-- STAGE 2: Argos descarga -->
+  <text x="320" y="138" class="stage">2 · CAPTURA</text>
+  <rect x="300" y="180" width="220" height="120" class="box" stroke="#1D9E75"/>
+  <text x="324" y="218" class="boxname">⚙️ Argos (Python)</text>
+  <text x="324" y="244" class="boxdesc">Playwright · 3 navegadores</text>
+  <text x="324" y="263" class="boxdesc">en paralelo descargan</text>
+  <text x="324" y="282" class="boxdesc">el CSV cada ~15 min</text>
+
+  <!-- STAGE 3: Sheets -->
+  <text x="592" y="138" class="stage">3 · DATOS</text>
+  <rect x="572" y="180" width="200" height="120" class="box"/>
+  <text x="596" y="218" class="boxname">📊 Google Sheets</text>
+  <text x="596" y="244" class="boxdesc">DIRECTORIO · TIEMPOS</text>
+  <text x="596" y="263" class="boxdesc">WEBHOOKS_JEFES</text>
+  <text x="596" y="282" class="boxdesc">WEBHOOKS_VENDEDORES</text>
+
+  <!-- STAGE 4: Procesa -->
+  <text x="844" y="138" class="stage">4 · PROCESO</text>
+  <rect x="824" y="170" width="210" height="140" class="box" stroke="#1D9E75"/>
+  <text x="848" y="206" class="boxname">🧠 Lógica Argos</text>
+  <text x="848" y="232" class="boxdesc">• Detecta vencidas (+20m)</text>
+  <text x="848" y="251" class="boxdesc">• Calcula tiempos</text>
+  <text x="848" y="270" class="boxdesc">• Prioriza C&amp;C / XD Exp.</text>
+  <text x="848" y="289" class="boxdesc">• Arma mensajes</text>
+
+  <!-- STAGE 5: Chat -->
+  <text x="60" y="408" class="stage">5 · COMUNICACIÓN — Google Chat</text>
+  <rect x="48" y="424" width="248" height="92" class="box"/>
+  <text x="72" y="458" class="boxname">📈 Espacio Reporte</text>
+  <text x="72" y="480" class="boxdesc">Indicadores + reporte de salud</text>
+  <text x="72" y="500" class="boxdesc">diario del bot</text>
+
+  <rect x="320" y="424" width="248" height="92" class="box"/>
+  <text x="344" y="458" class="boxname">👔 Espacio Jefes</text>
+  <text x="344" y="480" class="boxdesc">Pendientes por jefe y piso</text>
+  <text x="344" y="500" class="boxdesc">+ mensaje individual</text>
+
+  <rect x="592" y="424" width="248" height="92" class="box"/>
+  <text x="616" y="458" class="boxname">🧑‍💼 Vendedores</text>
+  <text x="616" y="480" class="boxdesc">Sus remisiones: nº + SKU</text>
+  <text x="616" y="500" class="boxdesc">+ tiempo desde asignación</text>
+
+  <rect x="864" y="424" width="248" height="92" class="box"/>
+  <text x="888" y="458" class="boxname">⏱️ Espacio Tiempos</text>
+  <text x="888" y="480" class="boxdesc">KPI de productividad</text>
+  <text x="888" y="500" class="boxdesc">y ranking al cierre</text>
+
+  <!-- CONTROL layer -->
+  <text x="60" y="576" class="stage">CONTROL Y MANTENIMIENTO</text>
+  <rect x="48" y="588" width="340" height="52" class="box"/>
+  <text x="72" y="620" class="pill">🖥️ Dashboard web (GitHub Pages) — control total</text>
+
+  <rect x="412" y="588" width="300" height="52" class="box"/>
+  <text x="436" y="620" class="pill">📜 Apps Script — puente Sheets ⇆ web</text>
+
+  <rect x="736" y="588" width="376" height="52" class="box"/>
+  <text x="760" y="620" class="pill">🔄 Auto-update + watchdog + respaldo local</text>
+
+  <!-- Flow arrows -->
+  <path d="M248 196 L296 220" stroke="#1D9E75" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M248 286 L296 262" stroke="#1D9E75" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M520 240 L568 240" stroke="#1D9E75" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M772 240 L820 240" stroke="#1D9E75" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M929 310 L929 350 L172 350 L172 420" stroke="#1D9E75" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M444 350 L444 420" stroke="#1D9E75" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M716 350 L716 420" stroke="#1D9E75" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M988 350 L988 420" stroke="#1D9E75" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+
+  <!-- Dashboard control arrow to Sheets (dashed) -->
+  <path d="M218 588 L218 540 L672 540 L672 304" stroke="#9aa0a6" stroke-width="2" stroke-dasharray="6 5" fill="none" marker-end="url(#arrowGray)"/>
+
+  <text x="48" y="654" class="footer">El operador configura todo desde el dashboard · El bot se actualiza solo desde GitHub · Sin intervención manual diaria</text>
+</svg>

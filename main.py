@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.1.7"
+VERSION = "1.1.8"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
@@ -1721,6 +1721,41 @@ def enviar_cierre(datos, dir_dict):
     marcar_cierre_enviado()
 
 
+def enviar_reporte_salud(resumen, vencidas):
+    """Resumen operativo del bot al cierre → espacio Reporte.
+    Comunica el valor diario: ciclos de monitoreo, remisiones procesadas e
+    incidencias. Pensado para que el negocio vea cuánto trabajó Argos.
+    """
+    fecha_now = datetime.now().strftime("%d/%m/%Y %H:%M")
+    c = leer_contador()
+    ciclos  = c.get("ciclos_dia", 0)
+    errores = c.get("errores_dia", 0)
+
+    try:
+        horario = f"{int(HORA_INICIO):02d}:00 – {int(HORA_FIN):02d}:{int(MINUTO_FIN):02d}"
+    except Exception:
+        horario = ""
+
+    estado = "✅ Sin incidencias" if errores == 0 else f"⚠️ {errores} incidencia(s) — recuperado automáticamente"
+
+    lineas = [
+        "🤖 *Argos — Reporte del día*",
+        "📅 " + fecha_now,
+        "",
+        "🔁 Ciclos de monitoreo hoy: *" + str(ciclos) + "*",
+        "📦 Remisiones en el último corte: *" + str(resumen.get("total", 0)) + "*",
+        "🏷️ Etiquetas generadas: *" + str(resumen.get("etiquetas", 0)) + "*",
+        "🔴 Vencidas al cierre: *" + str(len(vencidas)) + "*",
+        "⚙️ Estado del sistema: " + estado,
+    ]
+    if horario:
+        lineas.append("🕐 Operación: " + horario)
+    lineas += ["", "_Argos v" + VERSION + " — monitoreo automático_"]
+
+    post_chat_con_reintento(WEBHOOK, {"text": "\n".join(lineas)})
+    log.info("Reporte de salud diario enviado al espacio reporte ✅")
+
+
 def enviar_pendientes_ayer(datos, dir_dict, descansos=None):
     """
     Manda al espacio JEFES un recordatorio de remisiones de ayer aún sin atender.
@@ -2924,6 +2959,11 @@ def main():
         if es_hora_apertura() and not apertura_ya_enviada():
             enviar_apertura(datos, dir_dict, hist_dict)
             enviar_pendientes_ayer(datos, dir_dict, descansos)
+            # Reiniciar contadores diarios para el reporte de salud
+            _c = leer_contador()
+            _c["ciclos_dia"] = 0
+            _c["errores_dia"] = 0
+            guardar_contador(_c)
             log.info("Primera ejecución: buenos días + pendientes de ayer enviados ✅")
 
         # ── RECORDATORIO 9:20 PM ──────────────────────────────────────────────
@@ -2934,6 +2974,10 @@ def main():
         elif es_hora_cierre() and not cierre_ya_enviado():
             # enviar_cierre manda buenas noches a Jefes y KPI tiempos a Tiempos
             enviar_cierre(datos, dir_dict)
+            try:
+                enviar_reporte_salud(resumen, vencidas)
+            except Exception as e:
+                log.error(f"Error enviando reporte de salud: {e}")
             guardar_health("cierre_enviado")
             liberar_lock()
             return  # no mandar más mensajes este ciclo
@@ -2955,6 +2999,7 @@ def main():
         # ── Mensajes — espacio REPORTE ────────────────────────────────────────
         enviar_notificaciones_vencidas(vencidas)
         contador = leer_contador()
+        contador["ciclos_dia"] = contador.get("ciclos_dia", 0) + 1
         contador["reporte_count"] = contador.get("reporte_count", 0) + 1
         if contador["reporte_count"] >= CICLOS_REPORTE:
             enviar_chat(resumen, exito=True)
@@ -3003,6 +3048,12 @@ def main():
     except Exception as e:
         log.error(f"Error: {e}")
         guardar_health("error", error=str(e)[:200])
+        try:
+            _c = leer_contador()
+            _c["errores_dia"] = _c.get("errores_dia", 0) + 1
+            guardar_contador(_c)
+        except Exception:
+            pass
         try:
             duracion = time.time() - t_inicio
         except Exception:

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Argos — Ficha técnica</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',Helvetica,Arial,sans-serif; background:#faf9f7; color:#1f2a24; line-height:1.5; padding:32px 18px; }
+  .page { max-width:900px; margin:0 auto; }
+  header { display:flex; align-items:center; gap:16px; border-bottom:3px solid #1D9E75; padding-bottom:18px; margin-bottom:26px; }
+  header .logo { font-size:46px; }
+  header h1 { font-size:32px; }
+  header .tag { color:#6b7280; font-size:14px; margin-top:2px; }
+  h2 { font-size:16px; color:#1D9E75; text-transform:uppercase; letter-spacing:1px; margin:26px 0 12px; }
+  .lead { font-size:16px; background:#fff; border:1px solid #e4e2dc; border-left:4px solid #1D9E75; border-radius:12px; padding:16px 18px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .card { background:#fff; border:1px solid #e4e2dc; border-radius:14px; padding:16px 18px; }
+  .card h3 { font-size:15px; margin-bottom:6px; }
+  .card p { font-size:13.5px; color:#555; }
+  .flow { display:flex; flex-wrap:wrap; align-items:center; gap:8px; background:#fff; border:1px solid #e4e2dc; border-radius:14px; padding:18px; font-size:13.5px; font-weight:600; }
+  .flow .node { background:#f2fbf7; border:1px solid #bfe6d6; color:#1f2a24; border-radius:10px; padding:9px 13px; }
+  .flow .arr { color:#1D9E75; font-weight:700; font-size:16px; }
+  ul.msgs { list-style:none; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  ul.msgs li { background:#fff; border:1px solid #e4e2dc; border-radius:12px; padding:12px 14px; font-size:13.5px; }
+  ul.msgs li b { display:block; margin-bottom:3px; }
+  .pills { display:flex; flex-wrap:wrap; gap:8px; }
+  .pill { background:#eaf3de; color:#3b6d11; font-size:12.5px; font-weight:600; padding:6px 13px; border-radius:20px; }
+  footer { margin-top:30px; border-top:1px solid #e4e2dc; padding-top:14px; font-size:12px; color:#9aa0a6; text-align:center; }
+  @media (max-width:680px){ .grid,ul.msgs{grid-template-columns:1fr;} }
+  @media print { body{background:#fff;padding:0;} .card,.flow,.lead,ul.msgs li{break-inside:avoid;} }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="logo">🤖</div>
+    <div>
+      <h1>Argos</h1>
+      <div class="tag">Monitoreo automático de remisiones · Tienda 456 Parque Antenas</div>
+    </div>
+  </header>
+
+  <h2>¿Qué es?</h2>
+  <p class="lead">
+    Argos es un asistente automático que vigila las remisiones del sistema OMS las 24 horas que opera la tienda.
+    Cada ~15 minutos descarga la información, detecta los pedidos atrasados y avisa por Google Chat a la persona
+    correcta —jefe o vendedor— para que ningún cliente se quede esperando su mercancía. Todo sin que nadie tenga
+    que revisar el sistema manualmente.
+  </p>
+
+  <h2>El problema que resuelve</h2>
+  <div class="grid">
+    <div class="card"><h3>❌ Antes</h3><p>Alguien tenía que entrar al OMS, revisar a mano qué remisiones llevaban mucho tiempo y avisarle a cada jefe. Tardado, propenso a errores y solo a ciertas horas.</p></div>
+    <div class="card"><h3>✅ Con Argos</h3><p>El monitoreo es automático cada ~15 min, los avisos llegan solos al chat de cada responsable con el detalle exacto, y se mide el tiempo de respuesta de todo el equipo.</p></div>
+  </div>
+
+  <h2>Cómo funciona</h2>
+  <div class="flow">
+    <span class="node">📥 OMS / XD</span><span class="arr">→</span>
+    <span class="node">⚙️ Argos descarga</span><span class="arr">→</span>
+    <span class="node">📊 Google Sheets</span><span class="arr">→</span>
+    <span class="node">🧠 Procesa y prioriza</span><span class="arr">→</span>
+    <span class="node">💬 Google Chat</span>
+  </div>
+
+  <h2>Lo que comunica</h2>
+  <ul class="msgs">
+    <li><b>👔 Jefes (grupal por piso)</b>Pendientes de cada jefe con semáforo 🟢🟡🔴 y alerta 🚨 para C&amp;C y XD Expreso.</li>
+    <li><b>🧑‍💼 Jefe individual</b>Su detalle por vendedor: cuántas remisiones y la más atrasada.</li>
+    <li><b>📦 Vendedor</b>Sus remisiones una por una: número, SKU y cuánto llevan desde la asignación en tienda.</li>
+    <li><b>⏱️ Tiempos / KPI</b>Ranking de productividad y tiempo promedio de asignación al cierre del día.</li>
+  </ul>
+
+  <h2>Por qué es confiable</h2>
+  <div class="pills">
+    <span class="pill">🔄 Se actualiza solo desde GitHub</span>
+    <span class="pill">🐶 Watchdog si se cae</span>
+    <span class="pill">🔁 Reintentos automáticos</span>
+    <span class="pill">💾 Respaldo local</span>
+    <span class="pill">🖥️ Dashboard de control web</span>
+    <span class="pill">🩺 Reporte de salud diario</span>
+  </div>
+
+  <footer>Argos · documento de presentación · generado para Tienda 456 Parque Antenas</footer>
+</div>
+</body>
+</html>
