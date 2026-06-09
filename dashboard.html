@@ -677,41 +677,6 @@ input:checked + .slider:before { transform:translateX(22px); }
       <div style="text-align:center;padding:2rem;color:#aaa">Cargando...</div>
     </div>
   </div>
-
-  <div class="card" style="margin-top:1rem">
-    <div class="card-title">⚙️ Código para tu Apps Script</div>
-    <div style="font-size:12px;color:#666;margin-bottom:10px;line-height:1.6">
-      Agrega estos 3 casos en el <code>switch/if</code> de tu función <b>doPost</b> en el Apps Script para que el dashboard pueda crear, borrar y pausar mensajes:
-    </div>
-    <pre style="background:#1e1e1e;color:#d4d4d4;padding:14px;border-radius:10px;font-size:11px;overflow-x:auto;line-height:1.6">case 'agregar_mensaje_programado': {
-  var s = ss.getSheetByName('MENSAJES_PROGRAMADOS')
-         || ss.insertSheet('MENSAJES_PROGRAMADOS');
-  if (s.getLastRow() === 0)
-    s.appendRow(['ID','Texto','Intervalo_ciclos','Destino','Activo','Ultimo_envio','Creado']);
-  s.appendRow([data.id, data.texto, data.intervalo_ciclos,
-               data.destino, 'si', '', data.creado]);
-  return ok();
-}
-case 'borrar_mensaje_programado': {
-  var s = ss.getSheetByName('MENSAJES_PROGRAMADOS');
-  if (s) {
-    var vals = s.getDataRange().getValues();
-    for (var i = vals.length - 1; i >= 1; i--)
-      if (vals[i][0].toString() === data.id.toString()) { s.deleteRow(i+1); break; }
-  }
-  return ok();
-}
-case 'toggle_mensaje_programado': {
-  var s = ss.getSheetByName('MENSAJES_PROGRAMADOS');
-  if (s) {
-    var vals = s.getDataRange().getValues();
-    for (var i = 1; i < vals.length; i++)
-      if (vals[i][0].toString() === data.id.toString()) { s.getRange(i+1,5).setValue(data.activo); break; }
-  }
-  return ok();
-}</pre>
-    <div style="font-size:11px;color:#888;margin-top:8px">Donde <code>ss</code> es tu SpreadsheetApp y <code>ok()</code> retorna <code>JSON {ok:true}</code>.</div>
-  </div>
 </div>
 
 <!-- ── PRUEBAS DE MENSAJES ── -->
