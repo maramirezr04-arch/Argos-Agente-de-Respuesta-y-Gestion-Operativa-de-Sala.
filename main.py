@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.2.0"
+VERSION = "1.2.1"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
@@ -34,6 +34,26 @@ def _actualizar_extras():
         except Exception as e:
             log.warning(f"No se pudo actualizar {rel}: {e}")
 
+def _descargar_extras_faltantes():
+    """Descarga solo los extras que aún no existen en disco."""
+    raiz     = Path(__file__).resolve().parent
+    faltantes = [rel for rel in _UPDATE_EXTRA if not (raiz / rel).exists()]
+    if not faltantes:
+        return
+    log.info(f"Extras faltantes detectados ({len(faltantes)}) — descargando...")
+    for rel in faltantes:
+        url = _UPDATE_EXTRA[rel]
+        try:
+            r = requests.get(url, timeout=30)
+            if r.status_code != 200:
+                continue
+            destino = raiz / rel
+            destino.parent.mkdir(parents=True, exist_ok=True)
+            destino.write_bytes(r.content)
+            log.info(f"✅ Descargado: {rel}")
+        except Exception as e:
+            log.warning(f"No se pudo descargar {rel}: {e}")
+
 def verificar_y_actualizar():
     """
     Compara VERSION local con version.txt del repo.
@@ -51,6 +71,8 @@ def verificar_y_actualizar():
             return
         version_remota = resp.text.strip()
         if not version_remota or version_remota == VERSION:
+            # Sin versión nueva — igual revisa si faltan extras en disco
+            _descargar_extras_faltantes()
             return
 
         log.info(f"🔄 Nueva versión disponible: v{version_remota} (instalada: v{VERSION}). Descargando...")
