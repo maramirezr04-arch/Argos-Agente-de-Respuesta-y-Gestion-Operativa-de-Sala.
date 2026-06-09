@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.1.3"
+VERSION = "1.1.4"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
