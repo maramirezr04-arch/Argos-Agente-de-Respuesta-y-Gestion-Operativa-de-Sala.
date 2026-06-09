@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Liverpool Bot 456 — Panel de Control</title>
+<title>Argos — Panel de Control</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -224,8 +224,8 @@ input:checked + .slider:before { transform:translateX(22px); }
 <body>
 <div class="header">
   <div>
-    <h1>🤖 Liverpool Bot 456</h1>
-    <div class="sub">Panel de control · Tienda 456 Parque Antenas · <span id="hdr-fecha" style="opacity:.8"></span></div>
+    <h1>🤖 Argos</h1>
+    <div class="sub">Panel de control · Tienda 456 Parque Antenas · <span style="opacity:.7">v1.1.3</span> · <span id="hdr-fecha" style="opacity:.8"></span></div>
   </div>
   <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
     <div class="status-pill"><span class="dot dot-off" id="dot"></span><span id="status-txt">Cargando...</span></div>
@@ -390,6 +390,33 @@ input:checked + .slider:before { transform:translateX(22px); }
       </div>
     </div>
   </div>
+  <div class="cfg-card" style="margin-bottom:1rem"><h3>📬 Frecuencia de mensajes</h3>
+    <div style="font-size:11px;color:#888;margin-bottom:14px;line-height:1.6">
+      1 ciclo ≈ 15 min. <b>No configurables:</b> buenos días, cierre y KPI tiempos.
+    </div>
+    <div class="cfg-row">
+      <label class="tooltip-wrap">Ciclos entre mensajes de jefes <span class="tooltip-icon">i</span><span class="tooltip-box">Cada cuántos ciclos se manda el resumen por piso al espacio Jefes. 2 = cada ~30 min, 3 = cada ~45 min.</span></label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="number" id="cfg-ciclos-jefes" min="1" max="20" value="2" style="width:70px" oninput="actualizarLabelCiclos('cfg-ciclos-jefes','lbl-ciclos-jefes')">
+        <span id="lbl-ciclos-jefes" style="font-size:11px;color:#888">ciclos (~30 min)</span>
+      </div>
+    </div>
+    <div class="cfg-row" style="margin-top:10px">
+      <label class="tooltip-wrap">Ciclos entre mensajes de reporte <span class="tooltip-icon">i</span><span class="tooltip-box">Cada cuántos ciclos se manda el resumen al espacio Reporte. 1 = cada ciclo (~15 min).</span></label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="number" id="cfg-ciclos-reporte" min="1" max="20" value="1" style="width:70px" oninput="actualizarLabelCiclos('cfg-ciclos-reporte','lbl-ciclos-reporte')">
+        <span id="lbl-ciclos-reporte" style="font-size:11px;color:#888">ciclo (~15 min)</span>
+      </div>
+    </div>
+    <div class="cfg-row" style="margin-top:10px">
+      <label class="tooltip-wrap">Hora del recordatorio de cierre <span class="tooltip-icon">i</span><span class="tooltip-box">El bot manda el aviso "falta una hora" en el ciclo más cercano a esta hora. Ej: 20:30 → manda entre 20:30 y 20:45.</span></label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="time" id="cfg-hora-record" value="20:30" style="width:110px;font-size:13px;border-radius:8px;border:1px solid #ddd;padding:4px 8px">
+        <span style="font-size:11px;color:#888">± un ciclo (~15 min)</span>
+      </div>
+    </div>
+  </div>
+
   <div class="cfg-card" style="margin-bottom:1rem"><h3>💬 Espacios de Chat</h3>
     <div class="cfg-row" style="margin-bottom:12px">
       <label>📢 Enviar a espacio Reporte</label>
@@ -609,7 +636,7 @@ input:checked + .slider:before { transform:translateX(22px); }
 
 <!-- ── MENSAJES PROGRAMADOS ── -->
 <div id="tab-mensajes" class="section" style="margin-top:1rem">
-  <div class="section-intro">📅 <b>Mensajes programados</b> — Escribe un mensaje personalizado, elige cada cuántos minutos quieres que se mande y a qué espacio. El bot lo enviará automáticamente. Para detenerlo, solo bórralo.</div>
+  <div class="section-intro">📅 <b>Mensajes programados</b> — Escribe un mensaje personalizado, elige cada cuántos ciclos quieres que se mande y a qué espacio. Cada ciclo dura ~15 min. El bot lo enviará automáticamente. Para detenerlo, solo bórralo.</div>
 
   <div class="cfg-card" style="margin-bottom:1rem">
     <h3>➕ Nuevo mensaje programado</h3>
@@ -619,10 +646,10 @@ input:checked + .slider:before { transform:translateX(22px); }
     </div>
     <div class="cfg-grid" style="margin-bottom:4px">
       <div class="cfg-row">
-        <label class="tooltip-wrap">Cada cuántos minutos <span class="tooltip-icon">i</span><span class="tooltip-box">El bot lo enviará cada X minutos. Mínimo 5 min. Ej: 20 = cada 20 minutos.</span></label>
+        <label class="tooltip-wrap">Cada cuántos ciclos <span class="tooltip-icon">i</span><span class="tooltip-box">El bot lo enviará cada X ciclos. 1 ciclo ≈ 15 min. Ej: 2 = cada ~30 min, 4 = cada ~1 hora.</span></label>
         <div style="display:flex;align-items:center;gap:6px">
-          <input type="number" id="msg-intervalo" min="5" max="480" value="20" style="width:80px">
-          <span style="font-size:12px;color:#888">min</span>
+          <input type="number" id="msg-intervalo" min="1" max="96" value="1" style="width:80px" oninput="actualizarEtiquetaCiclos(this.value)">
+          <span style="font-size:12px;color:#888" id="ciclos-label">ciclo (~15 min)</span>
         </div>
       </div>
       <div class="cfg-row">
@@ -660,8 +687,8 @@ input:checked + .slider:before { transform:translateX(22px); }
   var s = ss.getSheetByName('MENSAJES_PROGRAMADOS')
          || ss.insertSheet('MENSAJES_PROGRAMADOS');
   if (s.getLastRow() === 0)
-    s.appendRow(['ID','Texto','Intervalo_min','Destino','Activo','Ultimo_envio','Creado']);
-  s.appendRow([data.id, data.texto, data.intervalo_min,
+    s.appendRow(['ID','Texto','Intervalo_ciclos','Destino','Activo','Ultimo_envio','Creado']);
+  s.appendRow([data.id, data.texto, data.intervalo_ciclos,
                data.destino, 'si', '', data.creado]);
   return ok();
 }
@@ -733,6 +760,35 @@ case 'toggle_mensaje_programado': {
     </div>
     <button onclick="verificarWebhooks()" style="margin-top:10px">🔍 Verificar webhooks</button>
   </div>
+
+  <!-- Modo Demo -->
+  <div class="cfg-card" style="margin-top:1rem;border:2px solid #c9254e20;background:#fff5f7">
+    <h3>🎯 Modo Demo</h3>
+    <p style="font-size:12px;color:#666;margin-bottom:14px">Ejecuta el bot completo con el navegador visible y redirige todos los mensajes a los webhooks de demo configurados aquí. Ideal para mostrar el sistema en funcionamiento sin afectar los espacios reales.</p>
+    <div class="cfg-row" style="margin-bottom:10px">
+      <label>📲 Webhook Demo 1 (Reporte)</label>
+      <input type="url" id="cfg-wh-demo1" placeholder="https://chat.googleapis.com/..." style="font-size:12px">
+    </div>
+    <div class="cfg-row" style="margin-bottom:10px">
+      <label>📲 Webhook Demo 2 (Jefes)</label>
+      <input type="url" id="cfg-wh-demo2" placeholder="https://chat.googleapis.com/..." style="font-size:12px">
+    </div>
+    <div class="cfg-row" style="margin-bottom:10px">
+      <label>📲 Webhook Demo 3 (Tiempos)</label>
+      <input type="url" id="cfg-wh-demo3" placeholder="https://chat.googleapis.com/..." style="font-size:12px">
+    </div>
+    <div class="cfg-row" style="margin-bottom:14px">
+      <label>⏱ Intervalo entre ejecuciones demo (minutos)</label>
+      <input type="number" id="cfg-intervalo-demo" value="15" min="1" max="60" style="width:80px">
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <span style="font-size:11px;color:#854f0b">⚠️ Los mensajes demo llegan a los webhooks configurados arriba</span>
+      <div style="display:flex;gap:8px">
+        <button onclick="guardarDemo()" style="background:#c9254e;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600">💾 Guardar config demo</button>
+      </div>
+    </div>
+    <div id="demo-estado" style="margin-top:10px;font-size:12px"></div>
+  </div>
 </div>
 
 <!-- ── LOGS ── -->
@@ -753,9 +809,14 @@ case 'toggle_mensaje_programado': {
   <div class="section-intro">⏱ <b>KPI Tiempos de asignación</b> — Se actualiza automáticamente al cierre del turno. Mide cuánto tarda cada jefe en asignar remisiones a vendedores desde que llegan a tienda.</div>
 
   <div class="card">
-    <div class="card-title" style="justify-content:space-between">
-      <span>📊 Tiempos por jefe — último cierre</span>
-      <button onclick="cargarKpiTiempos()" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #ddd;background:#faf9f7;cursor:pointer">🔄 Actualizar</button>
+    <div class="card-title" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <span>📊 Tiempos por jefe</span>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <select id="kpi-dia-sel" onchange="filtrarKpiPorDia()" style="font-size:12px;border-radius:8px;border:1px solid #ddd;padding:5px 10px;background:#faf9f7;cursor:pointer">
+          <option value="">Cargando...</option>
+        </select>
+        <button onclick="cargarKpiTiempos()" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #ddd;background:#faf9f7;cursor:pointer">🔄 Actualizar</button>
+      </div>
     </div>
     <div id="kpi-meta" style="font-size:12px;color:#888;margin-bottom:12px">Cargando...</div>
     <div class="kpi-legend">
@@ -810,7 +871,7 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxBSox6hX-SfSem
 const SHEET_ID = "135lsymm5A67_ieYZLaKIfvPpkyqRWbUf9UV-mv3b7js";
 const URL_MONITOR  = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=MONITOR";
 const URL_METRICAS = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=METRICAS";
-const URL_TIEMPOS  = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=TIEMPOS";
+const URL_KPI_TIEMPOS = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=KPI_TIEMPOS";
 let chartKpi = null;
 let todos=[],chartT,chartI,chartV;
 let DIRECTORIO_SECCIONES = [], DIRECTORIO_JEFES = [];
@@ -932,71 +993,98 @@ async function togglePc(nombre, nuevoEstado){
 function fmtMin(m){m=Math.round(Number(m)||0);const h=Math.floor(m/60),min=m%60;return h>0?h+'h '+min+'min':min+'min';}
 function semaforoColor(p){if(p<=5)return '#2ecc71';if(p<=20)return '#f39c12';return '#e74c3c';}
 
+let _kpiTodos = []; // todos los registros históricos
+
 async function cargarKpiTiempos(){
   const tbody = document.getElementById('tabla-kpi-tiempos');
   const meta  = document.getElementById('kpi-meta');
-  const footer= document.getElementById('kpi-footer');
+  const sel   = document.getElementById('kpi-dia-sel');
   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#aaa">Cargando...</td></tr>';
   try {
-    const r    = await fetch(URL_TIEMPOS + '&t=' + Date.now());
+    const r    = await fetch(URL_KPI_TIEMPOS + '&t=' + Date.now());
     const txt  = await r.text();
     const json = JSON.parse(txt.replace(/^[^\(]+\(|\);?$/g,''));
-    const rows = json.table.rows;
-    if(!rows || rows.length === 0){
+    const rows = json.table?.rows || [];
+    if(!rows.length){
       tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#aaa;padding:2rem">Sin datos — el bot aún no ha enviado el KPI de cierre.</td></tr>';
       meta.textContent='Sin datos aún';
       return;
     }
-    // Fila 0 = cabecera (Jefe, Min, Prom, Max, Remisiones, Fecha)
-    // Leer datos desde fila 1
-    const datos = rows.slice(1).map(r=>({
-      jefe : r.c[0]?.v || '',
-      min  : Number(r.c[1]?.v || 0),
-      prom : Number(r.c[2]?.v || 0),
-      max  : Number(r.c[3]?.v || 0),
-      rem  : Number(r.c[4]?.v || 0),
-      fecha: r.c[5]?.v || '',
-    })).filter(d=>d.jefe).sort((a,b)=>a.prom-b.prom);
+    // Schema: Dia(0) Jefe(1) Min(2) Prom(3) Max(4) Remisiones(5) Hora_cierre(6)
+    _kpiTodos = rows.slice(1).map(r=>({
+      dia  : r.c[0]?.v || '',
+      jefe : r.c[1]?.v || '',
+      min  : Number(r.c[2]?.v || 0),
+      prom : Number(r.c[3]?.v || 0),
+      max  : Number(r.c[4]?.v || 0),
+      rem  : Number(r.c[5]?.v || 0),
+      hora : r.c[6]?.v || '',
+    })).filter(d=>d.jefe && d.dia);
 
-    const fechaUlt = datos[0]?.fecha || '';
-    meta.textContent = `Último cierre: ${fechaUlt} — ${datos.length} jefes`;
-
-    tbody.innerHTML = datos.map((d,i)=>{
-      const color = semaforoColor(d.prom);
-      const dot   = `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${color};margin-right:6px"></span>`;
-      return `<tr>
-        <td style="color:#aaa;font-size:11px">${i+1}</td>
-        <td><b>${d.jefe}</b></td>
-        <td style="color:#2ecc71;font-weight:600">${fmtMin(d.min)}</td>
-        <td>${dot}<b>${fmtMin(d.prom)}</b></td>
-        <td style="color:#e74c3c">${fmtMin(d.max)}</td>
-        <td style="color:#888">${d.rem} rem</td>
-      </tr>`;
-    }).join('');
-
-    // Promedio general
-    const promGral = Math.round(datos.reduce((s,d)=>s+d.prom,0)/datos.length);
-    footer.textContent = `Promedio general: ${fmtMin(promGral)}`;
-
-    // Gráfica
-    const labels = datos.map(d=>d.jefe.split(' ').slice(0,2).join(' '));
-    const proms  = datos.map(d=>d.prom);
-    const colors = proms.map(p=>semaforoColor(p));
-    const ctx    = document.getElementById('chart-kpi').getContext('2d');
-    if(chartKpi) chartKpi.destroy();
-    chartKpi = new Chart(ctx, {
-      type:'bar',
-      data:{labels, datasets:[{label:'Promedio (min)',data:proms,backgroundColor:colors,borderRadius:6}]},
-      options:{
-        responsive:true,
-        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmtMin(c.raw)}}},
-        scales:{y:{ticks:{callback:v=>fmtMin(v)},grid:{color:'rgba(0,0,0,.05)'}},x:{ticks:{font:{size:10}}}}
-      }
+    // Días únicos, más reciente primero
+    const dias = [...new Set(_kpiTodos.map(d=>d.dia))].sort((a,b)=>{
+      const p = s=>s.split('/').reverse().join('');
+      return p(b).localeCompare(p(a));
     });
+
+    sel.innerHTML = dias.map((d,i)=>
+      `<option value="${d}">${d}${i===0?' (más reciente)':''}</option>`
+    ).join('');
+
+    filtrarKpiPorDia();
   } catch(e){
-    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#e74c3c;padding:2rem">Error cargando datos: '+e.message+'</td></tr>';
+    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#e74c3c;padding:2rem">Error: '+e.message+'</td></tr>';
     meta.textContent='Error';
   }
+}
+
+function filtrarKpiPorDia(){
+  const tbody  = document.getElementById('tabla-kpi-tiempos');
+  const meta   = document.getElementById('kpi-meta');
+  const footer = document.getElementById('kpi-footer');
+  const dia    = document.getElementById('kpi-dia-sel').value;
+  if(!dia || !_kpiTodos.length) return;
+
+  const datos = _kpiTodos.filter(d=>d.dia===dia).sort((a,b)=>a.prom-b.prom);
+  if(!datos.length){
+    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#aaa;padding:2rem">Sin datos para este día.</td></tr>';
+    meta.textContent=dia;
+    return;
+  }
+
+  const hora = datos[0]?.hora || '';
+  meta.textContent = `📅 ${dia}  ·  cierre: ${hora}  ·  ${datos.length} jefes`;
+
+  tbody.innerHTML = datos.map((d,i)=>{
+    const color = semaforoColor(d.prom);
+    const dot   = `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${color};margin-right:6px"></span>`;
+    return `<tr>
+      <td style="color:#aaa;font-size:11px">${i+1}</td>
+      <td><b>${d.jefe}</b></td>
+      <td style="color:#2ecc71;font-weight:600">${fmtMin(d.min)}</td>
+      <td>${dot}<b>${fmtMin(d.prom)}</b></td>
+      <td style="color:#e74c3c">${fmtMin(d.max)}</td>
+      <td style="color:#888">${d.rem} rem</td>
+    </tr>`;
+  }).join('');
+
+  const promGral = Math.round(datos.reduce((s,d)=>s+d.prom,0)/datos.length);
+  footer.textContent = `Promedio general del día: ${fmtMin(promGral)}`;
+
+  const labels = datos.map(d=>d.jefe.split(' ').slice(0,2).join(' '));
+  const proms  = datos.map(d=>d.prom);
+  const colors = proms.map(p=>semaforoColor(p));
+  const ctx    = document.getElementById('chart-kpi').getContext('2d');
+  if(chartKpi) chartKpi.destroy();
+  chartKpi = new Chart(ctx, {
+    type:'bar',
+    data:{labels, datasets:[{label:'Promedio (min)',data:proms,backgroundColor:colors,borderRadius:6}]},
+    options:{
+      responsive:true,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmtMin(c.raw)}}},
+      scales:{y:{ticks:{callback:v=>fmtMin(v)},grid:{color:'rgba(0,0,0,.05)'}},x:{ticks:{font:{size:10}}}}
+    }
+  });
 }
 function formatDur(seg){seg=Math.round(Number(seg)||0);const m=Math.floor(seg/60),s=seg%60;if(m===0)return s+'s';return m+'m '+(s<10?'0':'')+s+'s';}
 function showToast(msg, tipo){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+(tipo||'ok');setTimeout(()=>t.classList.remove('show'),3000);}
@@ -1162,6 +1250,12 @@ async function verificarWebhooks(){
 }
 
 // CONFIG
+function actualizarLabelCiclos(inputId, labelId){
+  const n = parseInt(document.getElementById(inputId).value) || 1;
+  const el = document.getElementById(labelId);
+  if(el) el.textContent = n === 1 ? 'ciclo (~15 min)' : `ciclos (~${n*15} min)`;
+}
+
 function actualizarResumen(){
   const hi=document.getElementById('cfg-hora-inicio').value;
   const hf=document.getElementById('cfg-hora-fin').value;
@@ -1196,6 +1290,16 @@ async function cargarConfig(){
     document.getElementById('cfg-env-reporte').checked=(c.enviar_reporte||'si').toLowerCase()==='si';
     document.getElementById('cfg-env-jefes').checked=(c.enviar_jefes||'si').toLowerCase()==='si';
     document.getElementById('cfg-env-tiempos').checked=(c.enviar_tiempos||'si').toLowerCase()==='si';
+    document.getElementById('cfg-ciclos-jefes').value=num(c.ciclos_jefes,2);
+    document.getElementById('cfg-ciclos-reporte').value=num(c.ciclos_reporte,1);
+    document.getElementById('cfg-hora-record').value=c.hora_recordatorio||'20:30';
+    actualizarLabelCiclos('cfg-ciclos-jefes','lbl-ciclos-jefes');
+    actualizarLabelCiclos('cfg-ciclos-reporte','lbl-ciclos-reporte');
+    // Demo fields
+    if(document.getElementById('cfg-wh-demo1'))document.getElementById('cfg-wh-demo1').value=c.webhook_demo_1||'';
+    if(document.getElementById('cfg-wh-demo2'))document.getElementById('cfg-wh-demo2').value=c.webhook_demo_2||'';
+    if(document.getElementById('cfg-wh-demo3'))document.getElementById('cfg-wh-demo3').value=c.webhook_demo_3||'';
+    if(document.getElementById('cfg-intervalo-demo'))document.getElementById('cfg-intervalo-demo').value=num(c.intervalo_demo,15);
     const dias=(c.dias_activos||'lun,mar,mie,jue,vie,sab,dom').split(',').map(d=>d.trim());
     document.querySelectorAll('.dia-chip').forEach(chip=>{if(dias.includes(chip.dataset.dia))chip.classList.add('active');else chip.classList.remove('active');});
     estado.className='estado-bar ok';estado.textContent='✅ Cargada';
@@ -1206,7 +1310,7 @@ async function cargarConfig(){
 async function guardarConfig(){
   const btn=document.getElementById('btn-guardar');btn.disabled=true;btn.textContent='⏳ Guardando...';
   const dias=[...document.querySelectorAll('.dia-chip.active')].map(c=>c.dataset.dia).join(',');
-  const cfg={hora_inicio:document.getElementById('cfg-hora-inicio').value,hora_fin:document.getElementById('cfg-hora-fin').value,minuto_fin:document.getElementById('cfg-minuto-fin').value,pausado:document.getElementById('cfg-pausado').checked?'si':'no',dias_activos:dias,minutos_vencida:document.getElementById('cfg-vencida').value,umbral_anomalia:document.getElementById('cfg-anomalia').value,watchdog_minutos:document.getElementById('cfg-watchdog').value,webhook_reporte:document.getElementById('cfg-wh-reporte').value,webhook_jefes:document.getElementById('cfg-wh-jefes').value,webhook_tiempos:document.getElementById('cfg-wh-tiempos').value,enviar_reporte:document.getElementById('cfg-env-reporte').checked?'si':'no',enviar_jefes:document.getElementById('cfg-env-jefes').checked?'si':'no',enviar_tiempos:document.getElementById('cfg-env-tiempos').checked?'si':'no'};
+  const cfg={hora_inicio:document.getElementById('cfg-hora-inicio').value,hora_fin:document.getElementById('cfg-hora-fin').value,minuto_fin:document.getElementById('cfg-minuto-fin').value,pausado:document.getElementById('cfg-pausado').checked?'si':'no',dias_activos:dias,minutos_vencida:document.getElementById('cfg-vencida').value,umbral_anomalia:document.getElementById('cfg-anomalia').value,watchdog_minutos:document.getElementById('cfg-watchdog').value,watchdog_activo:document.getElementById('cfg-watchdog-activo').checked?'si':'no',webhook_reporte:document.getElementById('cfg-wh-reporte').value,webhook_jefes:document.getElementById('cfg-wh-jefes').value,webhook_tiempos:document.getElementById('cfg-wh-tiempos').value,enviar_reporte:document.getElementById('cfg-env-reporte').checked?'si':'no',enviar_jefes:document.getElementById('cfg-env-jefes').checked?'si':'no',enviar_tiempos:document.getElementById('cfg-env-tiempos').checked?'si':'no',ciclos_jefes:document.getElementById('cfg-ciclos-jefes').value,ciclos_reporte:document.getElementById('cfg-ciclos-reporte').value,hora_recordatorio:document.getElementById('cfg-hora-record').value};
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'config',config:cfg})});
     const data=await r.json();
@@ -1218,6 +1322,23 @@ async function guardarConfig(){
 
 document.querySelectorAll('.dia-chip').forEach(chip=>{chip.addEventListener('click',()=>{chip.classList.toggle('active');actualizarResumen();});});
 document.querySelectorAll('#cfg-hora-inicio,#cfg-hora-fin,#cfg-minuto-fin,#cfg-pausado,#cfg-vencida').forEach(el=>el.addEventListener('change',actualizarResumen));
+
+async function guardarDemo(){
+  const el=document.getElementById('demo-estado');
+  el.textContent='⏳ Guardando...';
+  const cfg={
+    webhook_demo_1:document.getElementById('cfg-wh-demo1').value,
+    webhook_demo_2:document.getElementById('cfg-wh-demo2').value,
+    webhook_demo_3:document.getElementById('cfg-wh-demo3').value,
+    intervalo_demo:document.getElementById('cfg-intervalo-demo').value
+  };
+  try{
+    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'config',config:cfg})});
+    const data=await r.json();
+    if(data.ok){el.textContent='✅ Configuración demo guardada';showToast('✅ Config demo guardada','ok');}
+    else throw new Error(data.error||'Error al guardar');
+  }catch(e){el.textContent='❌ '+e.message;showToast('❌ '+e.message,'err');}
+}
 
 // DESCANSOS
 async function cargarDirectorio(){
@@ -1522,7 +1643,7 @@ async function cargarMensajesProgramados(){
       const dLabel   = DEST_LABEL[destino] || destino;
       html += `<tr>
         <td style="max-width:300px;word-break:break-word;font-size:12px">${preview.replace(/\n/g,'<br>')}</td>
-        <td style="white-space:nowrap">cada <b>${intervalo} min</b></td>
+        <td style="white-space:nowrap">cada <b>${intervalo} ciclo${intervalo==1?'':'s'}</b><br><span style="color:#888;font-size:10px">≈${intervalo*15} min</span></td>
         <td><span class="badge info">${dLabel}</span></td>
         <td><span class="badge ${activo?'ok':'warn'}">${activo?'✅ Activo':'⏸️ Pausado'}</span></td>
         <td style="color:#888;font-size:11px;white-space:nowrap">${ultimo||'—'}</td>
@@ -1545,24 +1666,31 @@ async function cargarMensajesProgramados(){
   }
 }
 
+function actualizarEtiquetaCiclos(v){
+  const n = parseInt(v) || 1;
+  const el = document.getElementById('ciclos-label');
+  if (el) el.textContent = n === 1 ? 'ciclo (~15 min)' : `ciclos (~${n*15} min)`;
+}
+
 async function agregarMensajeProgramado(){
   const texto     = document.getElementById('msg-texto').value.trim();
   const intervalo = parseInt(document.getElementById('msg-intervalo').value) || 0;
   const destino   = document.getElementById('msg-destino').value;
   if (!texto)          { showToast('⚠️ Escribe un mensaje','err'); return; }
-  if (intervalo < 5)   { showToast('⚠️ Intervalo mínimo: 5 minutos','err'); return; }
+  if (intervalo < 1)   { showToast('⚠️ Mínimo 1 ciclo (~15 min)','err'); return; }
   try {
     const id     = Date.now().toString();
     const creado = new Date().toISOString().replace('T',' ').substring(0,19);
     const r    = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
-      body: JSON.stringify({accion:'agregar_mensaje_programado', id, texto, intervalo_min: intervalo, destino, creado})
+      body: JSON.stringify({accion:'agregar_mensaje_programado', id, texto, intervalo_ciclos: intervalo, destino, creado})
     });
     const data = await r.json();
     if (data.ok) {
       showToast('✅ Mensaje programado agregado','ok');
       document.getElementById('msg-texto').value    = '';
-      document.getElementById('msg-intervalo').value = '20';
+      document.getElementById('msg-intervalo').value = '1';
+      actualizarEtiquetaCiclos(1);
       cargarMensajesProgramados();
     } else {
       throw new Error(data.error || 'Error al guardar');

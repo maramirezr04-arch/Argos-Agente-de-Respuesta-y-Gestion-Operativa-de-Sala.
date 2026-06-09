@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.0.4"
+VERSION = "1.1.3"
 
 Path("logs").mkdir(exist_ok=True)
 logging.basicConfig(
@@ -171,9 +171,19 @@ MAX_EJECUCION_SEG     = 600    # 10 min max por ejecucion
 HORA_INICIO     = 10
 HORA_FIN        = 21
 MINUTO_FIN      = 30
+# ── Frecuencia de mensajes — configurable desde dashboard ─────
+CICLOS_JEFES       = 2       # ciclos entre mensajes al espacio Jefes
+CICLOS_REPORTE     = 1       # ciclos entre mensajes al espacio Reporte
+HORA_RECORDATORIO  = "20:30" # hora objetivo del recordatorio (HH:MM)
+# ── Demo mode ────────────────────────────────────────────────
+WEBHOOK_DEMO_1  = ""
+WEBHOOK_DEMO_2  = ""
+WEBHOOK_DEMO_3  = ""
+INTERVALO_DEMO  = 15  # minutos entre ejecuciones demo
 # ── Archivos ─────────────────────────────────────────────────
 TIEMPOS_FILE      = "tiempos.json"
 CONTADOR_FILE     = "contador_jefes.json"
+CONTADOR_MSGS_FILE = "contador_mensajes.json"
 APERTURA_FILE     = "apertura.json"
 CIERRE_FILE       = "cierre.json"
 LOCK_FILE         = "bot.lock"
@@ -292,7 +302,7 @@ CONFIG_CACHE_FILE = "config_remota_cache.json"
 
 def cargar_config_remota(gc):
     """Lee la hoja CONFIG del Sheet 1 y actualiza valores globales."""
-    global HORA_INICIO, HORA_FIN, MINUTO_FIN, MINUTOS_VENCIDA, UMBRAL_ANOMALIA, WATCHDOG_MINUTOS, CONFIG_REMOTA
+    global HORA_INICIO, HORA_FIN, MINUTO_FIN, MINUTOS_VENCIDA, UMBRAL_ANOMALIA, WATCHDOG_MINUTOS, CONFIG_REMOTA, CICLOS_JEFES, CICLOS_REPORTE, HORA_RECORDATORIO, WEBHOOK_DEMO_1, WEBHOOK_DEMO_2, WEBHOOK_DEMO_3, INTERVALO_DEMO
     try:
         ss = gc.open_by_key(GOOGLE["sheet_id"])
         try:
@@ -313,6 +323,13 @@ def cargar_config_remota(gc):
                 ["webhook_reporte", WEBHOOK],
                 ["webhook_jefes", WEBHOOK_JEFES],
                 ["webhook_tiempos", WEBHOOK_TIEMPOS],
+                ["ciclos_jefes", "2"],
+                ["ciclos_reporte", "1"],
+                ["hora_recordatorio", "20:30"],
+                ["webhook_demo_1", ""],
+                ["webhook_demo_2", ""],
+                ["webhook_demo_3", ""],
+                ["intervalo_demo", "15"],
             ]
             hoja.update(defaults, "A1")
             log.info("Hoja CONFIG creada con valores por defecto")
@@ -338,6 +355,20 @@ def cargar_config_remota(gc):
         except: pass
         if cfg.get("watchdog_minutos", "").isdigit():
             WATCHDOG_MINUTOS = int(cfg["watchdog_minutos"])
+        if cfg.get("ciclos_jefes", "").isdigit():
+            CICLOS_JEFES = max(1, int(cfg["ciclos_jefes"]))
+        if cfg.get("ciclos_reporte", "").isdigit():
+            CICLOS_REPORTE = max(1, int(cfg["ciclos_reporte"]))
+        if cfg.get("hora_recordatorio"):
+            HORA_RECORDATORIO = cfg["hora_recordatorio"].strip()
+        if cfg.get("webhook_demo_1"):
+            WEBHOOK_DEMO_1 = cfg["webhook_demo_1"].strip()
+        if cfg.get("webhook_demo_2"):
+            WEBHOOK_DEMO_2 = cfg["webhook_demo_2"].strip()
+        if cfg.get("webhook_demo_3"):
+            WEBHOOK_DEMO_3 = cfg["webhook_demo_3"].strip()
+        if cfg.get("intervalo_demo", "").isdigit():
+            INTERVALO_DEMO = max(1, int(cfg["intervalo_demo"]))
 
         CONFIG_REMOTA = cfg
 
@@ -508,6 +539,22 @@ def guardar_contador(c):
     except Exception:
         pass
 
+def leer_contador_msgs():
+    try:
+        if os.path.exists(CONTADOR_MSGS_FILE):
+            with open(CONTADOR_MSGS_FILE, "r") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
+
+def guardar_contador_msgs(c):
+    try:
+        with open(CONTADOR_MSGS_FILE, "w") as f:
+            json.dump(c, f)
+    except Exception:
+        pass
+
 # ── Utilidades ────────────────────────────────────────────────
 
 def get_fechas():
@@ -632,7 +679,7 @@ def calcular_tiempo_espera_str(minutos):
 
 # ── Descarga CSV con 3 navegadores en paralelo ────────────────
 
-def descargar_csv():
+def descargar_csv(visible=False):
     Path(CARPETA_DESCARGA).mkdir(parents=True, exist_ok=True)
     fecha_ayer, fecha_hoy = get_fechas()
     log.info(f"Descargando reporte {fecha_ayer} -> {fecha_hoy}")
@@ -713,7 +760,7 @@ def descargar_csv():
         try:
             with sync_playwright() as p:
                 browser = p.chromium.launch(
-                    headless=True,
+                    headless=not visible,
                     args=["--disable-extensions", "--no-sandbox", "--disable-dev-shm-usage"]
                 )
                 try:
@@ -1063,7 +1110,7 @@ def enviar_apertura(datos, dir_dict, hist_dict):
             lineas.append("    📍 " + " | ".join(nom_secs))
 
     lineas.append("")
-    lineas.append("_Liverpool Bot 456 — " + fecha_now + "_")
+    lineas.append("_Argos — " + fecha_now + "_")
 
     mensaje = "\n".join(lineas)
     post_chat_con_reintento(WEBHOOK, {"text": mensaje})
@@ -1251,7 +1298,7 @@ def enviar_mensaje_jefe_individual(jefe, info_j, ubicacion, fecha_now, dir_dict,
             partes.append(linea)
 
     partes.append("  🟢 *Total: " + str(total_jefe) + " remisiones*")
-    partes.append("_Liverpool Bot 456 — " + fecha_now + "_")
+    partes.append("_Argos — " + fecha_now + "_")
     partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
 
     post_chat_con_reintento(webhook_jefe, {"text": "\n".join(partes)})
@@ -1368,7 +1415,7 @@ def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes
             partes.append("")
 
         partes.append("📋 *Total " + ubicacion + ": " + str(total_piso) + " remisiones*")
-        partes.append("_Liverpool Bot 456 — " + fecha_now + "_")
+        partes.append("_Argos — " + fecha_now + "_")
         partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
 
         post_chat_con_reintento(WEBHOOK_JEFES, {"text": "\n".join(partes)})
@@ -1435,7 +1482,7 @@ def enviar_cierre(datos, dir_dict):
                 lineas.append("    📍 " + sec_key + " — " + calcular_tiempo_espera_str(max(minutos_list)))
 
     lineas.append("")
-    lineas.append("_Liverpool Bot 456 — " + fecha_now + "_")
+    lineas.append("_Argos — " + fecha_now + "_")
 
     # ── Mensaje buenas noches → espacio Jefes ────────────────────────
     post_chat_con_reintento(WEBHOOK_JEFES, {"text": "\n".join(lineas)})
@@ -1527,7 +1574,7 @@ def enviar_pendientes_ayer(datos, dir_dict, descansos=None):
             lineas.append(linea)
         lineas.append("")
 
-    lineas.append("_Liverpool Bot 456 — " + fecha_now + "_")
+    lineas.append("_Argos — " + fecha_now + "_")
     lineas.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
 
     post_chat_con_reintento(WEBHOOK_JEFES, {"text": "\n".join(lineas)})
@@ -1582,16 +1629,38 @@ def actualizar_sheets(gc, datos):
         hoja2 = ss2.worksheet(GOOGLE["sheet2_hoja"])
     except gspread.WorksheetNotFound:
         hoja2 = ss2.add_worksheet(GOOGLE["sheet2_hoja"], rows=5000, cols=50)
-    # Borrar rango V2:AS hacia abajo antes de pegar datos nuevos
+    # Borrar solo hasta la última fila con datos en columna V (no siempre 5000)
     try:
-        hoja2.batch_clear(["V2:AS5000"])
-        log.info("Sheet 2 rango V2:AS limpiado ✅")
+        col_v = hoja2.col_values(22)  # columna V = índice 22
+        ultima_fila = max(len(col_v), int(GOOGLE.get("sheet2_fila", 2)))
+        hoja2.batch_clear([f"V2:AS{ultima_fila}"])
+        log.info(f"Sheet 2 rango V2:AS{ultima_fila} limpiado ✅")
     except Exception as e:
         log.warning(f"No se pudo limpiar Sheet 2: {e}")
 
     hoja2.update(datos_limpios, f"{GOOGLE['sheet2_col']}{GOOGLE['sheet2_fila']}", value_input_option="USER_ENTERED")
     hoja2.update([[datetime.now().strftime("%d/%m/%Y %H:%M:%S")]], f"{GOOGLE['timestamp_col']}{GOOGLE['timestamp_fila']}")
     log.info("Sheet 2 actualizado ✅")
+
+    # Copiar fórmulas de columnas específicas (A, F, I, J, K, U) hacia abajo
+    try:
+        fila_inicio = int(GOOGLE.get("sheet2_fila", 2))
+        num_filas   = len(datos_limpios)
+        if num_filas > 1:
+            # Columnas con fórmula (0-based start, exclusive end): A, F, I-K, U
+            formula_cols = [(0,1), (5,6), (8,11), (20,21)]
+            dest_end     = fila_inicio - 1 + num_filas
+            requests     = []
+            for start_col, end_col in formula_cols:
+                requests.append({"copyPaste": {
+                    "source":      {"sheetId": hoja2.id, "startRowIndex": fila_inicio - 1, "endRowIndex": fila_inicio,   "startColumnIndex": start_col, "endColumnIndex": end_col},
+                    "destination": {"sheetId": hoja2.id, "startRowIndex": fila_inicio,     "endRowIndex": dest_end, "startColumnIndex": start_col, "endColumnIndex": end_col},
+                    "pasteType": "PASTE_FORMULA", "pasteOrientation": "NORMAL"
+                }})
+            ss2.batch_update({"requests": requests})
+            log.info(f"Fórmulas A,F,I,J,K,U copiadas hasta fila {fila_inicio + num_filas - 1} ✅")
+    except Exception as e:
+        log.warning(f"No se pudo copiar fórmulas: {e}")
 
     dir_dict  = {}
     hist_dict = {}
@@ -1878,7 +1947,7 @@ def enviar_resumen_tiempos(gc):
             lineas.append("  📋 Remisiones: *" + str(len(segs)) + "*")
             lineas.append("")
 
-        lineas.append("_Liverpool Bot 456 — " + fecha_now + "_")
+        lineas.append("_Argos — " + fecha_now + "_")
 
         post_chat_con_reintento(WEBHOOK_TIEMPOS, {"text": "\n".join(lineas)})
         log.info("Resumen tiempos enviado al espacio tiempos ✅")
@@ -2099,7 +2168,7 @@ def verificar_watchdog(gc):
         diff_min  = (datetime.now() - ultima_dt).total_seconds() / 60
         if diff_min > 30 and dentro_de_horario():
             fecha_now = datetime.now().strftime("%d/%m/%Y %H:%M")
-            msg = "🚨 *Watchdog — Bot inactivo*\n\nUltima ejecucion exitosa: " + ultima[1] + " (hace " + str(int(diff_min)) + " min)\n\n_Favor de verificar la PC_\n_Liverpool Bot 456 — " + fecha_now + "_"
+            msg = "🚨 *Watchdog — Bot inactivo*\n\nUltima ejecucion exitosa: " + ultima[1] + " (hace " + str(int(diff_min)) + " min)\n\n_Favor de verificar la PC_\n_Argos — " + fecha_now + "_"
             post_chat_con_reintento(WEBHOOK, {"text": msg})
             log.warning("⚠️ Watchdog: bot inactivo mas de 30 min")
     except Exception as e:
@@ -2200,7 +2269,7 @@ def enviar_comparativa_semanal(gc):
         for d in dias_semana:
             lineas.append("  " + d["dia"] + " " + d["fecha"] + " — " + str(d["total"]) + " remisiones | " + str(d["vencidas"]) + " vencidas")
 
-        lineas.append("\n_Liverpool Bot 456 — " + fecha_now + "_")
+        lineas.append("\n_Argos — " + fecha_now + "_")
 
         post_chat_con_reintento(WEBHOOK, {"text": "\n".join(lineas)})
         post_chat_con_reintento(WEBHOOK_JEFES, {"text": "\n".join(lineas)})
@@ -2310,7 +2379,7 @@ def enviar_ranking_jefes(gc):
                 lineas.append("  " + jefe + " — " + seg_a_str(prom))
             lineas.append("")
 
-        lineas.append("_Liverpool Bot 456 — " + fecha_now + "_")
+        lineas.append("_Argos — " + fecha_now + "_")
 
         post_chat_con_reintento(WEBHOOK_TIEMPOS, {"text": "\n".join(lineas)})
         log.info("Ranking de jefes enviado ✅")
@@ -2322,9 +2391,15 @@ def enviar_ranking_jefes(gc):
 RECORDATORIO_FILE = "recordatorio_estado.json"
 
 def es_hora_recordatorio():
-    """8:30 PM — 1 hora antes del cierre."""
+    """Verifica si el ciclo actual cae dentro de la ventana del recordatorio configurable."""
     ahora = datetime.now()
-    return ahora.hour == 20 and 25 <= ahora.minute < 45
+    try:
+        partes   = HORA_RECORDATORIO.split(":")
+        objetivo = ahora.replace(hour=int(partes[0]), minute=int(partes[1]), second=0, microsecond=0)
+        mins_diff = (ahora - objetivo).total_seconds() / 60
+        return 0 <= mins_diff < 20  # ventana de 20 min para no perderse el ciclo
+    except Exception:
+        return ahora.hour == 20 and 25 <= ahora.minute < 45
 
 def recordatorio_ya_enviado():
     try:
@@ -2375,7 +2450,7 @@ def enviar_recordatorio_cierre(datos, dir_dict):
         lineas.append(get_mencion(jefe) + " — *" + str(count) + "* pendientes")
 
     lineas.append("")
-    lineas.append("_Liverpool Bot 456 — " + fecha_now + "_")
+    lineas.append("_Argos — " + fecha_now + "_")
 
     post_chat_con_reintento(WEBHOOK_JEFES, {"text": "\n".join(lineas)})
     marcar_recordatorio_enviado()
@@ -2384,14 +2459,14 @@ def enviar_recordatorio_cierre(datos, dir_dict):
 # ── MENSAJES PROGRAMADOS ─────────────────────────────────────
 
 def procesar_mensajes_programados(gc):
-    """Lee hoja MENSAJES_PROGRAMADOS y envía los mensajes cuyo intervalo ya vencio."""
+    """Envía mensajes programados usando contador de ciclos (igual que contador_jefes)."""
     try:
         ss = gc.open_by_key(GOOGLE["sheet_id"])
         try:
             hoja = ss.worksheet("MENSAJES_PROGRAMADOS")
         except gspread.WorksheetNotFound:
             hoja = ss.add_worksheet("MENSAJES_PROGRAMADOS", rows=200, cols=7)
-            hoja.update([["ID", "Texto", "Intervalo_min", "Destino", "Activo", "Ultimo_envio", "Creado"]], "A1")
+            hoja.update([["ID", "Texto", "Intervalo_ciclos", "Destino", "Activo", "Ultimo_envio", "Creado"]], "A1")
             log.info("Hoja MENSAJES_PROGRAMADOS creada ✅")
             return
 
@@ -2405,56 +2480,50 @@ def procesar_mensajes_programados(gc):
             "jefes":   WEBHOOK_JEFES,
             "tiempos": WEBHOOK_TIEMPOS,
         }
-        FORMATOS_DT = ["%Y-%m-%d %H:%M:%S", "%d/%m/%Y %H:%M:%S", "%Y-%m-%dT%H:%M:%S"]
+
+        contadores = leer_contador_msgs()
 
         for i, row in enumerate(rows[1:], start=2):
             if len(row) < 4:
                 continue
-            texto      = row[1] if len(row) > 1 else ""
+            raw_id  = (row[0] if len(row) > 0 else "").strip()
             try:
-                intervalo = int(float(row[2])) if len(row) > 2 and row[2] else 0
+                msg_id = str(int(float(raw_id))) if raw_id else ""
             except (ValueError, TypeError):
-                intervalo = 0
-            destino    = (row[3] if len(row) > 3 else "reporte").strip()
-            activo     = (row[4] if len(row) > 4 else "si").strip().lower()
-            ultimo_env = (row[5] if len(row) > 5 else "").strip()
+                msg_id = raw_id
+            texto   = (row[1] if len(row) > 1 else "").strip()
+            try:
+                intervalo_ciclos = int(float(row[2])) if len(row) > 2 and row[2] else 0
+            except (ValueError, TypeError):
+                intervalo_ciclos = 0
+            destino = (row[3] if len(row) > 3 else "reporte").strip()
+            activo  = (row[4] if len(row) > 4 else "si").strip().lower()
 
             if activo not in ("si", "yes", "true", "1"):
                 continue
-            if not texto.strip() or intervalo <= 0:
+            if not texto or intervalo_ciclos <= 0 or not msg_id:
                 continue
 
-            # Determinar si corresponde enviar
-            debe_enviar = False
-            if not ultimo_env:
-                debe_enviar = True
-            else:
-                for fmt in FORMATOS_DT:
+            contadores[msg_id] = contadores.get(msg_id, 0) + 1
+            ciclo_actual = contadores[msg_id]
+
+            if ciclo_actual >= intervalo_ciclos:
+                enviado = False
+                for dest in [d.strip() for d in destino.split(",")]:
+                    url = WEBHOOKS_DESTINO.get(dest)
+                    if url and post_chat_con_reintento(url, {"text": texto}):
+                        enviado = True
+                if enviado:
+                    contadores[msg_id] = 0
                     try:
-                        ultimo_dt   = datetime.strptime(ultimo_env, fmt)
-                        mins_pasados = (ahora - ultimo_dt).total_seconds() / 60
-                        debe_enviar  = mins_pasados >= intervalo
-                        break
-                    except ValueError:
-                        continue
-                else:
-                    debe_enviar = True
+                        hoja.update([[ahora.strftime("%Y-%m-%d %H:%M:%S")]], f"F{i}")
+                    except Exception as upd_e:
+                        log.warning(f"Error actualizando Ultimo_envio fila {i}: {upd_e}")
+                    log.info(f"Mensaje programado enviado (fila {i}): destino={destino}, cada {intervalo_ciclos} ciclo(s)")
+            else:
+                log.info(f"Msg programado fila {i}: {ciclo_actual}/{intervalo_ciclos} ciclos")
 
-            if not debe_enviar:
-                continue
-
-            enviado = False
-            for dest in [d.strip() for d in destino.split(",")]:
-                url = WEBHOOKS_DESTINO.get(dest)
-                if url and post_chat_con_reintento(url, {"text": texto}):
-                    enviado = True
-
-            if enviado:
-                try:
-                    hoja.update([[ahora.strftime("%Y-%m-%d %H:%M:%S")]], f"F{i}")
-                except Exception as upd_e:
-                    log.warning(f"Error actualizando Ultimo_envio fila {i}: {upd_e}")
-                log.info(f"Mensaje programado enviado (fila {i}): destino={destino}, cada {intervalo} min")
+        guardar_contador_msgs(contadores)
 
     except Exception as e:
         log.warning(f"Error procesando mensajes programados: {e}")
@@ -2467,10 +2536,11 @@ def main():
     DRY_RUN   = "--dry-run" in sys.argv or "test" in sys.argv
     TEST_MODE = "test" in sys.argv
     FORZAR    = "--forzar" in sys.argv
+    DEMO_MODE = "--demo" in sys.argv
 
     log.info("=" * 50)
     if DRY_RUN: log.info("🧪 MODO DRY-RUN — no se mandaran mensajes ni se actualizaran Sheets")
-    log.info("Iniciando automatizacion Liverpool")
+    log.info("Iniciando Argos")
 
     # Verificar lock
     if not verificar_lock():
@@ -2521,6 +2591,20 @@ def main():
         # Cargar config remota desde hoja CONFIG
         cargar_config_remota(gc_global)
 
+        # Modo demo — redirigir webhooks y abrir browser visible
+        if DEMO_MODE:
+            global WEBHOOK, WEBHOOK_JEFES, WEBHOOK_TIEMPOS
+            log.info("🎯 MODO DEMO activado — webhooks redirigidos a canales demo")
+            if WEBHOOK_DEMO_1:
+                WEBHOOK = WEBHOOK_DEMO_1
+                log.info(f"  WEBHOOK → demo_1")
+            if WEBHOOK_DEMO_2:
+                WEBHOOK_JEFES = WEBHOOK_DEMO_2
+                log.info(f"  WEBHOOK_JEFES → demo_2")
+            if WEBHOOK_DEMO_3:
+                WEBHOOK_TIEMPOS = WEBHOOK_DEMO_3
+                log.info(f"  WEBHOOK_TIEMPOS → demo_3")
+
         # Registrar PC y verificar si esta pausada individualmente
         if not registrar_y_verificar_pc(gc_global):
             liberar_lock()
@@ -2542,7 +2626,7 @@ def main():
             liberar_lock()
             return
 
-        ruta, intentos_descarga        = descargar_csv()
+        ruta, intentos_descarga        = descargar_csv(visible=DEMO_MODE)
 
         # Validar CSV
         es_valido, info_csv = validar_csv(ruta)
@@ -2633,22 +2717,27 @@ def main():
         if es_anom:
             mandar_alerta_anomalia(len(vencidas), prom_venc)
 
-        # ── Mensajes normales — espacio REPORTE ───────────────────────────────
+        # ── Mensajes — espacio REPORTE ────────────────────────────────────────
         enviar_notificaciones_vencidas(vencidas)
-        enviar_chat(resumen, exito=True)
-
-        # ── Mensajes por piso cada 30 min — espacio JEFES ────────────────────
-        # Incluye pendientes de ayer hasta que no quede ninguno
         contador = leer_contador()
+        contador["reporte_count"] = contador.get("reporte_count", 0) + 1
+        if contador["reporte_count"] >= CICLOS_REPORTE:
+            enviar_chat(resumen, exito=True)
+            contador["reporte_count"] = 0
+            log.info(f"Reporte enviado, contador reiniciado (cada {CICLOS_REPORTE} ciclo(s))")
+        else:
+            log.info(f"Contador reporte: {contador['reporte_count']}/{CICLOS_REPORTE}")
+
+        # ── Mensajes por piso — espacio JEFES ────────────────────────────────
         contador["count"] = contador.get("count", 0) + 1
-        if contador["count"] >= 2:
+        if contador["count"] >= CICLOS_JEFES:
             _WEBHOOKS_YA_ENVIADOS.clear()
             enviar_mensaje_jefes(datos, dir_dict, hist_dict, descansos, jefes_en_descanso)
             enviar_pendientes_ayer(datos, dir_dict, descansos)
             contador["count"] = 0
-            log.info("Mensajes por piso + pendientes de ayer enviados, contador reiniciado")
+            log.info(f"Mensajes jefes enviados, contador reiniciado (cada {CICLOS_JEFES} ciclo(s))")
         else:
-            log.info("Contador jefes: " + str(contador["count"]) + "/2")
+            log.info(f"Contador jefes: {contador['count']}/{CICLOS_JEFES}")
         guardar_contador(contador)
 
         guardar_metricas_dia(gc_global, resumen, len(vencidas))
@@ -3098,7 +3187,7 @@ def enviar_kpi_jefes_tiempos(csv_oms=None, csv_xd=None, dir_dict=None):
                 log.info(f"KPI jefes: usando XD de hoy: {csv_xd}")
             else:
                 log.info("KPI jefes: descargando historico XD...")
-                csv_xd = descargar_historico_xd()
+                csv_xd = descargar_historico_xd(visible=DEMO_MODE)
 
         # ── DIRECTORIO ────────────────────────────────────────────
         if not dir_dict:
@@ -3180,42 +3269,49 @@ def enviar_kpi_jefes_tiempos(csv_oms=None, csv_xd=None, dir_dict=None):
             lineas.append(f"📊 *Promedio general del turno: {_formato_min(p_gral)}*")
 
         lineas.append("")
-        lineas.append(f"_Liverpool Bot 456 — {fecha_now}_")
+        lineas.append(f"_Argos — {fecha_now}_")
         lineas.append("━━━━━━━━━━━━━━━━━━━━━━━━━")
 
         post_chat_con_reintento(WEBHOOK_TIEMPOS, {"text": "\n".join(lineas)})
         log.info("KPI jefes tiempos enviado al espacio Tiempos ✅")
 
-        # ── Escribir KPI en hoja TIEMPOS del Sheet para el dashboard ──
+        # ── Escribir KPI en hoja KPI_TIEMPOS (histórico por día) ──────────
         try:
             from config import GOOGLE
             creds2 = Credentials.from_service_account_file(
                 GOOGLE["credentials"],
                 scopes=["https://www.googleapis.com/auth/spreadsheets"]
             )
-            gc2 = gspread.authorize(creds2)
-            ss2 = gc2.open_by_key(GOOGLE["sheet_id"])
+            gc2    = gspread.authorize(creds2)
+            ss2    = gc2.open_by_key(GOOGLE["sheet_id"])
             try:
-                hoja_t = ss2.worksheet("TIEMPOS")
+                hoja_t = ss2.worksheet("KPI_TIEMPOS")
             except Exception:
-                hoja_t = ss2.add_worksheet("TIEMPOS", rows=200, cols=10)
+                hoja_t = ss2.add_worksheet("KPI_TIEMPOS", rows=5000, cols=7)
 
-            filas_sheet = [["Jefe", "Min (min)", "Promedio (min)", "Max (min)", "Remisiones", "Fecha"]]
-            fecha_hoy   = datetime.now().strftime("%d/%m/%Y %H:%M")
+            if hoja_t.row_count == 0 or not hoja_t.get("A1"):
+                hoja_t.update(
+                    [["Dia", "Jefe", "Min (min)", "Promedio (min)", "Max (min)", "Remisiones", "Hora_cierre"]],
+                    "A1"
+                )
+
+            dia_hoy   = datetime.now().strftime("%d/%m/%Y")
+            hora_hoy  = datetime.now().strftime("%d/%m/%Y %H:%M")
+            filas_nuevas = []
             for jefe, d in sorted(jefes.items(), key=lambda x: x[1]["prom_mins"]):
-                filas_sheet.append([
+                filas_nuevas.append([
+                    dia_hoy,
                     jefe.title(),
                     d["min_mins"],
                     d["prom_mins"],
                     d["max_mins"],
                     d["total_rem"],
-                    fecha_hoy,
+                    hora_hoy,
                 ])
-            hoja_t.clear()
-            hoja_t.update(filas_sheet, value_input_option="RAW")
-            log.info(f"KPI tiempos escrito en hoja TIEMPOS ({len(jefes)} jefes) ✅")
+            hoja_t.append_rows(filas_nuevas, value_input_option="RAW")
+            log.info(f"KPI tiempos guardado en KPI_TIEMPOS ({len(jefes)} jefes, día {dia_hoy}) ✅")
         except Exception as e2:
-            log.warning(f"No se pudo escribir KPI en Sheets: {e2}")
+            log.warning(f"No se pudo escribir KPI en KPI_TIEMPOS: {e2}")
 
     except Exception as e:
         log.error(f"Error enviando KPI jefes tiempos: {e}")
@@ -3261,7 +3357,7 @@ def enviar_kpi_vendedores_tiempos(csv_oms=None, csv_xd=None):
             nombre = " ".join(w.capitalize() for w in ven.split()[:2])
             lineas.append(f"{emoji} *{nombre}* — {_formato_min(p)} | {datos['total']} rem")
 
-        lineas.append(f"\n_Liverpool Bot 456 — {fecha_now}_")
+        lineas.append(f"\n_Argos — {fecha_now}_")
         lineas.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
 
         post_chat_con_reintento(WEBHOOK_TIEMPOS, {"text": "\n".join(lineas)})
