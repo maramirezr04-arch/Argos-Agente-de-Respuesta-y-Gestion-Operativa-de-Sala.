@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.1.6"
+VERSION = "1.1.7"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
@@ -1548,8 +1548,8 @@ def enviar_mensajes_vendedores(todas_remisiones, dir_dict, descansos=None):
         log.info("Sin webhooks de vendedores configurados — omitiendo mensajes individuales")
         return
     ESTATUS_ACTIVOS = ["Etiqueta Generada", "Mercancia en Espera de Entrega"]
-    COL_STATUS=8; COL_SECCION=5; COL_FECHA_ASIG=7
-    COL_NOMBRE_VEN=13; COL_TIPO_ENTREGA=22
+    COL_REMISION=1; COL_SKU=2; COL_SECCION=5; COL_FECHA_ASIG=7
+    COL_STATUS=8; COL_NOMBRE_VEN=13; COL_TIPO_ENTREGA=22
 
     fecha_now    = datetime.now().strftime("%d/%m/%Y %H:%M")
     por_vendedor = {}
@@ -1566,6 +1566,8 @@ def enviar_mensajes_vendedores(todas_remisiones, dir_dict, descansos=None):
 
         fecha_asig   = row[COL_FECHA_ASIG] if len(row) > COL_FECHA_ASIG else ""
         minutos      = calcular_minutos(fecha_asig)
+        remision     = str(row[COL_REMISION]).strip().replace(".0", "") if len(row) > COL_REMISION else ""
+        sku          = str(row[COL_SKU]).strip().replace(".0", "") if len(row) > COL_SKU else ""
         tipo_entrega = str(row[COL_TIPO_ENTREGA]).strip() if len(row) > COL_TIPO_ENTREGA else ""
         es_ayer      = es_de_ayer(fecha_asig)
         vencida      = minutos >= MINUTOS_VENCIDA
@@ -1582,19 +1584,33 @@ def enviar_mensajes_vendedores(todas_remisiones, dir_dict, descansos=None):
 
         if nom_vendedor not in por_vendedor:
             por_vendedor[nom_vendedor] = {
-                "en_tiempo": 0, "vencidas": 0, "de_ayer": 0,
-                "max_min": 0, "tipo_counts": {}, "ubicacion": ubicacion,
+                "en_tiempo": [], "vencidas": [], "de_ayer": [],
+                "ubicacion": ubicacion,
             }
+        item = {
+            "remision":  remision,
+            "sku":       sku,
+            "minutos":   minutos,
+            "prioridad": tipo_entrega.strip().lower() in _TIPOS_ALERTA,
+        }
         v = por_vendedor[nom_vendedor]
         if es_ayer:
-            v["de_ayer"] += 1
+            v["de_ayer"].append(item)
         elif vencida:
-            v["vencidas"] += 1
+            v["vencidas"].append(item)
         else:
-            v["en_tiempo"] += 1
-        v["max_min"] = max(v["max_min"], minutos)
-        if tipo_entrega:
-            v["tipo_counts"][tipo_entrega] = v["tipo_counts"].get(tipo_entrega, 0) + 1
+            v["en_tiempo"].append(item)
+
+    def _lineas_remisiones(items):
+        """Una línea por remisión: nº · SKU — lleva <tiempo>  🚨 si es prioridad.
+        Ordenadas de la más atrasada a la más reciente."""
+        lineas = []
+        for it in sorted(items, key=lambda x: -x["minutos"]):
+            sku_txt = " · SKU " + it["sku"] if it["sku"] else ""
+            prio    = "  🚨" if it["prioridad"] else ""
+            lineas.append("    • *" + it["remision"] + "*" + sku_txt +
+                          " — lleva " + calcular_tiempo_espera_str(it["minutos"]) + prio)
+        return lineas
 
     enviados    = 0
     ya_enviados = set()
@@ -1604,24 +1620,25 @@ def enviar_mensajes_vendedores(todas_remisiones, dir_dict, descansos=None):
             continue
         ya_enviados.add(webhook)
 
-        total  = v["en_tiempo"] + v["vencidas"] + v["de_ayer"]
+        total  = len(v["en_tiempo"]) + len(v["vencidas"]) + len(v["de_ayer"])
+        if total == 0:
+            continue
+
         partes = []
         partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
         partes.append("🏬 *" + v["ubicacion"] + "* — " + fecha_now)
         partes.append("")
         partes.append("👤 *" + vendedor.title() + "*")
         partes.append("")
-        if v["de_ayer"]:   partes.append("  📅 *De ayer sin atender:* " + str(v["de_ayer"]))
-        if v["vencidas"]:  partes.append("  🔴 *Vencidas (+20 min):* " + str(v["vencidas"]))
-        if v["en_tiempo"]: partes.append("  ⏰ *En tiempo:* " + str(v["en_tiempo"]))
-        if v["max_min"] > 0:
-            partes.append("  ⏱️ Más atrasada: " + calcular_tiempo_espera_str(v["max_min"]))
-
-        # Alerta de prioridad: C&C, C&C Expreso, XD Expreso
-        alerta = {k: c for k, c in v["tipo_counts"].items() if k.strip().lower() in _TIPOS_ALERTA}
-        if alerta:
-            detalle = " · ".join(t + ": *" + str(c) + "*" for t, c in sorted(alerta.items(), key=lambda x: -x[1]))
-            partes.append("  🚨 " + detalle + " — *DAR PRIORIDAD*")
+        if v["de_ayer"]:
+            partes.append("  📅 *De ayer sin atender (" + str(len(v["de_ayer"])) + "):*")
+            partes.extend(_lineas_remisiones(v["de_ayer"]))
+        if v["vencidas"]:
+            partes.append("  🔴 *Vencidas +20 min (" + str(len(v["vencidas"])) + "):*")
+            partes.extend(_lineas_remisiones(v["vencidas"]))
+        if v["en_tiempo"]:
+            partes.append("  ⏰ *En tiempo (" + str(len(v["en_tiempo"])) + "):*")
+            partes.extend(_lineas_remisiones(v["en_tiempo"]))
 
         partes.append("")
         partes.append("  🟢 *Total: " + str(total) + " remisiones*")
