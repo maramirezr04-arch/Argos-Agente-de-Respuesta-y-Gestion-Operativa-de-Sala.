@@ -1184,9 +1184,8 @@ def generar_linea_jefe(jefe, info_j):
     vencidas_jefe = sum(ds["count"] for ds in info_j["vencidas"].values())
     ayer_jefe     = sum(ds["count"] for ds in info_j["de_ayer"].values())
     sin_asignar   = sum(
-        ds["sin_vendedor"]
-        for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]]
-        for ds in grp.values()
+        ds["count"] for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]]
+        for ven, ds in grp.items() if ven == "Sin asignar"
     )
     amarillo_jefe = sum(
         ds["count"] for ds in info_j["en_tiempo"].values()
@@ -1199,7 +1198,7 @@ def generar_linea_jefe(jefe, info_j):
     if verde_puro > 0:    partes_color.append("🟢 *" + str(verde_puro) + "* rem")
     if amarillo_jefe > 0: partes_color.append("🟡 *" + str(amarillo_jefe) + "* rem")
     if rojo_jefe > 0:     partes_color.append("🔴 *" + str(rojo_jefe) + "* rem")
-    if sin_asignar > 0:   partes_color.append("⚠️ *" + str(sin_asignar) + "* sin asignar")
+    if sin_asignar > 0:   partes_color.append("⚠️ *" + str(sin_asignar) + "* sin vendedor")
 
     lineas = [get_mencion(jefe)]
     if partes_color:
@@ -1264,6 +1263,15 @@ def enviar_mensaje_jefe_individual(jefe, info_j, ubicacion, fecha_now, dir_dict,
 
     total_jefe = sum(ds["count"] for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]] for ds in grp.values())
 
+    def _lineas_vendedores(grp):
+        """Devuelve líneas ordenadas por tiempo más atrasado (mayor primero)."""
+        lineas = []
+        for ven, ds in sorted(grp.items(), key=lambda x: -x[1]["max_min"]):
+            sufijo = " | más atrasado: " + calcular_tiempo_espera_str(ds["max_min"]) if ds["max_min"] > 0 else ""
+            icono  = "⚠️" if ven == "Sin asignar" else "👤"
+            lineas.append("    " + icono + " " + ven + " — *" + str(ds["count"]) + "* rem" + sufijo)
+        return lineas
+
     partes = []
     partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
     partes.append("🏬 *" + ubicacion + "* — " + fecha_now)
@@ -1273,30 +1281,19 @@ def enviar_mensaje_jefe_individual(jefe, info_j, ubicacion, fecha_now, dir_dict,
     partes.append(get_mencion(jefe))
     partes.append("")
 
-    if info_j["en_tiempo"]:
-        partes.append("  ⏰ *En tiempo:*")
-        for sec_label, ds in sorted(info_j["en_tiempo"].items()):
-            linea = "    " + sec_label + " — " + calcular_tiempo_espera_str(ds["max_min"]) + " | " + str(ds["count"]) + " remisiones"
-            if ds["sin_vendedor"] > 0:
-                linea += " | ⚠️ *" + str(ds["sin_vendedor"]) + "* sin vendedor"
-            partes.append(linea)
+    if info_j["de_ayer"]:
+        partes.append("  📅 *De ayer sin atender:*")
+        partes.extend(_lineas_vendedores(info_j["de_ayer"]))
 
     if info_j["vencidas"]:
         partes.append("  🔴 *Vencidas (+20 min):*")
-        for sec_label, ds in sorted(info_j["vencidas"].items()):
-            linea = "    " + sec_label + " — " + calcular_tiempo_espera_str(ds["max_min"]) + " | " + str(ds["count"]) + " remisiones"
-            if ds["sin_vendedor"] > 0:
-                linea += " | ⚠️ *" + str(ds["sin_vendedor"]) + "* sin vendedor"
-            partes.append(linea)
+        partes.extend(_lineas_vendedores(info_j["vencidas"]))
 
-    if info_j["de_ayer"]:
-        partes.append("  📅 *De ayer sin atender:*")
-        for sec_label, ds in sorted(info_j["de_ayer"].items()):
-            linea = "    " + sec_label + " — " + calcular_tiempo_espera_str(ds["max_min"]) + " | " + str(ds["count"]) + " remisiones"
-            if ds["sin_vendedor"] > 0:
-                linea += " | ⚠️ *" + str(ds["sin_vendedor"]) + "* sin vendedor"
-            partes.append(linea)
+    if info_j["en_tiempo"]:
+        partes.append("  ⏰ *En tiempo:*")
+        partes.extend(_lineas_vendedores(info_j["en_tiempo"]))
 
+    partes.append("")
     partes.append("  🟢 *Total: " + str(total_jefe) + " remisiones*")
     partes.append("_Argos — " + fecha_now + "_")
     partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
@@ -1334,8 +1331,6 @@ def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes
         nom_jefe     = str(row[COL_JEFE]).strip() if len(row) > COL_JEFE else ""
         nom_vendedor = str(row[COL_NOMBRE_VEN]).strip() if len(row) > COL_NOMBRE_VEN else ""
         tipo_entrega = str(row[COL_TIPO_ENTREGA]).strip() if len(row) > COL_TIPO_ENTREGA else ""
-        nom_sec      = dir_dict.get(sec, {}).get("nombre_seccion", "") or dir_dict.get(sec_raw, {}).get("nombre_seccion", "")
-        sec_label    = "Seccion " + sec + (" " + nom_sec if nom_sec else "")
         es_ayer      = es_de_ayer(fecha_asig)
         vencida      = minutos >= MINUTOS_VENCIDA
 
@@ -1372,12 +1367,11 @@ def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes
 
         grp = info_j["de_ayer"] if es_ayer else (info_j["vencidas"] if vencida else info_j["en_tiempo"])
 
-        if sec_label not in grp:
-            grp[sec_label] = {"count": 0, "max_min": 0, "sin_vendedor": 0}
-        grp[sec_label]["count"]   += 1
-        grp[sec_label]["max_min"]  = max(grp[sec_label]["max_min"], minutos)
-        if not nom_vendedor:
-            grp[sec_label]["sin_vendedor"] += 1
+        ven_key = nom_vendedor.strip().title() if nom_vendedor.strip() else "Sin asignar"
+        if ven_key not in grp:
+            grp[ven_key] = {"count": 0, "max_min": 0}
+        grp[ven_key]["count"]  += 1
+        grp[ven_key]["max_min"] = max(grp[ven_key]["max_min"], minutos)
 
     if not por_piso:
         log.info("Sin remisiones activas para mensaje de jefes")
