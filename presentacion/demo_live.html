@@ -3,112 +3,177 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Argos — Demostración en vivo</title>
+<title>Argos — Demostración</title>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  html,body { height:100%; }
-  body {
-    font-family:'Segoe UI',Helvetica,Arial,sans-serif;
-    background:radial-gradient(circle at 50% 0%, #16312a 0%, #0c1714 60%, #080f0d 100%);
-    color:#eaf3ef; display:flex; flex-direction:column; overflow:hidden;
-  }
-  header { text-align:center; padding:26px 16px 6px; }
-  header h1 { font-size:34px; letter-spacing:.5px; }
-  header h1 .dot { color:#2ee59d; animation:blink 1.4s infinite; }
-  header .sub { color:#8faea3; font-size:14px; margin-top:4px; }
-  .ciclo { display:inline-block; margin-top:10px; font-size:13px; font-weight:600;
-           background:rgba(46,229,157,.12); color:#2ee59d; border:1px solid rgba(46,229,157,.3);
-           padding:5px 16px; border-radius:20px; }
+/* ── Base ─────────────────────────────────────────────────────── */
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{
+  font-family:'Segoe UI',Helvetica,Arial,sans-serif;
+  background:radial-gradient(circle at 50% 0%,#16312a 0%,#0c1714 60%,#080f0d 100%);
+  color:#eaf3ef;display:flex;flex-direction:column;
+}
 
-  .flow { flex:1; display:flex; align-items:center; justify-content:center; gap:0; padding:10px 30px; flex-wrap:nowrap; }
-  .node {
-    width:188px; min-height:150px; background:rgba(255,255,255,.04);
-    border:2px solid rgba(255,255,255,.10); border-radius:20px;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    text-align:center; padding:18px 12px; transition:all .45s ease; position:relative;
-  }
-  .node .ico  { font-size:46px; transition:transform .45s ease; filter:grayscale(.6) opacity(.6); }
-  .node .name { font-size:16px; font-weight:700; margin-top:10px; color:#cfe3db; }
-  .node .desc { font-size:11.5px; color:#7e958c; margin-top:5px; line-height:1.35; }
-  .node .check { position:absolute; top:10px; right:12px; font-size:18px; color:#2ee59d; opacity:0; transition:opacity .4s; }
+/* ── Header ───────────────────────────────────────────────────── */
+header{text-align:center;padding:20px 16px 0;flex:none;}
+header h1{font-size:30px;letter-spacing:.5px;}
+header h1 .dot{color:#2ee59d;animation:blink 1.4s infinite;}
+header .sub{color:#8faea3;font-size:13px;margin-top:3px;}
 
-  .node.done   { border-color:rgba(46,229,157,.4); background:rgba(46,229,157,.07); }
-  .node.done .ico { filter:none; }
-  .node.done .check { opacity:1; }
+/* ── Tab bar ──────────────────────────────────────────────────── */
+.tabs{display:flex;justify-content:center;gap:10px;margin:14px 0 0;flex:none;}
+.tabs button{
+  font-size:13px;font-weight:600;padding:8px 22px;border-radius:24px;cursor:pointer;
+  border:1.5px solid rgba(46,229,157,.35);background:transparent;color:#8faea3;
+  transition:all .25s;letter-spacing:.3px;
+}
+.tabs button.active,
+.tabs button:hover{background:rgba(46,229,157,.14);color:#2ee59d;border-color:#2ee59d;}
 
-  .node.active {
-    border-color:#2ee59d; background:rgba(46,229,157,.14);
-    box-shadow:0 0 0 4px rgba(46,229,157,.10), 0 0 38px rgba(46,229,157,.45);
-    animation:pulse 1.3s ease-in-out infinite;
-  }
-  .node.active .ico { filter:none; transform:scale(1.12); }
-  .node.active .name { color:#fff; }
+/* ── Views container ──────────────────────────────────────────── */
+.views{flex:1;position:relative;overflow:hidden;}
+.view{position:absolute;inset:0;display:flex;flex-direction:column;
+      opacity:0;pointer-events:none;transition:opacity .35s;}
+.view.visible{opacity:1;pointer-events:all;}
 
-  .arrow { width:64px; display:flex; align-items:center; justify-content:center; position:relative; height:6px; }
-  .arrow .track { width:100%; height:4px; background:rgba(255,255,255,.10); border-radius:3px; position:relative; overflow:hidden; }
-  .arrow .track::after {
-    content:''; position:absolute; top:0; left:-40%; width:40%; height:100%;
-    background:linear-gradient(90deg, transparent, #2ee59d, transparent); opacity:0;
-  }
-  .arrow.flow .track::after { opacity:1; animation:slide 1s linear infinite; }
-  .arrow.done .track { background:rgba(46,229,157,.5); }
+/* ════════════════════════════════════════════════════════════════
+   VISTA 1 — Demo en vivo
+   ════════════════════════════════════════════════════════════════ */
+#v-live{justify-content:center;align-items:center;}
 
-  footer { padding:20px 30px 30px; }
-  .logbar {
-    max-width:1000px; margin:0 auto; background:rgba(0,0,0,.32); border:1px solid rgba(255,255,255,.08);
-    border-radius:14px; padding:16px 22px; display:flex; align-items:center; gap:16px;
-  }
-  .logbar .spin { width:18px; height:18px; border:3px solid rgba(46,229,157,.25); border-top-color:#2ee59d;
-                  border-radius:50%; animation:spin .8s linear infinite; flex:none; }
-  .logbar .txt { font-size:16px; color:#dff1ea; flex:1; }
-  .logbar .stats { display:flex; gap:10px; flex:none; }
-  .logbar .stat { font-size:12.5px; font-weight:700; padding:5px 12px; border-radius:18px; }
-  .stat.tot { background:rgba(120,180,255,.14); color:#9cc4ff; }
-  .stat.ven { background:rgba(255,120,120,.14); color:#ff9c9c; }
-  .offline { text-align:center; color:#6f8a80; font-size:12px; margin-top:10px; }
+.ciclo{display:inline-block;margin-bottom:18px;font-size:13px;font-weight:600;
+       background:rgba(46,229,157,.12);color:#2ee59d;border:1px solid rgba(46,229,157,.3);
+       padding:5px 18px;border-radius:20px;}
 
-  @keyframes pulse { 0%,100%{ box-shadow:0 0 0 4px rgba(46,229,157,.10),0 0 30px rgba(46,229,157,.35);} 50%{ box-shadow:0 0 0 7px rgba(46,229,157,.16),0 0 48px rgba(46,229,157,.6);} }
-  @keyframes slide { 0%{ left:-40%; } 100%{ left:110%; } }
-  @keyframes spin { to{ transform:rotate(360deg); } }
-  @keyframes blink { 0%,100%{ opacity:1;} 50%{ opacity:.25;} }
+.flow-live{display:flex;align-items:center;justify-content:center;gap:0;
+           padding:0 30px;flex-wrap:nowrap;}
+.node{
+  width:172px;min-height:144px;background:rgba(255,255,255,.04);
+  border:2px solid rgba(255,255,255,.10);border-radius:20px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:16px 10px;transition:all .45s ease;position:relative;
+}
+.node .ico{font-size:42px;transition:transform .45s;filter:grayscale(.6) opacity(.6);}
+.node .name{font-size:15px;font-weight:700;margin-top:9px;color:#cfe3db;}
+.node .desc{font-size:11px;color:#7e958c;margin-top:4px;line-height:1.35;}
+.node .check{position:absolute;top:9px;right:11px;font-size:17px;color:#2ee59d;opacity:0;transition:opacity .4s;}
+.node.done{border-color:rgba(46,229,157,.4);background:rgba(46,229,157,.07);}
+.node.done .ico{filter:none;}
+.node.done .check{opacity:1;}
+.node.active{
+  border-color:#2ee59d;background:rgba(46,229,157,.14);
+  box-shadow:0 0 0 4px rgba(46,229,157,.10),0 0 36px rgba(46,229,157,.45);
+  animation:pulse 1.3s ease-in-out infinite;
+}
+.node.active .ico{filter:none;transform:scale(1.1);}
+.node.active .name{color:#fff;}
+.arrow{width:56px;display:flex;align-items:center;justify-content:center;height:6px;}
+.arrow .track{width:100%;height:4px;background:rgba(255,255,255,.10);border-radius:3px;position:relative;overflow:hidden;}
+.arrow .track::after{content:'';position:absolute;top:0;left:-40%;width:40%;height:100%;
+  background:linear-gradient(90deg,transparent,#2ee59d,transparent);opacity:0;}
+.arrow.flow .track::after{opacity:1;animation:slide 1s linear infinite;}
+.arrow.done .track{background:rgba(46,229,157,.5);}
+
+.logbar{
+  max-width:900px;margin:22px auto 0;
+  background:rgba(0,0,0,.32);border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;padding:14px 20px;display:flex;align-items:center;gap:14px;
+}
+.logbar .spin{width:16px;height:16px;border:3px solid rgba(46,229,157,.25);border-top-color:#2ee59d;
+              border-radius:50%;animation:spin .8s linear infinite;flex:none;}
+.logbar .txt{font-size:15px;color:#dff1ea;flex:1;}
+.logbar .stats{display:flex;gap:8px;flex:none;}
+.stat{font-size:12px;font-weight:700;padding:4px 11px;border-radius:18px;}
+.stat.tot{background:rgba(120,180,255,.14);color:#9cc4ff;}
+.stat.ven{background:rgba(255,120,120,.14);color:#ff9c9c;}
+.offline{text-align:center;color:#546e65;font-size:11.5px;margin-top:8px;}
+
+/* ════════════════════════════════════════════════════════════════
+   VISTA 2 — Arquitectura completa
+   ════════════════════════════════════════════════════════════════ */
+#v-arch{overflow:auto;padding:18px 24px 24px;align-items:center;}
+.arch-title{text-align:center;margin-bottom:16px;}
+.arch-title h2{font-size:20px;color:#eaf3ef;}
+.arch-title p{font-size:12.5px;color:#8faea3;margin-top:3px;}
+
+.arch-grid{width:100%;max-width:1100px;display:flex;flex-direction:column;gap:12px;}
+
+/* Fila de etapa */
+.arch-row{display:flex;flex-direction:column;gap:6px;}
+.arch-stage{font-size:10.5px;font-weight:700;color:#2ee59d;letter-spacing:1.5px;
+            text-transform:uppercase;padding-left:4px;}
+.arch-nodes{display:flex;gap:8px;align-items:stretch;}
+.arch-node{
+  flex:1;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.10);
+  border-radius:14px;padding:13px 14px;min-height:72px;
+  display:flex;flex-direction:column;justify-content:center;
+}
+.arch-node.hl{border-color:rgba(46,229,157,.4);background:rgba(46,229,157,.07);}
+.arch-node .n-ico{font-size:22px;margin-bottom:5px;}
+.arch-node .n-name{font-size:13px;font-weight:700;color:#dff1ea;}
+.arch-node .n-desc{font-size:11px;color:#7e958c;margin-top:3px;line-height:1.3;}
+
+/* Flecha entre filas */
+.arch-arrow{text-align:center;color:#2ee59d;font-size:20px;line-height:1;opacity:.7;}
+
+/* Fila de control más estrecha */
+.arch-control{display:flex;gap:8px;}
+.arch-control .arch-node{flex:1;}
+
+/* ── Animaciones ───────────────────────────────────────────────── */
+@keyframes pulse{0%,100%{box-shadow:0 0 0 4px rgba(46,229,157,.10),0 0 28px rgba(46,229,157,.35);}
+  50%{box-shadow:0 0 0 7px rgba(46,229,157,.16),0 0 46px rgba(46,229,157,.6);}}
+@keyframes slide{0%{left:-40%;}100%{left:110%;}}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.25;}}
 </style>
 </head>
 <body>
-  <header>
-    <h1>🤖 Argos <span class="dot">●</span> <span style="font-size:20px;font-weight:400;color:#8faea3">en vivo</span></h1>
-    <div class="sub">Así trabaja Argos en cada ciclo — paso a paso, en tiempo real</div>
-    <div class="ciclo" id="ciclo">Esperando inicio…</div>
-  </header>
 
-  <div class="flow" id="flow">
-    <div class="node" data-stage="descarga" data-arrow="0">
-      <span class="check">✓</span><div class="ico">📥</div>
-      <div class="name">OMS / XD</div><div class="desc">Sistemas fuente<br>de remisiones</div>
-    </div>
-    <div class="arrow" data-arrow="1"><div class="track"></div></div>
-    <div class="node" data-stage="descarga" data-arrow="1">
-      <span class="check">✓</span><div class="ico">⚙️</div>
-      <div class="name">Argos descarga</div><div class="desc">3 navegadores<br>en paralelo</div>
-    </div>
-    <div class="arrow" data-arrow="2"><div class="track"></div></div>
-    <div class="node" data-stage="sheets" data-arrow="2">
-      <span class="check">✓</span><div class="ico">📊</div>
-      <div class="name">Google Sheets</div><div class="desc">Datos ordenados<br>y respaldados</div>
-    </div>
-    <div class="arrow" data-arrow="3"><div class="track"></div></div>
-    <div class="node" data-stage="procesa" data-arrow="3">
-      <span class="check">✓</span><div class="ico">🧠</div>
-      <div class="name">Procesa</div><div class="desc">Vencidas, tiempos<br>y prioridad C&amp;C</div>
-    </div>
-    <div class="arrow" data-arrow="4"><div class="track"></div></div>
-    <div class="node" data-stage="mensajes" data-arrow="4">
-      <span class="check">✓</span><div class="ico">💬</div>
-      <div class="name">Google Chat</div><div class="desc">Avisa a jefes<br>y vendedores</div>
-    </div>
-  </div>
+<header>
+  <h1>🤖 Argos <span class="dot">●</span></h1>
+  <div class="sub">Monitoreo automático de remisiones · Tienda 456 Parque Antenas</div>
+</header>
 
-  <footer>
-    <div class="logbar">
+<div class="tabs">
+  <button id="btn-arch" onclick="showView('arch')">📐 Arquitectura</button>
+  <button id="btn-live" class="active" onclick="showView('live')">⚡ Demo en vivo</button>
+</div>
+
+<div class="views">
+
+  <!-- ── VISTA DEMO EN VIVO ──────────────────────────────────── -->
+  <div class="view visible" id="v-live">
+    <div style="text-align:center;padding-top:10px;">
+      <div class="ciclo" id="ciclo">Esperando inicio…</div>
+    </div>
+    <div class="flow-live">
+      <div class="node" data-stage="descarga">
+        <span class="check">✓</span><div class="ico">📥</div>
+        <div class="name">OMS / XD</div><div class="desc">Sistemas fuente<br>de remisiones</div>
+      </div>
+      <div class="arrow" id="arr0"><div class="track"></div></div>
+      <div class="node" data-stage="descarga">
+        <span class="check">✓</span><div class="ico">⚙️</div>
+        <div class="name">Argos descarga</div><div class="desc">3 navegadores<br>en paralelo</div>
+      </div>
+      <div class="arrow" id="arr1"><div class="track"></div></div>
+      <div class="node" data-stage="sheets">
+        <span class="check">✓</span><div class="ico">📊</div>
+        <div class="name">Google Sheets</div><div class="desc">Datos ordenados<br>y respaldados</div>
+      </div>
+      <div class="arrow" id="arr2"><div class="track"></div></div>
+      <div class="node" data-stage="procesa">
+        <span class="check">✓</span><div class="ico">🧠</div>
+        <div class="name">Procesa</div><div class="desc">Vencidas, tiempos<br>y prioridad C&amp;C</div>
+      </div>
+      <div class="arrow" id="arr3"><div class="track"></div></div>
+      <div class="node" data-stage="mensajes">
+        <span class="check">✓</span><div class="ico">💬</div>
+        <div class="name">Google Chat</div><div class="desc">Avisa a jefes<br>y vendedores</div>
+      </div>
+    </div>
+    <div class="logbar" style="width:calc(100% - 60px);">
       <div class="spin" id="spin"></div>
       <div class="txt" id="log">Conectando con Argos…</div>
       <div class="stats">
@@ -117,78 +182,238 @@
       </div>
     </div>
     <div class="offline" id="offline"></div>
-  </footer>
+  </div>
+
+  <!-- ── VISTA ARQUITECTURA ─────────────────────────────────── -->
+  <div class="view" id="v-arch">
+    <div class="arch-title">
+      <h2>Cómo está construido Argos</h2>
+      <p>De los sistemas de origen hasta los mensajes en Google Chat</p>
+    </div>
+
+    <div class="arch-grid">
+
+      <!-- Fila 1: Fuentes -->
+      <div class="arch-row">
+        <div class="arch-stage">1 · Fuentes de datos</div>
+        <div class="arch-nodes">
+          <div class="arch-node">
+            <div class="n-ico">📥</div>
+            <div class="n-name">OMS Liverpool</div>
+            <div class="n-desc">Remisiones activas, estatus y tiempos de asignación en tienda</div>
+          </div>
+          <div class="arch-node">
+            <div class="n-ico">📦</div>
+            <div class="n-name">Sistema XD</div>
+            <div class="n-desc">Histórico de eventos: asignación, reasignación, etiqueta</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arch-arrow">↓</div>
+
+      <!-- Fila 2: Argos captura -->
+      <div class="arch-row">
+        <div class="arch-stage">2 · Captura automática — cada ~15 min</div>
+        <div class="arch-nodes">
+          <div class="arch-node hl">
+            <div class="n-ico">⚙️</div>
+            <div class="n-name">Argos (Python + Playwright)</div>
+            <div class="n-desc">3 navegadores en paralelo descargan el CSV del OMS sin intervención humana</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arch-arrow">↓</div>
+
+      <!-- Fila 3: Sheets -->
+      <div class="arch-row">
+        <div class="arch-stage">3 · Datos estructurados</div>
+        <div class="arch-nodes">
+          <div class="arch-node">
+            <div class="n-ico">📊</div>
+            <div class="n-name">Google Sheets</div>
+            <div class="n-desc">DIRECTORIO · TIEMPOS · WEBHOOKS_JEFES · WEBHOOKS_VENDEDORES · MONITOR</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arch-arrow">↓</div>
+
+      <!-- Fila 4: Lógica -->
+      <div class="arch-row">
+        <div class="arch-stage">4 · Inteligencia y priorización</div>
+        <div class="arch-nodes">
+          <div class="arch-node hl">
+            <div class="n-ico">🧠</div>
+            <div class="n-name">Detecta vencidas (+20 min)</div>
+            <div class="n-desc">Semáforo 🟢🟡🔴 por jefe y piso</div>
+          </div>
+          <div class="arch-node hl">
+            <div class="n-ico">🚨</div>
+            <div class="n-name">Prioriza C&amp;C / XD Expreso</div>
+            <div class="n-desc">Alerta inmediata con instrucción "DAR PRIORIDAD"</div>
+          </div>
+          <div class="arch-node hl">
+            <div class="n-ico">⏱️</div>
+            <div class="n-name">Mide tiempos</div>
+            <div class="n-desc">Desde asignación en tienda hasta etiqueta generada por el vendedor</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arch-arrow">↓</div>
+
+      <!-- Fila 5: Chat -->
+      <div class="arch-row">
+        <div class="arch-stage">5 · Comunicación — Google Chat</div>
+        <div class="arch-nodes">
+          <div class="arch-node">
+            <div class="n-ico">📈</div>
+            <div class="n-name">Reporte</div>
+            <div class="n-desc">Indicadores globales + salud diaria del bot</div>
+          </div>
+          <div class="arch-node">
+            <div class="n-ico">👔</div>
+            <div class="n-name">Jefes</div>
+            <div class="n-desc">Por piso + mensaje individual con detalle por vendedor</div>
+          </div>
+          <div class="arch-node">
+            <div class="n-ico">🧑‍💼</div>
+            <div class="n-name">Vendedores</div>
+            <div class="n-desc">Sus remisiones una por una: nº · SKU · tiempo desde asignación</div>
+          </div>
+          <div class="arch-node">
+            <div class="n-ico">⏱️</div>
+            <div class="n-name">Tiempos / KPI</div>
+            <div class="n-desc">Ranking de productividad al cierre del día</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fila control -->
+      <div class="arch-row" style="margin-top:4px;">
+        <div class="arch-stage">Control y mantenimiento</div>
+        <div class="arch-control">
+          <div class="arch-node">
+            <div class="n-ico">🖥️</div>
+            <div class="n-name">Dashboard web</div>
+            <div class="n-desc">Control total desde el navegador (GitHub Pages)</div>
+          </div>
+          <div class="arch-node">
+            <div class="n-ico">🔄</div>
+            <div class="n-name">Auto-update</div>
+            <div class="n-desc">Se actualiza solo desde GitHub al arrancar</div>
+          </div>
+          <div class="arch-node">
+            <div class="n-ico">🐶</div>
+            <div class="n-name">Watchdog + reintentos</div>
+            <div class="n-desc">Se recupera solo de fallos de red o sistema</div>
+          </div>
+          <div class="arch-node">
+            <div class="n-ico">🩺</div>
+            <div class="n-name">Reporte de salud</div>
+            <div class="n-desc">Ciclos, incidencias y estado al cierre cada día</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- arch-grid -->
+  </div><!-- v-arch -->
+
+</div><!-- views -->
 
 <script>
-const ORDER = ["descarga","sheets","procesa","mensajes","listo"];
-const nodes  = [...document.querySelectorAll('.node')];
-const arrows = [...document.querySelectorAll('.arrow')];
-
-function render(st){
-  const etapa = st.etapa || "inicio";
-  const cur   = ORDER.indexOf(etapa);              // -1 si "inicio"
-  const done  = etapa === "listo";
-
-  nodes.forEach(n=>{
-    const idx = ORDER.indexOf(n.dataset.stage);    // descarga=0, sheets=1, procesa=2, mensajes=3
-    n.classList.remove('active','done');
-    if(done || cur > idx)      n.classList.add('done');
-    else if(cur === idx)       n.classList.add('active');
-  });
-
-  arrows.forEach((a,i)=>{
-    a.classList.remove('flow','done');
-    // la flecha i conecta nodo i-1 → nodo i ; se llena cuando ese tramo ya pasó
-    if(done || cur > i)        a.classList.add('done');
-    else if(cur === i)         a.classList.add('flow');
-  });
-
-  // Ciclo
-  const cicloEl = document.getElementById('ciclo');
-  cicloEl.textContent = st.ciclo ? ('Ciclo #' + st.ciclo + (done ? ' — completado ✅' : ' — en proceso')) : (done ? 'Completado ✅' : 'Arrancando…');
-
-  // Log + stats
-  document.getElementById('log').textContent = st.detalle || (done ? 'Ciclo completado.' : 'Trabajando…');
-  document.getElementById('spin').style.visibility = done ? 'hidden' : 'visible';
-  if(st.total != null)    document.getElementById('stat-tot').textContent = st.total + ' rem';
-  if(st.vencidas != null) document.getElementById('stat-ven').textContent = st.vencidas + ' vencidas';
+/* ── Cambio de vistas ────────────────────────────────────────── */
+function showView(v){
+  document.getElementById('v-live').classList.toggle('visible', v==='live');
+  document.getElementById('v-arch').classList.toggle('visible', v==='arch');
+  document.getElementById('btn-live').classList.toggle('active', v==='live');
+  document.getElementById('btn-arch').classList.toggle('active', v==='arch');
 }
 
-// ── Polling del estado real escrito por el bot ──────────────────
+// Atajos de teclado: 1 = arquitectura, 2 = demo en vivo
+document.addEventListener('keydown', e=>{
+  if(e.key==='1') showView('arch');
+  if(e.key==='2') showView('live');
+});
+
+/* ── Lógica de animación (vista en vivo) ────────────────────── */
+const ORDER   = ['descarga','sheets','procesa','mensajes','listo'];
+const NODES   = [...document.querySelectorAll('.node')];
+const ARROWS  = [
+  document.getElementById('arr0'),
+  document.getElementById('arr1'),
+  document.getElementById('arr2'),
+  document.getElementById('arr3'),
+];
+
+function render(st){
+  const etapa = st.etapa || 'inicio';
+  const cur   = ORDER.indexOf(etapa);
+  const done  = etapa === 'listo';
+
+  NODES.forEach(n=>{
+    const idx = ORDER.indexOf(n.dataset.stage);
+    n.classList.remove('active','done');
+    if(done || cur > idx) n.classList.add('done');
+    else if(cur === idx)  n.classList.add('active');
+  });
+
+  ARROWS.forEach((a,i)=>{
+    if(!a) return;
+    a.classList.remove('flow','done');
+    if(done || cur > i) a.classList.add('done');
+    else if(cur === i)  a.classList.add('flow');
+  });
+
+  document.getElementById('ciclo').textContent =
+    st.ciclo ? ('Ciclo #' + st.ciclo + (done ? ' — completado ✅' : ' — en proceso')) :
+    (done ? 'Completado ✅' : 'Arrancando…');
+
+  document.getElementById('log').textContent =
+    st.detalle || (done ? 'Ciclo completado.' : 'Trabajando…');
+  document.getElementById('spin').style.visibility = done ? 'hidden' : 'visible';
+  if(st.total    != null) document.getElementById('stat-tot').textContent = st.total    + ' rem';
+  if(st.vencidas != null) document.getElementById('stat-ven').textContent = st.vencidas + ' vencidas';
+
+  // Si hay actividad → cambiar automáticamente a vista en vivo
+  if(etapa !== 'inicio' && !document.getElementById('v-live').classList.contains('visible'))
+    showView('live');
+}
+
+/* ── Polling del estado real ─────────────────────────────────── */
 let online = false;
 async function tick(){
   try{
-    const r = await fetch('/demo_estado.json?t=' + Date.now(), {cache:'no-store'});
+    const r  = await fetch('/demo_estado.json?t=' + Date.now(), {cache:'no-store'});
     if(!r.ok) throw 0;
     const st = await r.json();
-    online = true;
+    online   = true;
     document.getElementById('offline').textContent = '';
     render(st);
   }catch(e){
     if(!online){
-      // Sin servidor/archivo: animación de demostración en bucle para que nunca se vea muerto
-      document.getElementById('offline').textContent = 'Modo previsualización (sin datos en vivo del bot)';
+      document.getElementById('offline').textContent =
+        'Modo previsualización — sin datos en vivo del bot';
       demoLoop();
     }
   }
 }
 
-// ── Animación de respaldo (preview) ─────────────────────────────
-let _p = 0;
+/* ── Animación de respaldo (preview) ────────────────────────── */
+let _p = 0, _previewTimer = null;
 const PREVIEW = [
-  {etapa:'descarga', detalle:'Abriendo OMS con 3 navegadores en paralelo…', ciclo:1, total:0, vencidas:0},
-  {etapa:'sheets',   detalle:'Volcando remisiones a Google Sheets…',        ciclo:1, total:312, vencidas:0},
-  {etapa:'procesa',  detalle:'Detectando vencidas y priorizando C&C…',      ciclo:1, total:312, vencidas:5},
-  {etapa:'mensajes', detalle:'Enviando avisos a jefes y vendedores…',       ciclo:1, total:312, vencidas:5},
-  {etapa:'listo',    detalle:'Ciclo completado — avisos entregados ✅',     ciclo:1, total:312, vencidas:5},
+  {etapa:'inicio',   detalle:'Argos listo — iniciando ciclo…',               ciclo:1, total:0,   vencidas:0},
+  {etapa:'descarga', detalle:'Abriendo OMS con 3 navegadores en paralelo…',  ciclo:1, total:0,   vencidas:0},
+  {etapa:'sheets',   detalle:'Volcando 318 remisiones a Google Sheets…',     ciclo:1, total:318, vencidas:0},
+  {etapa:'procesa',  detalle:'Detectando vencidas y priorizando C&C…',       ciclo:1, total:318, vencidas:7},
+  {etapa:'mensajes', detalle:'Enviando avisos a jefes y vendedores…',        ciclo:1, total:318, vencidas:7},
+  {etapa:'listo',    detalle:'Ciclo completado — avisos entregados ✅',      ciclo:1, total:318, vencidas:7},
 ];
-let _previewTimer = null;
 function demoLoop(){
   if(_previewTimer) return;
-  _previewTimer = setInterval(()=>{
-    render(PREVIEW[_p % PREVIEW.length]);
-    _p++;
-  }, 2200);
+  _previewTimer = setInterval(()=>{ render(PREVIEW[_p++ % PREVIEW.length]); }, 2200);
 }
 
 setInterval(tick, 700);
