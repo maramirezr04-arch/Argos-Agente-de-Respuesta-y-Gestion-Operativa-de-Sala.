@@ -6,17 +6,39 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.1.9"
+VERSION = "1.2.0"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
 _UPDATE_VERSION_URL = _UPDATE_BASE + "/version.txt"
 _UPDATE_MAIN_URL    = _UPDATE_BASE + "/main.py"
 
+# Archivos adicionales que se actualizan en segundo plano (sin relanzar)
+_UPDATE_EXTRA = {
+    "demo.py":                         _UPDATE_BASE + "/demo.py",
+    "presentacion/demo_live.html":     _UPDATE_BASE + "/presentacion/demo_live.html",
+}
+
+def _actualizar_extras():
+    """Descarga demo.py y demo_live.html en segundo plano, sin bloquear."""
+    raiz = Path(__file__).resolve().parent
+    for rel, url in _UPDATE_EXTRA.items():
+        try:
+            r = requests.get(url, timeout=30)
+            if r.status_code != 200:
+                continue
+            destino = raiz / rel
+            destino.parent.mkdir(parents=True, exist_ok=True)
+            destino.write_bytes(r.content)
+            log.info(f"🔄 Actualizado: {rel}")
+        except Exception as e:
+            log.warning(f"No se pudo actualizar {rel}: {e}")
+
 def verificar_y_actualizar():
     """
     Compara VERSION local con version.txt del repo.
     Si difiere: descarga main.py, reemplaza el archivo local y relanza el proceso.
+    También actualiza demo.py y demo_live.html en segundo plano.
     Silencioso en caso de error (no interrumpe el bot si hay problema de red).
     """
     import sys as _sys
@@ -38,18 +60,19 @@ def verificar_y_actualizar():
             return
 
         ruta = Path(__file__).resolve()
-        # Backup del archivo actual
         ruta.with_name("main.bak").write_bytes(ruta.read_bytes())
-        # Escribir nueva versión
         ruta.write_bytes(resp2.content)
-        log.info(f"✅ Actualizado a v{version_remota} — relanzando...")
 
+        # Actualizar archivos extra antes de relanzar
+        _actualizar_extras()
+
+        log.info(f"✅ Actualizado a v{version_remota} — relanzando...")
         import subprocess
         subprocess.Popen([_sys.executable] + _sys.argv)
         _sys.exit(0)
 
     except SystemExit:
-        raise  # dejar que el sys.exit() propague
+        raise
     except Exception as e:
         log.warning(f"Auto-update omitido: {e}")
 

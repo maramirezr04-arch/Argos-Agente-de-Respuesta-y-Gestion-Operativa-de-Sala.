@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════
 //  Argos — Google Apps Script
-//  Versión: 1.1.9
+//  Versión: 1.2.0
 //  Última actualización: 2026-06-09
 //
 //  CÓMO USAR:
