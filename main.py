@@ -1178,8 +1178,14 @@ def enviar_chat(resumen, exito=True, error=""):
 
 # ── Mensajes espacio JEFES ────────────────────────────────────
 
+_CC_KEYS = ("CC0D", "CC1D", "C&C")   # palabras clave para detectar C&C
+
+def _es_cc(tipo):
+    t = tipo.upper()
+    return any(k in t for k in _CC_KEYS)
+
 def generar_linea_jefe(jefe, info_j):
-    """Genera las 2 lineas del jefe: mencion + colores en una linea."""
+    """Genera las lineas del jefe: mencion + colores + alerta C&C si aplica."""
     verde_jefe    = sum(ds["count"] for ds in info_j["en_tiempo"].values())
     vencidas_jefe = sum(ds["count"] for ds in info_j["vencidas"].values())
     ayer_jefe     = sum(ds["count"] for ds in info_j["de_ayer"].values())
@@ -1200,9 +1206,26 @@ def generar_linea_jefe(jefe, info_j):
     if rojo_jefe > 0:     partes_color.append("🔴 *" + str(rojo_jefe) + "* rem")
     if sin_asignar > 0:   partes_color.append("⚠️ *" + str(sin_asignar) + "* sin vendedor")
 
+    # Conteo de C&C por subtipo
+    tipo_counts = info_j.get("tipo_counts", {})
+    cc_por_tipo = {k: v for k, v in tipo_counts.items() if _es_cc(k)}
+    cc_total    = sum(cc_por_tipo.values())
+
     lineas = [get_mencion(jefe)]
     if partes_color:
         lineas.append("  ".join(partes_color))
+    if cc_total > 0:
+        # Etiqueta corta por subtipo: "CC0D - Mismo dia" → "mismo día", etc.
+        _alias = {
+            "CC0D - Mismo dia":   "mismo día",
+            "CC1D - Manana":      "mañana",
+            "C&C Misma Tienda":   "retiro tienda",
+        }
+        detalle = []
+        for tipo, cnt in sorted(cc_por_tipo.items(), key=lambda x: -x[1]):
+            etiq = _alias.get(tipo, tipo.split(" - ")[-1] if " - " in tipo else tipo)
+            detalle.append("*" + str(cnt) + "* " + etiq)
+        lineas.append("  🚨 *C&C: " + str(cc_total) + "* — " + " · ".join(detalle) + " — *DAR PRIORIDAD*")
     return lineas
 
 
@@ -1356,14 +1379,20 @@ def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes
             # jefe_original = quién descansa (para fallback de webhook)
             jefe_original = nom_jefe if sustituto else ""
             por_piso[p_idx]["jefes"][jefe] = {
-                "en_tiempo": {}, "vencidas": {}, "de_ayer": {}, "tipos": [],
+                "en_tiempo": {}, "vencidas": {}, "de_ayer": {}, "tipo_counts": {},
                 "jefe_original": jefe_original,
                 "es_sustituto": bool(sustituto),
             }
 
         info_j = por_piso[p_idx]["jefes"][jefe]
         if tipo_entrega:
-            info_j["tipos"].append(tipo_entrega)
+            # Normalizar contra TIPOS_PRIORIDAD; si no hay match usar el raw
+            tipo_key = tipo_entrega
+            for tp in TIPOS_PRIORIDAD:
+                if tp.lower() in tipo_entrega.lower():
+                    tipo_key = tp
+                    break
+            info_j["tipo_counts"][tipo_key] = info_j["tipo_counts"].get(tipo_key, 0) + 1
 
         grp = info_j["de_ayer"] if es_ayer else (info_j["vencidas"] if vencida else info_j["en_tiempo"])
 
@@ -1381,20 +1410,11 @@ def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes
         info_piso = por_piso[p_idx]
         ubicacion = info_piso["ubicacion"]
 
-        total_piso  = 0
-        tipos_piso  = {}
-        tiene_tipos = False
-
+        total_piso = 0
         for info_j in info_piso["jefes"].values():
             for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]]:
                 for ds in grp.values():
                     total_piso += ds["count"]
-            for te in info_j["tipos"]:
-                for tp in TIPOS_PRIORIDAD:
-                    if tp.lower() in te.lower():
-                        tipos_piso[tp] = tipos_piso.get(tp, 0) + 1
-                        tiene_tipos = True
-                        break
 
         partes = []
         partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
