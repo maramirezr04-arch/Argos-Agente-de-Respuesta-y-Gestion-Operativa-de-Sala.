@@ -225,7 +225,7 @@ input:checked + .slider:before { transform:translateX(22px); }
 <div class="header">
   <div>
     <h1>🤖 Argos</h1>
-    <div class="sub">Panel de control · Tienda 456 Parque Antenas · <span style="opacity:.7">v1.1.4</span> · <span id="hdr-fecha" style="opacity:.8"></span></div>
+    <div class="sub">Panel de control · Tienda 456 Parque Antenas · <span style="opacity:.7">v1.1.5</span> · <span id="hdr-fecha" style="opacity:.8"></span></div>
   </div>
   <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
     <div class="status-pill"><span class="dot dot-off" id="dot"></span><span id="status-txt">Cargando...</span></div>
@@ -836,7 +836,8 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxBSox6hX-SfSem
 const SHEET_ID = "135lsymm5A67_ieYZLaKIfvPpkyqRWbUf9UV-mv3b7js";
 const URL_MONITOR  = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=MONITOR";
 const URL_METRICAS = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=METRICAS";
-const URL_KPI_TIEMPOS = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=KPI_TIEMPOS";
+const URL_KPI_TIEMPOS  = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=KPI_TIEMPOS";
+const URL_TIEMPOS_LIVE = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=TIEMPOS";
 let chartKpi = null;
 let todos=[],chartT,chartI,chartV;
 let DIRECTORIO_SECCIONES = [], DIRECTORIO_JEFES = [];
@@ -966,25 +967,47 @@ async function cargarKpiTiempos(){
   const sel   = document.getElementById('kpi-dia-sel');
   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#aaa">Cargando...</td></tr>';
   try {
-    const r    = await fetch(URL_KPI_TIEMPOS + '&t=' + Date.now());
+    const r    = await fetch(URL_TIEMPOS_LIVE + '&t=' + Date.now());
     const txt  = await r.text();
     const json = JSON.parse(txt.replace(/^[^\(]+\(|\);?$/g,''));
     const rows = json.table?.rows || [];
     if(!rows.length){
-      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#aaa;padding:2rem">Sin datos — el bot aún no ha enviado el KPI de cierre.</td></tr>';
+      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#aaa;padding:2rem">Sin datos aún — el bot no ha registrado tiempos todavía.</td></tr>';
       meta.textContent='Sin datos aún';
       return;
     }
-    // Schema: Dia(0) Jefe(1) Min(2) Prom(3) Max(4) Remisiones(5) Hora_cierre(6)
-    _kpiTodos = rows.map(r=>({
-      dia  : r.c[0]?.v || '',
-      jefe : r.c[1]?.v || '',
-      min  : Number(r.c[2]?.v || 0),
-      prom : Number(r.c[3]?.v || 0),
-      max  : Number(r.c[4]?.v || 0),
-      rem  : Number(r.c[5]?.v || 0),
-      hora : r.c[6]?.v || '',
-    })).filter(d=>d.jefe && d.dia);
+    // Schema TIEMPOS: Fecha(0) Hora(1) Jefe(2) Seccion(3) Segundos(4) Fecha_H(5) FechaStatus(6)
+    // Aggregate by dia+jefe: compute min/prom/max/rem from seconds→minutes
+    const agg = {}; // { "DD/MM/YYYY|Jefe": { mins:[], hora:"HH:MM" } }
+    for(const row of rows){
+      const dia  = row.c[0]?.v || row.c[0]?.f || '';
+      const hora = row.c[1]?.v || row.c[1]?.f || '';
+      const jefe = row.c[2]?.v || '';
+      const segs = Number(row.c[4]?.v || 0);
+      if(!jefe || !dia || segs <= 0) continue;
+      const key = dia + '|' + jefe;
+      if(!agg[key]) agg[key] = { dia, jefe, mins:[], hora:'' };
+      agg[key].mins.push(segs / 60);
+      if(hora) agg[key].hora = hora; // keep last recorded hora
+    }
+    if(!Object.keys(agg).length){
+      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#aaa;padding:2rem">Sin datos válidos en la hoja TIEMPOS.</td></tr>';
+      meta.textContent='Sin datos';
+      return;
+    }
+    _kpiTodos = Object.values(agg).map(a=>{
+      const mn = a.mins;
+      const sum = mn.reduce((s,v)=>s+v,0);
+      return {
+        dia  : a.dia,
+        jefe : a.jefe,
+        min  : Math.round(Math.min(...mn)),
+        prom : Math.round(sum / mn.length),
+        max  : Math.round(Math.max(...mn)),
+        rem  : mn.length,
+        hora : a.hora,
+      };
+    }).filter(d=>d.jefe && d.dia);
 
     // Días únicos, más reciente primero
     const dias = [...new Set(_kpiTodos.map(d=>d.dia))].sort((a,b)=>{
@@ -1018,7 +1041,7 @@ function filtrarKpiPorDia(){
   }
 
   const hora = datos[0]?.hora || '';
-  meta.textContent = `📅 ${dia}  ·  cierre: ${hora}  ·  ${datos.length} jefes`;
+  meta.textContent = `📅 ${dia}  ·  últ. registro: ${hora}  ·  ${datos.length} jefes`;
 
   tbody.innerHTML = datos.map((d,i)=>{
     const color = semaforoColor(d.prom);
