@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.1.8"
+VERSION = "1.1.9"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
@@ -71,6 +71,30 @@ from functools import lru_cache
 METRICAS_PASOS = {}  # {paso: [tiempos]}
 HEALTH_FILE    = "health.json"
 QUEUE_FILE     = "mensajes_pendientes.json"
+
+# ── Estado en vivo para la demostración visual ───────────────
+DEMO_ESTADO_FILE = "demo_estado.json"
+_DEMO_LIVE       = False   # se activa en main() solo si corre con --demo
+_DEMO_CICLO      = 0
+
+def estado_demo(etapa, detalle="", **extra):
+    """Escribe la etapa actual del bot para que demo_live.html la ilumine en
+    tiempo real durante la demostración. Solo escribe en modo demo; silencioso.
+    Etapas: inicio · descarga · sheets · procesa · mensajes · listo."""
+    if not _DEMO_LIVE:
+        return
+    try:
+        data = {
+            "etapa":   etapa,
+            "detalle": detalle,
+            "ciclo":   _DEMO_CICLO,
+            "ts":      datetime.now().isoformat(),
+        }
+        data.update(extra)
+        with open(DEMO_ESTADO_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+    except Exception:
+        pass
 
 def medir_paso(nombre, inicio):
     dur = time.time() - inicio
@@ -2796,6 +2820,15 @@ def main():
     FORZAR    = "--forzar" in sys.argv
     DEMO_MODE = "--demo" in sys.argv
 
+    global _DEMO_LIVE, _DEMO_CICLO
+    if DEMO_MODE:
+        _DEMO_LIVE = True
+        try:
+            _DEMO_CICLO = int(os.environ.get("ARGOS_DEMO_CICLO", "0"))
+        except Exception:
+            _DEMO_CICLO = 0
+        estado_demo("inicio", "Argos arrancando...")
+
     log.info("=" * 50)
     if DRY_RUN: log.info("🧪 MODO DRY-RUN — no se mandaran mensajes ni se actualizaran Sheets")
     log.info("Iniciando Argos")
@@ -2887,6 +2920,7 @@ def main():
             liberar_lock()
             return
 
+        estado_demo("descarga", "Abriendo OMS con 3 navegadores en paralelo y descargando el CSV...")
         ruta, intentos_descarga        = descargar_csv(visible=DEMO_MODE)
 
         # Validar CSV
@@ -2896,6 +2930,8 @@ def main():
         log.info(f"CSV validado: {info_csv}")
 
         datos, resumen                 = leer_csv(ruta)
+        estado_demo("sheets", "Volcando " + str(resumen.get("total", 0)) + " remisiones a Google Sheets...",
+                    total=resumen.get("total", 0))
 
         # Cache del DIRECTORIO
         cache = cargar_dir_cache()
@@ -2928,7 +2964,11 @@ def main():
         }
         WEBHOOKS_VENDEDORES_CACHE = cargar_webhooks_vendedores(gc_global, nombres_vendedores=nombres_ven)
 
+        estado_demo("procesa", "Detectando vencidas, calculando tiempos y priorizando C&C / XD Expreso...",
+                    total=resumen.get("total", 0))
         vencidas                       = detectar_vencidas(datos, dir_dict, hist_dict, descansos)
+        estado_demo("procesa", str(len(vencidas)) + " remisiones vencidas detectadas",
+                    total=resumen.get("total", 0), vencidas=len(vencidas))
         gc_mod.collect()  # liberar memoria
 
         # Verificar pausa manual
@@ -2997,6 +3037,8 @@ def main():
             mandar_alerta_anomalia(len(vencidas), prom_venc)
 
         # ── Mensajes — espacio REPORTE ────────────────────────────────────────
+        estado_demo("mensajes", "Enviando avisos a Google Chat: jefes, vendedores y reporte...",
+                    total=resumen.get("total", 0), vencidas=len(vencidas))
         enviar_notificaciones_vencidas(vencidas)
         contador = leer_contador()
         contador["ciclos_dia"] = contador.get("ciclos_dia", 0) + 1
@@ -3036,6 +3078,9 @@ def main():
             vencidas=len(vencidas),
             intentos=intentos_descarga,
             duracion_seg=round(duracion,1))
+
+        estado_demo("listo", "Ciclo completado en " + str(round(duracion, 1)) + "s — avisos entregados",
+                    total=resumen.get("total", 0), vencidas=len(vencidas), duracion=round(duracion, 1))
 
         # Archivar MONITOR cada 6 meses (>180 dias)
         try:

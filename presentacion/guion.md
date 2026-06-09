@@ -50,11 +50,21 @@
 ---
 
 ## Slide 6 — DEMO EN VIVO ⭐
-**Hacer:** correr `demo.py` (navegador visible, webhooks redirigidos a un espacio de prueba).
+**Hacer:** correr `demo.py`. Al arrancar abre **solo** la pantalla en vivo
+(`presentacion/demo_live.html`) en el navegador, **además** del navegador visible del OMS.
 
-**Decir:** "Esto es Argos trabajando en tiempo real —descarga, procesa y manda el mensaje— sin tocar nada."
+**Mostrar:** la pantalla `demo_live.html` proyectada — el diagrama de flujo se va
+**iluminando paso a paso** conforme Argos lo hace de verdad: 📥 descarga → 📊 Sheets →
+🧠 procesa → 💬 Chat, con el contador de remisiones y vencidas en vivo abajo.
 
-> *Tip: ten el demo ya abierto y probado antes; es el momento que más convence.*
+**Decir:** "Lo que ven encenderse es exactamente lo que Argos está haciendo en este
+momento: descargando, ordenando, detectando atrasos y avisando —sin que yo toque nada."
+
+> *Tips:*
+> - *Proyecta `demo_live.html` en grande; es el corazón de la demostración.*
+> - *Si por algo no hay datos en vivo, la pantalla entra en "modo previsualización" y
+>   reproduce el flujo en bucle, así nunca se ve estática.*
+> - *Ten el demo probado antes; es el momento que más convence.*
 
 ---
 

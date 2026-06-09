@@ -1,11 +1,15 @@
 """
 Argos — Modo Demo
 Ejecuta el bot completo con navegador visible y mensajes redirigidos a webhooks de demo.
+Levanta una pantalla web (presentacion/demo_live.html) que se ilumina en tiempo real
+mostrando cada paso que hace Argos, ideal para una demostración frente a público.
 Leer intervalo desde CONFIG remota; iterar indefinidamente.
 """
 
-import subprocess, sys, time, json, os
+import subprocess, sys, time, json, os, threading, webbrowser
 from datetime import datetime
+from functools import partial
+from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 
 try:
     import gspread
@@ -15,13 +19,39 @@ try:
 except Exception:
     _GSPREAD_OK = False
 
-VERSION = "1.1.3"
+VERSION = "1.1.9"
+RAIZ    = os.path.dirname(os.path.abspath(__file__))
 
 def print_banner():
     print("=" * 60)
     print(f"  🎯 Argos — Modo Demo  v{VERSION}")
     print(f"  {datetime.now():%Y-%m-%d %H:%M:%S}")
     print("=" * 60)
+
+# ── Servidor local para la pantalla de demostración ───────────
+class _SilentHandler(SimpleHTTPRequestHandler):
+    def log_message(self, *args):
+        pass  # no ensuciar la consola con cada request
+
+def iniciar_pantalla_demo():
+    """Levanta un servidor local y abre demo_live.html en el navegador.
+    Devuelve la URL, o None si no se pudo."""
+    handler = partial(_SilentHandler, directory=RAIZ)
+    for puerto in (8765, 8780, 8799, 8808):
+        try:
+            srv = ThreadingHTTPServer(("127.0.0.1", puerto), handler)
+        except OSError:
+            continue
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        url = f"http://127.0.0.1:{puerto}/presentacion/demo_live.html"
+        print(f"  🖥️  Pantalla de demostración: {url}")
+        try:
+            webbrowser.open(url)
+        except Exception:
+            print("     (Ábrela manualmente en el navegador)")
+        return url
+    print("  ⚠️  No se pudo iniciar la pantalla de demostración (puertos ocupados)")
+    return None
 
 def leer_intervalo_remoto():
     """Lee intervalo_demo desde la hoja CONFIG del Sheets. Devuelve int (minutos)."""
@@ -51,6 +81,8 @@ def ejecutar_ciclo(ciclo: int) -> bool:
     print(f"{'─'*60}")
     print("  🌐 Abriendo navegador visible (OMS)...")
     cmd = [sys.executable, "main.py", "--demo", "--forzar"]
+    # Pasar el número de ciclo al bot para que lo muestre la pantalla de demo
+    env = dict(os.environ, ARGOS_DEMO_CICLO=str(ciclo))
     try:
         proc = subprocess.Popen(
             cmd,
@@ -58,7 +90,8 @@ def ejecutar_ciclo(ciclo: int) -> bool:
             stderr=subprocess.STDOUT,
             text=True,
             bufsize=1,
-            cwd=os.path.dirname(os.path.abspath(__file__))
+            cwd=RAIZ,
+            env=env,
         )
         for line in proc.stdout:
             line = line.rstrip()
@@ -77,6 +110,8 @@ def ejecutar_ciclo(ciclo: int) -> bool:
 
 def main():
     print_banner()
+    print("\n  Abriendo la pantalla de demostración...")
+    iniciar_pantalla_demo()
     print("\n  Leyendo configuración de demo desde Google Sheets...")
     intervalo = leer_intervalo_remoto()
     print(f"  ⏱  Intervalo entre ciclos: {intervalo} minuto(s)\n")
