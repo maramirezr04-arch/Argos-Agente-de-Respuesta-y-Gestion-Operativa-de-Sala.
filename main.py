@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.1.5"
+VERSION = "1.1.6"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
@@ -339,6 +339,68 @@ def cargar_webhooks_jefes(gc, nombres_jefes=None):
     except Exception as e:
         log.warning(f"Error cargando WEBHOOKS_JEFES: {e}")
         return {}
+
+# ── WEBHOOKS POR VENDEDOR ─────────────────────────────────────
+WEBHOOKS_VENDEDORES_CACHE = {}
+
+def cargar_webhooks_vendedores(gc, nombres_vendedores=None):
+    """Lee la hoja WEBHOOKS_VENDEDORES y retorna {NOMBRE_UPPER: webhook_url}.
+    Agrega automaticamente cualquier vendedor nuevo detectado en el CSV
+    (columna A) para que solo haya que pegar el webhook en la columna B.
+    La hoja se va llenando sola conforme aparecen vendedores en el archivo.
+    """
+    try:
+        ss = gc.open_by_key(GOOGLE["sheet_id"])
+        try:
+            hoja = ss.worksheet("WEBHOOKS_VENDEDORES")
+        except gspread.WorksheetNotFound:
+            hoja = ss.add_worksheet("WEBHOOKS_VENDEDORES", rows=300, cols=3)
+            hoja.update([["Vendedor", "Webhook", "Activo"]], "A1")
+            log.info("Hoja WEBHOOKS_VENDEDORES creada — agrega los webhooks en columna B")
+        rows = hoja.get_all_values()
+
+        # Nombres ya presentes en la hoja (columna A, normalizados)
+        existentes = {str(r[0]).strip().upper() for r in rows[1:] if r and str(r[0]).strip()}
+
+        # Agregar vendedores nuevos detectados en el CSV
+        if nombres_vendedores:
+            nuevos = sorted({
+                n.strip() for n in nombres_vendedores
+                if n and n.strip().upper() not in existentes
+            })
+            if nuevos:
+                hoja.append_rows([[n, "", ""] for n in nuevos], value_input_option="RAW")
+                log.info(f"WEBHOOKS_VENDEDORES: {len(nuevos)} vendedor(es) nuevo(s) agregado(s)")
+                rows = hoja.get_all_values()
+
+        resultado = {}
+        for row in rows[1:]:
+            if row and len(row) >= 2 and str(row[0]).strip() and str(row[1]).strip():
+                nombre  = str(row[0]).strip()
+                webhook = str(row[1]).strip()
+                activo  = True
+                if len(row) >= 3 and str(row[2]).strip().lower() in ("false", "0", "no"):
+                    activo = False
+                if nombre and webhook and activo:
+                    resultado[nombre.upper()] = webhook
+        log.info(f"WEBHOOKS_VENDEDORES cargados: {len(resultado)} vendedor(es) con webhook activo")
+        return resultado
+    except Exception as e:
+        log.warning(f"Error cargando WEBHOOKS_VENDEDORES: {e}")
+        return {}
+
+def _buscar_webhook_vendedor(nombre):
+    """Busca el webhook de un vendedor: exacta primero, luego por 2+ palabras."""
+    n = nombre.strip().upper()
+    if not n:
+        return ""
+    if n in WEBHOOKS_VENDEDORES_CACHE:
+        return WEBHOOKS_VENDEDORES_CACHE[n]
+    palabras = set(n.split())
+    for clave, url in WEBHOOKS_VENDEDORES_CACHE.items():
+        if url and len(palabras & set(clave.split())) >= 2:
+            return url
+    return ""
 
 # ── CONFIG REMOTA (HOJA CONFIG DEL SHEET 1) ──────────────────
 
@@ -1476,6 +1538,100 @@ def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes
             enviar_mensaje_jefe_individual(jefe, info_j, ubicacion, fecha_now, dir_dict, jefe_original=jefe_original)
 
     log.info("4 mensajes por piso enviados al espacio jefes ✅")
+
+def enviar_mensajes_vendedores(todas_remisiones, dir_dict, descansos=None):
+    """Manda a cada vendedor (con webhook activo en WEBHOOKS_VENDEDORES) un
+    mensaje con SUS pendientes. Mismo formato/cadencia que el mensaje individual
+    de jefe. Vendedores sin webhook o sin pendientes no reciben nada.
+    """
+    if not WEBHOOKS_VENDEDORES_CACHE:
+        log.info("Sin webhooks de vendedores configurados — omitiendo mensajes individuales")
+        return
+    ESTATUS_ACTIVOS = ["Etiqueta Generada", "Mercancia en Espera de Entrega"]
+    COL_STATUS=8; COL_SECCION=5; COL_FECHA_ASIG=7
+    COL_NOMBRE_VEN=13; COL_TIPO_ENTREGA=22
+
+    fecha_now    = datetime.now().strftime("%d/%m/%Y %H:%M")
+    por_vendedor = {}
+
+    for row in todas_remisiones:
+        if not row or len(row) <= COL_NOMBRE_VEN:
+            continue
+        status = str(row[COL_STATUS]).strip() if len(row) > COL_STATUS else ""
+        if status not in ESTATUS_ACTIVOS:
+            continue
+        nom_vendedor = str(row[COL_NOMBRE_VEN]).strip() if len(row) > COL_NOMBRE_VEN else ""
+        if not nom_vendedor or nom_vendedor in ("nan", "Sin Asignar", "UNASSIGNED"):
+            continue
+
+        fecha_asig   = row[COL_FECHA_ASIG] if len(row) > COL_FECHA_ASIG else ""
+        minutos      = calcular_minutos(fecha_asig)
+        tipo_entrega = str(row[COL_TIPO_ENTREGA]).strip() if len(row) > COL_TIPO_ENTREGA else ""
+        es_ayer      = es_de_ayer(fecha_asig)
+        vencida      = minutos >= MINUTOS_VENCIDA
+
+        # Ubicacion / piso (igual que en mensaje de jefes)
+        sec_raw = str(row[COL_SECCION]).strip().replace(".0","") if len(row) > COL_SECCION else ""
+        try:
+            sec = str(int(sec_raw))
+        except Exception:
+            sec = sec_raw
+        ubicacion_raw = dir_dict.get(sec, {}).get("ubicacion", "") or dir_dict.get(sec_raw, {}).get("ubicacion", "") or ""
+        p_idx     = orden_piso(ubicacion_raw)
+        ubicacion = NOMBRES_PISOS.get(p_idx, ubicacion_raw.upper() if ubicacion_raw else "SIN PISO")
+
+        if nom_vendedor not in por_vendedor:
+            por_vendedor[nom_vendedor] = {
+                "en_tiempo": 0, "vencidas": 0, "de_ayer": 0,
+                "max_min": 0, "tipo_counts": {}, "ubicacion": ubicacion,
+            }
+        v = por_vendedor[nom_vendedor]
+        if es_ayer:
+            v["de_ayer"] += 1
+        elif vencida:
+            v["vencidas"] += 1
+        else:
+            v["en_tiempo"] += 1
+        v["max_min"] = max(v["max_min"], minutos)
+        if tipo_entrega:
+            v["tipo_counts"][tipo_entrega] = v["tipo_counts"].get(tipo_entrega, 0) + 1
+
+    enviados    = 0
+    ya_enviados = set()
+    for vendedor, v in sorted(por_vendedor.items()):
+        webhook = _buscar_webhook_vendedor(vendedor)
+        if not webhook or webhook in ya_enviados:
+            continue
+        ya_enviados.add(webhook)
+
+        total  = v["en_tiempo"] + v["vencidas"] + v["de_ayer"]
+        partes = []
+        partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
+        partes.append("🏬 *" + v["ubicacion"] + "* — " + fecha_now)
+        partes.append("")
+        partes.append("👤 *" + vendedor.title() + "*")
+        partes.append("")
+        if v["de_ayer"]:   partes.append("  📅 *De ayer sin atender:* " + str(v["de_ayer"]))
+        if v["vencidas"]:  partes.append("  🔴 *Vencidas (+20 min):* " + str(v["vencidas"]))
+        if v["en_tiempo"]: partes.append("  ⏰ *En tiempo:* " + str(v["en_tiempo"]))
+        if v["max_min"] > 0:
+            partes.append("  ⏱️ Más atrasada: " + calcular_tiempo_espera_str(v["max_min"]))
+
+        # Alerta de prioridad: C&C, C&C Expreso, XD Expreso
+        alerta = {k: c for k, c in v["tipo_counts"].items() if k.strip().lower() in _TIPOS_ALERTA}
+        if alerta:
+            detalle = " · ".join(t + ": *" + str(c) + "*" for t, c in sorted(alerta.items(), key=lambda x: -x[1]))
+            partes.append("  🚨 " + detalle + " — *DAR PRIORIDAD*")
+
+        partes.append("")
+        partes.append("  🟢 *Total: " + str(total) + " remisiones*")
+        partes.append("_Argos — " + fecha_now + "_")
+        partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
+
+        post_chat_con_reintento(webhook, {"text": "\n".join(partes)})
+        enviados += 1
+
+    log.info(f"Mensajes individuales a vendedores enviados: {enviados}")
 
 def enviar_cierre(datos, dir_dict):
     fecha_now  = datetime.now().strftime("%d/%m/%Y %H:%M")
@@ -2711,6 +2867,15 @@ def main():
             if nombres:
                 WEBHOOKS_JEFES_CACHE = cargar_webhooks_jefes(gc_global, nombres_jefes=nombres)
 
+        # Cargar/autollenar webhooks de vendedores con los nombres del CSV (col 13)
+        global WEBHOOKS_VENDEDORES_CACHE
+        nombres_ven = {
+            str(r[13]).strip() for r in datos
+            if len(r) > 13 and str(r[13]).strip()
+            and str(r[13]).strip() not in ("nan", "Sin Asignar", "UNASSIGNED")
+        }
+        WEBHOOKS_VENDEDORES_CACHE = cargar_webhooks_vendedores(gc_global, nombres_vendedores=nombres_ven)
+
         vencidas                       = detectar_vencidas(datos, dir_dict, hist_dict, descansos)
         gc_mod.collect()  # liberar memoria
 
@@ -2786,6 +2951,7 @@ def main():
         if contador["count"] >= CICLOS_JEFES:
             _WEBHOOKS_YA_ENVIADOS.clear()
             enviar_mensaje_jefes(datos, dir_dict, hist_dict, descansos, jefes_en_descanso)
+            enviar_mensajes_vendedores(datos, dir_dict, descansos)
             enviar_pendientes_ayer(datos, dir_dict, descansos)
             contador["count"] = 0
             log.info(f"Mensajes jefes enviados, contador reiniciado (cada {CICLOS_JEFES} ciclo(s))")
