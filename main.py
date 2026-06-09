@@ -3342,7 +3342,11 @@ def enviar_kpi_jefes_tiempos(csv_oms=None, csv_xd=None, dir_dict=None):
             except Exception:
                 hoja_t = ss2.add_worksheet("KPI_TIEMPOS", rows=5000, cols=7)
 
-            if hoja_t.row_count == 0 or not hoja_t.get("A1"):
+            try:
+                a1 = hoja_t.acell("A1").value or ""
+            except Exception:
+                a1 = ""
+            if "dia" not in a1.lower():
                 hoja_t.update(
                     [["Dia", "Jefe", "Min (min)", "Promedio (min)", "Max (min)", "Remisiones", "Hora_cierre"]],
                     "A1"
