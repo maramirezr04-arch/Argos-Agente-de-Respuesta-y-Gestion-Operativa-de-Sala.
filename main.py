@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.2.7"
+VERSION = "1.2.8"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
@@ -1802,6 +1802,55 @@ def construir_card_pendientes_ayer(por_jefe, total_ayer, fecha_now):
     }
 
 
+def construir_card_vendedor(vendedor, v, fecha_now):
+    """Card v2 personal para vendedor con sus remisiones por categoría."""
+    sections = []
+    total = len(v["de_ayer"]) + len(v["vencidas"]) + len(v["en_tiempo"])
+
+    for titulo, items, emoji_grp in [
+        ("📅 De ayer sin atender", v["de_ayer"],  "📅"),
+        ("🔴 Vencidas +20 min",   v["vencidas"], "🔴"),
+        ("⏰ En tiempo",          v["en_tiempo"], "⏰"),
+    ]:
+        if not items:
+            continue
+        cnt      = len(items)
+        prio_cnt = sum(1 for it in items if it["prioridad"])
+        chips    = [{"label": f"{emoji_grp} {cnt} rem"}]
+        if prio_cnt > 0:
+            chips.append({"label": f"🚨 {prio_cnt} prioritarias"})
+        widgets = [{"chipList": {"chips": chips}}]
+        for it in sorted(items, key=lambda x: -x["minutos"]):
+            sku_txt = f" · {it['sku']}" if it["sku"] else ""
+            prio    = " 🚨" if it["prioridad"] else ""
+            widgets.append({"decoratedText": {
+                "topLabel": f"Rem {it['remision']}{sku_txt}",
+                "text":     calcular_tiempo_espera_str(it["minutos"]) + prio,
+                "startIcon": {"knownIcon": "CONFIRMATION_NUMBER_ICON"}
+            }})
+        sec = {"header": f"{titulo} ({cnt})", "widgets": widgets}
+        if len(widgets) > 1:
+            sec["collapsible"] = True
+            sec["uncollapsibleWidgetsCount"] = 1
+        sections.append(sec)
+
+    sections.append(_card_total_section("Total", total))
+    return {
+        "cardsV2": [{
+            "cardId": "vendedor-" + vendedor.replace(" ", "_"),
+            "card": {
+                "header": {
+                    "title": f"👤 {vendedor.title()}",
+                    "subtitle": f"{v['ubicacion']} — {fecha_now}",
+                    "imageUrl": "https://fonts.gstatic.com/s/i/googlematerialicons/person/v6/24px.svg",
+                    "imageType": "CIRCLE"
+                },
+                "sections": sections
+            }
+        }]
+    }
+
+
 def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes_en_descanso=None):
     """4 mensajes al espacio jefes — uno por piso con TODAS las remisiones activas."""
     if jefes_en_descanso is None:
@@ -1954,17 +2003,6 @@ def enviar_mensajes_vendedores(todas_remisiones, dir_dict, descansos=None):
         else:
             v["en_tiempo"].append(item)
 
-    def _lineas_remisiones(items):
-        """Una línea por remisión: nº · SKU — lleva <tiempo>  🚨 si es prioridad.
-        Ordenadas de la más atrasada a la más reciente."""
-        lineas = []
-        for it in sorted(items, key=lambda x: -x["minutos"]):
-            sku_txt = " · SKU " + it["sku"] if it["sku"] else ""
-            prio    = "  🚨" if it["prioridad"] else ""
-            lineas.append("    • *" + it["remision"] + "*" + sku_txt +
-                          " — lleva " + calcular_tiempo_espera_str(it["minutos"]) + prio)
-        return lineas
-
     # Contadores individuales por vendedor (persisten entre ciclos)
     contador   = leer_contador()
     ven_counts = contador.get("ven_counts", {})
@@ -1990,28 +2028,8 @@ def enviar_mensajes_vendedores(todas_remisiones, dir_dict, descansos=None):
         ven_counts[clave] = 0
         ya_enviados.add(webhook)
 
-        partes = []
-        partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
-        partes.append("🏬 *" + v["ubicacion"] + "* — " + fecha_now)
-        partes.append("")
-        partes.append("👤 *" + vendedor.title() + "*")
-        partes.append("")
-        if v["de_ayer"]:
-            partes.append("  📅 *De ayer sin atender (" + str(len(v["de_ayer"])) + "):*")
-            partes.extend(_lineas_remisiones(v["de_ayer"]))
-        if v["vencidas"]:
-            partes.append("  🔴 *Vencidas +20 min (" + str(len(v["vencidas"])) + "):*")
-            partes.extend(_lineas_remisiones(v["vencidas"]))
-        if v["en_tiempo"]:
-            partes.append("  ⏰ *En tiempo (" + str(len(v["en_tiempo"])) + "):*")
-            partes.extend(_lineas_remisiones(v["en_tiempo"]))
-
-        partes.append("")
-        partes.append("  🟢 *Total: " + str(total) + " remisiones*")
-        partes.append("_Argos — " + fecha_now + "_")
-        partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
-
-        post_chat_con_reintento(webhook, {"text": "\n".join(partes)})
+        payload = construir_card_vendedor(vendedor, v, fecha_now)
+        post_chat_con_reintento(webhook, payload)
         enviados += 1
 
     # Persistir contadores individuales
