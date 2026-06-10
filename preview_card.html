@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Preview — Card v2 Jefes</title>
+<title>Preview — Card v2 Jefes (colapsable)</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -12,7 +12,7 @@
     justify-content: center;
     align-items: flex-start;
     padding: 40px 20px;
-    gap: 20px;
+    gap: 24px;
     flex-wrap: wrap;
   }
 
@@ -25,7 +25,6 @@
     border: 1px solid rgba(255,255,255,0.08);
   }
 
-  /* HEADER */
   .card-header {
     background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
     padding: 16px 18px;
@@ -38,242 +37,319 @@
     background: rgba(255,255,255,0.15);
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 22px;
-    flex-shrink: 0;
+    font-size: 22px; flex-shrink: 0;
   }
-  .card-header-text { flex: 1; min-width: 0; }
-  .card-header-title {
-    color: #fff;
-    font-size: 16px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
-  }
-  .card-header-subtitle {
-    color: rgba(255,255,255,0.75);
-    font-size: 12px;
-    margin-top: 2px;
-  }
+  .card-header-title { color: #fff; font-size: 16px; font-weight: 600; }
+  .card-header-subtitle { color: rgba(255,255,255,0.75); font-size: 12px; margin-top: 2px; }
 
-  /* SECTIONS */
-  .section {
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-  }
+  .section { border-bottom: 1px solid rgba(255,255,255,0.06); }
   .section:last-child { border-bottom: none; }
 
   .section-header {
     padding: 10px 18px 6px;
-    font-size: 11px;
-    font-weight: 600;
-    color: #9aa0a6;
-    letter-spacing: 0.6px;
-    text-transform: uppercase;
+    font-size: 11px; font-weight: 600;
+    color: #9aa0a6; letter-spacing: 0.6px; text-transform: uppercase;
   }
   .section-header.legend {
-    font-size: 12px;
-    text-transform: none;
-    letter-spacing: 0;
-    font-weight: 500;
-    color: #bdc1c6;
-    padding: 12px 18px 10px;
+    font-size: 12px; text-transform: none; letter-spacing: 0;
+    font-weight: 500; color: #bdc1c6; padding: 12px 18px 10px;
   }
 
-  /* CHIPS */
-  .chip-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 4px 18px 12px;
-  }
+  .chip-list { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 18px 10px; }
   .chip {
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 16px;
-    padding: 5px 12px;
-    font-size: 13px;
-    color: #e8eaed;
-    white-space: nowrap;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px; padding: 5px 12px; font-size: 13px; color: #e8eaed;
   }
-  .chip.green  { background: rgba(52,168,83,0.18); border-color: rgba(52,168,83,0.4); }
-  .chip.yellow { background: rgba(251,188,4,0.18); border-color: rgba(251,188,4,0.4); }
-  .chip.red    { background: rgba(234,67,53,0.18); border-color: rgba(234,67,53,0.4); }
-  .chip.warn   { background: rgba(255,145,0,0.18); border-color: rgba(255,145,0,0.4); }
+  .chip.green  { background: rgba(52,168,83,0.18);  border-color: rgba(52,168,83,0.4); }
+  .chip.yellow { background: rgba(251,188,4,0.18);  border-color: rgba(251,188,4,0.4); }
+  .chip.red    { background: rgba(234,67,53,0.18);  border-color: rgba(234,67,53,0.4); }
+  .chip.warn   { background: rgba(255,145,0,0.18);  border-color: rgba(255,145,0,0.4); }
   .chip.empty  { background: rgba(154,160,166,0.12); border-color: rgba(154,160,166,0.25); color: #9aa0a6; }
 
-  /* DIVIDER */
-  .divider {
-    height: 1px;
-    background: rgba(255,255,255,0.08);
-    margin: 0 18px;
+  /* Vendedor row */
+  .vendor-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 18px; border-top: 1px solid rgba(255,255,255,0.04);
   }
-
-  /* DECORATED TEXT (total) */
-  .decorated-text {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 12px 18px 14px;
-  }
-  .decorated-icon {
-    width: 34px; height: 34px;
-    background: rgba(26,115,232,0.18);
-    border-radius: 8px;
+  .vendor-icon {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: rgba(255,255,255,0.06);
     display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
-    flex-shrink: 0;
+    font-size: 14px; flex-shrink: 0;
   }
-  .decorated-body {}
-  .decorated-label {
-    font-size: 11px;
-    color: #9aa0a6;
-    margin-bottom: 2px;
-  }
-  .decorated-value {
-    font-size: 15px;
-    font-weight: 700;
-    color: #e8eaed;
-  }
+  .vendor-body { flex: 1; min-width: 0; }
+  .vendor-label { font-size: 11px; color: #9aa0a6; }
+  .vendor-value { font-size: 13px; font-weight: 600; color: #e8eaed; }
 
-  /* Google Chat message wrapper */
-  .chat-bubble {
-    background: #3c3c3e;
-    border-radius: 18px 18px 18px 4px;
-    padding: 4px 4px 4px 4px;
-    max-width: 360px;
+  /* "Mostrar más" button */
+  .expand-btn {
+    width: 100%; background: none; border: none; cursor: pointer;
+    padding: 8px 18px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: #8ab4f8;
+    font-family: inherit;
+    border-top: 1px solid rgba(255,255,255,0.06);
   }
-  .chat-sender {
-    font-size: 11px;
-    color: #9aa0a6;
-    padding: 0 0 6px 4px;
-  }
+  .expand-btn:hover { background: rgba(138,180,248,0.06); }
+  .expand-btn svg { transition: transform 0.2s; }
+  .expand-btn.open svg { transform: rotate(180deg); }
 
-  h2 {
-    color: #9aa0a6;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    width: 100%;
-    padding: 0 0 10px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    margin-bottom: 4px;
+  /* Collapsible content */
+  .collapsible-content { overflow: hidden; transition: max-height 0.25s ease; }
+  .collapsible-content.collapsed { max-height: 0; }
+  .collapsible-content.expanded  { max-height: 500px; }
+
+  .divider { height: 1px; background: rgba(255,255,255,0.08); margin: 0 18px; }
+  .decorated-text { display: flex; align-items: center; gap: 14px; padding: 12px 18px 14px; }
+  .decorated-icon {
+    width: 34px; height: 34px; background: rgba(26,115,232,0.18);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
   }
-  .label {
-    font-size: 10px;
-    color: #5f6368;
-    text-align: center;
-    margin-top: 8px;
-    letter-spacing: 0.5px;
+  .decorated-label { font-size: 11px; color: #9aa0a6; margin-bottom: 2px; }
+  .decorated-value { font-size: 15px; font-weight: 700; color: #e8eaed; }
+
+  .chat-sender { font-size: 11px; color: #9aa0a6; padding: 0 0 6px 4px; }
+  .col-label {
+    font-size: 11px; color: #5f6368; text-align: center;
+    margin-top: 10px; letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .col-title {
+    font-size: 10px; color: #5f6368; text-align: center;
+    margin-bottom: 14px; letter-spacing: 0.5px;
+    border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;
   }
 </style>
 </head>
 <body>
 
-<!-- PISO 1 — con 3 jefes y variedad de chips -->
+<!-- COLUMNA IZQUIERDA — colapsada (por defecto) -->
 <div>
+  <div class="col-title">ESTADO POR DEFECTO</div>
   <div class="chat-sender">Argos Bot</div>
-  <div class="chat-bubble">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-header-icon">🏬</div>
-        <div class="card-header-text">
-          <div class="card-header-title">1er PISO</div>
-          <div class="card-header-subtitle">Liverpool Tienda 456 — 10/06/2026 14:30</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-icon">🏬</div>
+      <div style="flex:1">
+        <div class="card-header-title">1er PISO</div>
+        <div class="card-header-subtitle">Liverpool Tienda 456 — 10/06/2026 14:30</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header legend">🟢 &lt; 15 min &nbsp;·&nbsp; 🟡 15–20 min &nbsp;·&nbsp; 🔴 &gt; 20 min</div>
+    </div>
+
+    <!-- García — colapsado -->
+    <div class="section">
+      <div class="section-header">👤 García</div>
+      <div class="chip-list">
+        <span class="chip green">🟢 8 rem</span>
+        <span class="chip yellow">🟡 3 rem</span>
+        <span class="chip warn">⚠️ 2 sin asignar</span>
+      </div>
+      <button class="expand-btn" onclick="toggle(this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="#8ab4f8">
+          <path d="M7 10l5 5 5-5z"/>
+        </svg>
+        Mostrar vendedores
+      </button>
+      <div class="collapsible-content collapsed">
+        <div class="vendor-row">
+          <div class="vendor-icon">🔴</div>
+          <div class="vendor-body">
+            <div class="vendor-label">🔴 López Martínez</div>
+            <div class="vendor-value"><b>5 rem</b> · 28 min</div>
+          </div>
         </div>
-      </div>
-
-      <!-- Leyenda -->
-      <div class="section">
-        <div class="section-header legend">🟢 &lt; 15 min &nbsp;·&nbsp; 🟡 15–20 min &nbsp;·&nbsp; 🔴 &gt; 20 min</div>
-      </div>
-
-      <!-- García -->
-      <div class="section">
-        <div class="section-header">👤 García</div>
-        <div class="chip-list">
-          <span class="chip green">🟢 8 rem</span>
-          <span class="chip yellow">🟡 3 rem</span>
-          <span class="chip warn">⚠️ 2 sin asignar</span>
+        <div class="vendor-row">
+          <div class="vendor-icon">🟡</div>
+          <div class="vendor-body">
+            <div class="vendor-label">🟡 Ramírez Torres</div>
+            <div class="vendor-value"><b>3 rem</b> · 17 min</div>
+          </div>
         </div>
-      </div>
-
-      <!-- López -->
-      <div class="section">
-        <div class="section-header">👤 López</div>
-        <div class="chip-list">
-          <span class="chip red">🔴 5 rem</span>
+        <div class="vendor-row">
+          <div class="vendor-icon">🟢</div>
+          <div class="vendor-body">
+            <div class="vendor-label">🟢 Hernández Cruz</div>
+            <div class="vendor-value"><b>8 rem</b> · 9 min</div>
+          </div>
         </div>
-      </div>
-
-      <!-- Martínez — sin remisiones -->
-      <div class="section">
-        <div class="section-header">👤 Martínez</div>
-        <div class="chip-list">
-          <span class="chip empty">Sin remisiones</span>
-        </div>
-      </div>
-
-      <!-- Total -->
-      <div class="section">
-        <div class="divider"></div>
-        <div class="decorated-text">
-          <div class="decorated-icon">🎫</div>
-          <div class="decorated-body">
-            <div class="decorated-label">Total 1er PISO</div>
-            <div class="decorated-value">65 remisiones</div>
+        <div class="vendor-row">
+          <div class="vendor-icon">⚠️</div>
+          <div class="vendor-body">
+            <div class="vendor-label">⚠️ Sin asignar</div>
+            <div class="vendor-value"><b>2 rem</b> · 12 min</div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-  <div class="label">PISO 1 — con sustituto sin remisiones</div>
-</div>
 
-<!-- PISO 2 — solo rojo + varios jefes -->
-<div>
-  <div class="chat-sender">Argos Bot</div>
-  <div class="chat-bubble">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-header-icon">🏬</div>
-        <div class="card-header-text">
-          <div class="card-header-title">2° PISO</div>
-          <div class="card-header-subtitle">Liverpool Tienda 456 — 10/06/2026 14:30</div>
-        </div>
+    <!-- López — colapsado -->
+    <div class="section">
+      <div class="section-header">👤 López</div>
+      <div class="chip-list">
+        <span class="chip red">🔴 5 rem</span>
       </div>
-
-      <div class="section">
-        <div class="section-header legend">🟢 &lt; 15 min &nbsp;·&nbsp; 🟡 15–20 min &nbsp;·&nbsp; 🔴 &gt; 20 min</div>
-      </div>
-
-      <div class="section">
-        <div class="section-header">👤 Hernández</div>
-        <div class="chip-list">
-          <span class="chip green">🟢 12 rem</span>
-          <span class="chip yellow">🟡 7 rem</span>
-          <span class="chip red">🔴 3 rem</span>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="section-header">👤 Ramírez</div>
-        <div class="chip-list">
-          <span class="chip green">🟢 4 rem</span>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="divider"></div>
-        <div class="decorated-text">
-          <div class="decorated-icon">🎫</div>
-          <div class="decorated-body">
-            <div class="decorated-label">Total 2° PISO</div>
-            <div class="decorated-value">48 remisiones</div>
+      <button class="expand-btn" onclick="toggle(this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="#8ab4f8">
+          <path d="M7 10l5 5 5-5z"/>
+        </svg>
+        Mostrar vendedores
+      </button>
+      <div class="collapsible-content collapsed">
+        <div class="vendor-row">
+          <div class="vendor-icon">📅</div>
+          <div class="vendor-body">
+            <div class="vendor-label">📅 Gómez Ruiz</div>
+            <div class="vendor-value"><b>5 rem</b> · de ayer</div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Martínez — sin remisiones (sin botón) -->
+    <div class="section">
+      <div class="section-header">👤 Martínez</div>
+      <div class="chip-list" style="padding-bottom:12px">
+        <span class="chip empty">Sin remisiones</span>
+      </div>
+    </div>
+
+    <!-- Total -->
+    <div class="section">
+      <div class="divider"></div>
+      <div class="decorated-text">
+        <div class="decorated-icon">🎫</div>
+        <div>
+          <div class="decorated-label">Total 1er PISO</div>
+          <div class="decorated-value">65 remisiones</div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="label">PISO 2 — sin pendientes sin asignar</div>
+  <div class="col-label">chips colapsados · "mostrar vendedores"</div>
 </div>
 
+<!-- COLUMNA DERECHA — García expandido -->
+<div>
+  <div class="col-title">AL EXPANDIR A GARCÍA</div>
+  <div class="chat-sender">Argos Bot</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-icon">🏬</div>
+      <div style="flex:1">
+        <div class="card-header-title">1er PISO</div>
+        <div class="card-header-subtitle">Liverpool Tienda 456 — 10/06/2026 14:30</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header legend">🟢 &lt; 15 min &nbsp;·&nbsp; 🟡 15–20 min &nbsp;·&nbsp; 🔴 &gt; 20 min</div>
+    </div>
+
+    <!-- García — expandido -->
+    <div class="section">
+      <div class="section-header">👤 García</div>
+      <div class="chip-list">
+        <span class="chip green">🟢 8 rem</span>
+        <span class="chip yellow">🟡 3 rem</span>
+        <span class="chip warn">⚠️ 2 sin asignar</span>
+      </div>
+      <button class="expand-btn open" onclick="toggle(this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="#8ab4f8">
+          <path d="M7 10l5 5 5-5z"/>
+        </svg>
+        Ocultar vendedores
+      </button>
+      <div class="collapsible-content expanded">
+        <div class="vendor-row">
+          <div class="vendor-icon">🔴</div>
+          <div class="vendor-body">
+            <div class="vendor-label">🔴 López Martínez</div>
+            <div class="vendor-value"><b>5 rem</b> · 28 min</div>
+          </div>
+        </div>
+        <div class="vendor-row">
+          <div class="vendor-icon">🟡</div>
+          <div class="vendor-body">
+            <div class="vendor-label">🟡 Ramírez Torres</div>
+            <div class="vendor-value"><b>3 rem</b> · 17 min</div>
+          </div>
+        </div>
+        <div class="vendor-row">
+          <div class="vendor-icon">🟢</div>
+          <div class="vendor-body">
+            <div class="vendor-label">🟢 Hernández Cruz</div>
+            <div class="vendor-value"><b>8 rem</b> · 9 min</div>
+          </div>
+        </div>
+        <div class="vendor-row">
+          <div class="vendor-icon">⚠️</div>
+          <div class="vendor-body">
+            <div class="vendor-label">⚠️ Sin asignar</div>
+            <div class="vendor-value"><b>2 rem</b> · 12 min</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- López — colapsado -->
+    <div class="section">
+      <div class="section-header">👤 López</div>
+      <div class="chip-list">
+        <span class="chip red">🔴 5 rem</span>
+      </div>
+      <button class="expand-btn" onclick="toggle(this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="#8ab4f8">
+          <path d="M7 10l5 5 5-5z"/>
+        </svg>
+        Mostrar vendedores
+      </button>
+      <div class="collapsible-content collapsed">
+        <div class="vendor-row">
+          <div class="vendor-icon">📅</div>
+          <div class="vendor-body">
+            <div class="vendor-label">📅 Gómez Ruiz</div>
+            <div class="vendor-value"><b>5 rem</b> · de ayer</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Martínez -->
+    <div class="section">
+      <div class="section-header">👤 Martínez</div>
+      <div class="chip-list" style="padding-bottom:12px">
+        <span class="chip empty">Sin remisiones</span>
+      </div>
+    </div>
+
+    <!-- Total -->
+    <div class="section">
+      <div class="divider"></div>
+      <div class="decorated-text">
+        <div class="decorated-icon">🎫</div>
+        <div>
+          <div class="decorated-label">Total 1er PISO</div>
+          <div class="decorated-value">65 remisiones</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-label">García expandido · vendedores + tiempo más atrasado</div>
+</div>
+
+<script>
+function toggle(btn) {
+  const content = btn.nextElementSibling;
+  const isOpen = btn.classList.contains("open");
+  btn.classList.toggle("open");
+  content.classList.toggle("collapsed", isOpen);
+  content.classList.toggle("expanded", !isOpen);
+  btn.childNodes[2].textContent = isOpen ? " Mostrar vendedores" : " Ocultar vendedores";
+}
+</script>
 </body>
 </html>

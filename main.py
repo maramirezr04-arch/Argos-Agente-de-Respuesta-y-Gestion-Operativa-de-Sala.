@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.2.5"
+VERSION = "1.2.6"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
@@ -1573,10 +1573,32 @@ def construir_card_piso(ubicacion, info_piso, fecha_now):
         if sin_asignar > 0:  chips.append({"label": f"⚠️ {sin_asignar} sin asignar"})
         if not chips:        chips.append({"label": "Sin remisiones"})
 
-        sections.append({
+        # Widgets: chipList siempre visible + detalle por vendedor colapsable
+        widgets = [{"chipList": {"chips": chips}}]
+        for emoji, grp in [("📅", info_j["de_ayer"]), ("🔴", info_j["vencidas"]), ("🟢", info_j["en_tiempo"])]:
+            for ven, ds in sorted(grp.items(), key=lambda x: -x[1]["max_min"]):
+                if ds["count"] == 0:
+                    continue
+                icono_ven = "⚠️" if ven == "Sin asignar" else emoji
+                tiempo_str = calcular_tiempo_espera_str(ds["max_min"]) if ds["max_min"] > 0 else ""
+                texto = f"<b>{ds['count']} rem</b>" + (f" · {tiempo_str}" if tiempo_str else "")
+                widgets.append({
+                    "decoratedText": {
+                        "topLabel": f"{icono_ven} {ven}",
+                        "text": texto,
+                        "startIcon": {"knownIcon": "PERSON"}
+                    }
+                })
+
+        tiene_detalle = len(widgets) > 1
+        section = {
             "header": f"👤 {jefe}",
-            "widgets": [{"chipList": {"chips": chips}}]
-        })
+            "widgets": widgets,
+        }
+        if tiene_detalle:
+            section["collapsible"] = True
+            section["uncollapsibleWidgetsCount"] = 1
+        sections.append(section)
 
     total = sum(
         sum(ds["count"] for ds in grp.values())
