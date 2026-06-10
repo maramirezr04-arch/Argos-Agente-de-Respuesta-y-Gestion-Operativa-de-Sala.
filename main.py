@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.2.7"  # thread keys para espacio jefes
+VERSION = "1.2.6"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
@@ -1711,22 +1711,12 @@ def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes
         log.info("Sin remisiones activas para mensaje de jefes")
         return
 
-    # Webhook con threadKey: todos los mensajes de un piso van al mismo hilo,
-    # el chat no se llena de mensajes sueltos.
-    webhook_hilo = WEBHOOK_JEFES
-    if WEBHOOK_JEFES:
-        sep = "&" if "?" in WEBHOOK_JEFES else "?"
-        webhook_hilo = WEBHOOK_JEFES + sep + "messageReplyOption=REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD"
-
     for p_idx in sorted(por_piso.keys()):
         info_piso = por_piso[p_idx]
         ubicacion = info_piso["ubicacion"]
 
-        payload         = construir_card_piso(ubicacion, info_piso, fecha_now)
-        card_id         = "piso-" + ubicacion.replace(" ", "_")
-        payload["thread"] = {"threadKey": card_id}
-
-        post_chat_con_reintento(webhook_hilo, payload)
+        payload = construir_card_piso(ubicacion, info_piso, fecha_now)
+        post_chat_con_reintento(WEBHOOK_JEFES, payload)
         log.info("Mensaje enviado al espacio jefes — piso: " + ubicacion)
 
         for jefe, info_j in sorted(info_piso["jefes"].items()):
