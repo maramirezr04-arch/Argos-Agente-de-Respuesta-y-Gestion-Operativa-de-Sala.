@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.2.8"
+VERSION = "1.2.9"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
@@ -1802,53 +1802,81 @@ def construir_card_pendientes_ayer(por_jefe, total_ayer, fecha_now):
     }
 
 
-def construir_card_vendedor(vendedor, v, fecha_now):
-    """Card v2 personal para vendedor con sus remisiones por categoría."""
-    sections = []
-    total = len(v["de_ayer"]) + len(v["vencidas"]) + len(v["en_tiempo"])
+# ── Mensajes vendedores — texto plano, se reescriben en lugar ────
+MENSAJES_VENDEDORES_FILE = "mensajes_vendedores.json"
 
-    for titulo, items, emoji_grp in [
-        ("📅 De ayer sin atender", v["de_ayer"],  "📅"),
-        ("🔴 Vencidas +20 min",   v["vencidas"], "🔴"),
-        ("⏰ En tiempo",          v["en_tiempo"], "⏰"),
+def _leer_mensajes_vendedores():
+    try:
+        if os.path.exists(MENSAJES_VENDEDORES_FILE):
+            with open(MENSAJES_VENDEDORES_FILE) as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
+
+def _guardar_mensajes_vendedores(d):
+    try:
+        with open(MENSAJES_VENDEDORES_FILE, "w") as f:
+            json.dump(d, f)
+    except Exception:
+        pass
+
+def _construir_texto_vendedor(vendedor, v, fecha_now):
+    partes = [
+        "〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰",
+        "🏬 *" + v["ubicacion"] + "* — " + fecha_now,
+        "",
+        "👤 *" + vendedor.title() + "*",
+        "",
+    ]
+    for titulo, items in [
+        ("  📅 *De ayer sin atender", v["de_ayer"]),
+        ("  🔴 *Vencidas +20 min",   v["vencidas"]),
+        ("  ⏰ *En tiempo",          v["en_tiempo"]),
     ]:
         if not items:
             continue
-        cnt      = len(items)
-        prio_cnt = sum(1 for it in items if it["prioridad"])
-        chips    = [{"label": f"{emoji_grp} {cnt} rem"}]
-        if prio_cnt > 0:
-            chips.append({"label": f"🚨 {prio_cnt} prioritarias"})
-        widgets = [{"chipList": {"chips": chips}}]
+        partes.append(f"{titulo} ({len(items)}):*")
         for it in sorted(items, key=lambda x: -x["minutos"]):
-            sku_txt = f" · {it['sku']}" if it["sku"] else ""
-            prio    = " 🚨" if it["prioridad"] else ""
-            widgets.append({"decoratedText": {
-                "topLabel": f"Rem {it['remision']}{sku_txt}",
-                "text":     calcular_tiempo_espera_str(it["minutos"]) + prio,
-                "startIcon": {"knownIcon": "CONFIRMATION_NUMBER_ICON"}
-            }})
-        sec = {"header": f"{titulo} ({cnt})", "widgets": widgets}
-        if len(widgets) > 1:
-            sec["collapsible"] = True
-            sec["uncollapsibleWidgetsCount"] = 1
-        sections.append(sec)
+            sku_txt = " · SKU " + it["sku"] if it["sku"] else ""
+            prio    = "  🚨" if it["prioridad"] else ""
+            partes.append("    • *" + it["remision"] + "*" + sku_txt +
+                          " — lleva " + calcular_tiempo_espera_str(it["minutos"]) + prio)
+    total = len(v["de_ayer"]) + len(v["vencidas"]) + len(v["en_tiempo"])
+    partes += ["", "  🟢 *Total: " + str(total) + " remisiones*",
+               "_Argos — " + fecha_now + "_",
+               "〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰"]
+    return "\n".join(partes)
 
-    sections.append(_card_total_section("Total", total))
-    return {
-        "cardsV2": [{
-            "cardId": "vendedor-" + vendedor.replace(" ", "_"),
-            "card": {
-                "header": {
-                    "title": f"👤 {vendedor.title()}",
-                    "subtitle": f"{v['ubicacion']} — {fecha_now}",
-                    "imageUrl": "https://fonts.gstatic.com/s/i/googlematerialicons/person/v6/24px.svg",
-                    "imageType": "CIRCLE"
-                },
-                "sections": sections
-            }
-        }]
-    }
+def _enviar_o_reescribir_vendedor(webhook_url, texto, msg_name):
+    """Reescribe el mensaje existente (PATCH) o crea uno nuevo (POST).
+    Usa la misma key+token del webhook — no requiere configuración extra.
+    Devuelve el name del mensaje para guardarlo."""
+    from urllib.parse import urlparse, parse_qs
+    parsed = urlparse(webhook_url)
+    params = parse_qs(parsed.query)
+    key    = params.get("key",   [""])[0]
+    token  = params.get("token", [""])[0]
+    payload = {"text": texto}
+
+    if msg_name and key and token:
+        patch_url = (f"https://chat.googleapis.com/v1/{msg_name}"
+                     f"?key={key}&token={token}&updateMask=text")
+        try:
+            r = requests.patch(patch_url, json=payload, timeout=15)
+            if 200 <= r.status_code < 300:
+                return msg_name
+            log.info(f"PATCH {r.status_code} — creando nuevo mensaje")
+        except Exception as e:
+            log.info(f"PATCH error: {e} — creando nuevo mensaje")
+
+    try:
+        r = requests.post(webhook_url, json=payload, timeout=15)
+        if 200 <= r.status_code < 300:
+            return r.json().get("name", "")
+    except Exception as e:
+        log.warning(f"Error enviando mensaje vendedor: {e}")
+    return ""
 
 
 def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes_en_descanso=None):
@@ -2006,6 +2034,7 @@ def enviar_mensajes_vendedores(todas_remisiones, dir_dict, descansos=None):
     # Contadores individuales por vendedor (persisten entre ciclos)
     contador   = leer_contador()
     ven_counts = contador.get("ven_counts", {})
+    mensajes_ven = _leer_mensajes_vendedores()
 
     enviados    = 0
     ya_enviados = set()
@@ -2028,13 +2057,17 @@ def enviar_mensajes_vendedores(todas_remisiones, dir_dict, descansos=None):
         ven_counts[clave] = 0
         ya_enviados.add(webhook)
 
-        payload = construir_card_vendedor(vendedor, v, fecha_now)
-        post_chat_con_reintento(webhook, payload)
+        texto    = _construir_texto_vendedor(vendedor, v, fecha_now)
+        msg_name = mensajes_ven.get(clave, "")
+        nuevo    = _enviar_o_reescribir_vendedor(webhook, texto, msg_name)
+        if nuevo:
+            mensajes_ven[clave] = nuevo
         enviados += 1
 
-    # Persistir contadores individuales
+    # Persistir contadores y nombres de mensajes
     contador["ven_counts"] = ven_counts
     guardar_contador(contador)
+    _guardar_mensajes_vendedores(mensajes_ven)
     log.info(f"Mensajes individuales a vendedores enviados: {enviados}")
 
 def enviar_cierre(datos, dir_dict):
