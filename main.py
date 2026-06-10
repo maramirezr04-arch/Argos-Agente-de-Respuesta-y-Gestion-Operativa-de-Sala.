@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.3.0"
+VERSION = "1.3.1"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
@@ -1824,9 +1824,7 @@ def _guardar_mensajes_vendedores(d):
 def _construir_texto_vendedor(vendedor, v, fecha_now):
     partes = [
         "〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰",
-        "🏬 *" + v["ubicacion"] + "* — " + fecha_now,
-        "",
-        "👤 *" + vendedor.title() + "*",
+        "👤 *" + vendedor.title() + "* — " + fecha_now,
         "",
     ]
     for titulo, items in [
@@ -1838,13 +1836,12 @@ def _construir_texto_vendedor(vendedor, v, fecha_now):
             continue
         partes.append(f"{titulo} ({len(items)}):*")
         for it in sorted(items, key=lambda x: -x["minutos"]):
-            sku_txt = " · SKU " + it["sku"] if it["sku"] else ""
-            prio    = "  🚨" if it["prioridad"] else ""
+            sku_txt  = " · SKU " + it["sku"] if it["sku"] else ""
+            tipo_txt = "  _" + it["tipo"] + "_" if it.get("tipo") else ""
             partes.append("    • *" + it["remision"] + "*" + sku_txt +
-                          " — lleva " + calcular_tiempo_espera_str(it["minutos"]) + prio)
+                          " — lleva " + calcular_tiempo_espera_str(it["minutos"]) + tipo_txt)
     total = len(v["de_ayer"]) + len(v["vencidas"]) + len(v["en_tiempo"])
     partes += ["", "  🟢 *Total: " + str(total) + " remisiones*",
-               "_Argos — " + fecha_now + "_",
                "〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰"]
     return "\n".join(partes)
 
@@ -2017,11 +2014,12 @@ def enviar_mensajes_vendedores(todas_remisiones, dir_dict, descansos=None):
                 "en_tiempo": [], "vencidas": [], "de_ayer": [],
                 "ubicacion": ubicacion,
             }
+        tipo_norm = tipo_entrega.strip()
         item = {
             "remision":  remision,
             "sku":       sku,
             "minutos":   minutos,
-            "prioridad": tipo_entrega.strip().lower() in _TIPOS_ALERTA,
+            "tipo":      tipo_norm if tipo_norm.lower() in _TIPOS_ALERTA else "",
         }
         v = por_vendedor[nom_vendedor]
         if es_ayer:
