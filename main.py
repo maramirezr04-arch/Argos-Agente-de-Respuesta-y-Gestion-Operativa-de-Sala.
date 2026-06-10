@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.2.4"
+VERSION = "1.2.5"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
@@ -1540,6 +1540,79 @@ def enviar_mensaje_jefe_individual(jefe, info_j, ubicacion, fecha_now, dir_dict,
     log.info(f"Mensaje individual enviado a jefe {jefe}")
 
 
+def construir_card_piso(ubicacion, info_piso, fecha_now):
+    """Construye el payload Card v2 para el mensaje de un piso al espacio jefes."""
+    sections = []
+
+    sections.append({
+        "header": "🟢 < 15 min   🟡 15–20 min   🔴 > 20 min",
+        "widgets": []
+    })
+
+    for jefe, info_j in sorted(info_piso["jefes"].items()):
+        verde = sum(ds["count"] for ds in info_j["en_tiempo"].values())
+        amarillo = sum(
+            ds["count"] for ds in info_j["en_tiempo"].values()
+            if ds["max_min"] >= MINUTOS_VENCIDA * 0.75
+        )
+        verde_puro = verde - amarillo
+        rojo = (
+            sum(ds["count"] for ds in info_j["vencidas"].values()) +
+            sum(ds["count"] for ds in info_j["de_ayer"].values())
+        )
+        sin_asignar = sum(
+            ds["count"]
+            for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]]
+            for ven, ds in grp.items() if ven == "Sin asignar"
+        )
+
+        chips = []
+        if verde_puro > 0:   chips.append({"label": f"🟢 {verde_puro} rem"})
+        if amarillo > 0:     chips.append({"label": f"🟡 {amarillo} rem"})
+        if rojo > 0:         chips.append({"label": f"🔴 {rojo} rem"})
+        if sin_asignar > 0:  chips.append({"label": f"⚠️ {sin_asignar} sin asignar"})
+        if not chips:        chips.append({"label": "Sin remisiones"})
+
+        sections.append({
+            "header": f"👤 {jefe}",
+            "widgets": [{"chipList": {"chips": chips}}]
+        })
+
+    total = sum(
+        sum(ds["count"] for ds in grp.values())
+        for info_j in info_piso["jefes"].values()
+        for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]]
+    )
+    sections.append({
+        "widgets": [
+            {"divider": {}},
+            {
+                "decoratedText": {
+                    "topLabel": f"Total {ubicacion}",
+                    "text": f"<b>{total} remisiones</b>",
+                    "icon": {"knownIcon": "CONFIRMATION_NUMBER_ICON"}
+                }
+            }
+        ]
+    })
+
+    card_id = "piso-" + ubicacion.replace(" ", "_")
+    return {
+        "cardsV2": [{
+            "cardId": card_id,
+            "card": {
+                "header": {
+                    "title": f"🏬 {ubicacion}",
+                    "subtitle": f"Liverpool Tienda 456 — {fecha_now}",
+                    "imageUrl": "https://fonts.gstatic.com/s/i/googlematerialicons/store/v6/24px.svg",
+                    "imageType": "CIRCLE"
+                },
+                "sections": sections
+            }
+        }]
+    }
+
+
 def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes_en_descanso=None):
     """4 mensajes al espacio jefes — uno por piso con TODAS las remisiones activas."""
     if jefes_en_descanso is None:
@@ -1620,29 +1693,8 @@ def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes
         info_piso = por_piso[p_idx]
         ubicacion = info_piso["ubicacion"]
 
-        total_piso = 0
-        for info_j in info_piso["jefes"].values():
-            for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]]:
-                for ds in grp.values():
-                    total_piso += ds["count"]
-
-        partes = []
-        partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
-        partes.append("🏬 *" + ubicacion + "* — " + fecha_now)
-        partes.append("")
-        partes.append("🟢 menos de 15 min  🟡 15-20 min  🔴 más de 20 min")
-        partes.append("")
-
-        for jefe, info_j in sorted(info_piso["jefes"].items()):
-            for linea in generar_linea_jefe(jefe, info_j):
-                partes.append(linea)
-            partes.append("")
-
-        partes.append("📋 *Total " + ubicacion + ": " + str(total_piso) + " remisiones*")
-        partes.append("_Argos — " + fecha_now + "_")
-        partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
-
-        post_chat_con_reintento(WEBHOOK_JEFES, {"text": "\n".join(partes)})
+        payload = construir_card_piso(ubicacion, info_piso, fecha_now)
+        post_chat_con_reintento(WEBHOOK_JEFES, payload)
         log.info("Mensaje enviado al espacio jefes — piso: " + ubicacion)
 
         for jefe, info_j in sorted(info_piso["jefes"].items()):
