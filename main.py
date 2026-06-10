@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.3.5"
+VERSION = "1.3.6"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
@@ -1813,8 +1813,7 @@ def construir_card_pendientes_ayer(por_jefe, total_ayer, fecha_now):
     }
 
 
-# ── Mensajes que se reescriben en lugar (vendedores y jefes) ─────
-MENSAJES_VENDEDORES_FILE = "mensajes_vendedores.json"
+# ── Mensajes que se reescriben en lugar (pisos y jefes) ──────────
 MENSAJES_PISOS_FILE      = "mensajes_pisos.json"
 MENSAJES_JEFES_IND_FILE  = "mensajes_jefes_ind.json"
 
@@ -2049,7 +2048,6 @@ def enviar_mensajes_vendedores(todas_remisiones, dir_dict, descansos=None):
     # Contadores individuales por vendedor (persisten entre ciclos)
     contador   = leer_contador()
     ven_counts = contador.get("ven_counts", {})
-    mensajes_ven = _leer_mensajes_reescribibles(MENSAJES_VENDEDORES_FILE)
 
     enviados    = 0
     ya_enviados = set()
@@ -2072,19 +2070,13 @@ def enviar_mensajes_vendedores(todas_remisiones, dir_dict, descansos=None):
         ven_counts[clave] = 0
         ya_enviados.add(webhook)
 
-        texto    = _construir_texto_vendedor(vendedor, v, fecha_now)
-        hoy      = datetime.now().strftime("%d/%m/%Y")
-        # _leer_mensajes_reescribibles ya filtró las entradas de días anteriores
-        msg_name = mensajes_ven.get(clave, {}).get("name", "")
-        nuevo    = _enviar_o_reescribir(webhook, {"text": texto}, msg_name)
-        if nuevo:
-            mensajes_ven[clave] = {"name": nuevo, "fecha": hoy}
+        texto = _construir_texto_vendedor(vendedor, v, fecha_now)
+        post_chat_con_reintento(webhook, {"text": texto})
         enviados += 1
 
-    # Persistir contadores y nombres de mensajes
+    # Persistir contadores individuales
     contador["ven_counts"] = ven_counts
     guardar_contador(contador)
-    _guardar_mensajes_reescribibles(MENSAJES_VENDEDORES_FILE, mensajes_ven)
     log.info(f"Mensajes individuales a vendedores enviados: {enviados}")
 
 def enviar_cierre(datos, dir_dict):
