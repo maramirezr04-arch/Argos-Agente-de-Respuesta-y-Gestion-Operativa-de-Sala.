@@ -1,4 +1,4 @@
-﻿import os, logging, requests, csv, time, json, random
+﻿import os, logging, requests, csv, time, json, random, hashlib
 from datetime import datetime, timedelta
 from pathlib import Path
 from playwright.sync_api import sync_playwright
@@ -6,17 +6,59 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.1.3"
+VERSION = "1.4.0"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
 _UPDATE_VERSION_URL = _UPDATE_BASE + "/version.txt"
 _UPDATE_MAIN_URL    = _UPDATE_BASE + "/main.py"
 
+# Archivos adicionales que se actualizan en segundo plano (sin relanzar)
+_UPDATE_EXTRA = {
+    "demo.py":                         _UPDATE_BASE + "/demo.py",
+    "presentacion/demo_live.html":     _UPDATE_BASE + "/presentacion/demo_live.html",
+}
+
+def _actualizar_extras():
+    """Descarga demo.py y demo_live.html en segundo plano, sin bloquear."""
+    raiz = Path(__file__).resolve().parent
+    for rel, url in _UPDATE_EXTRA.items():
+        try:
+            r = requests.get(url, timeout=30)
+            if r.status_code != 200:
+                continue
+            destino = raiz / rel
+            destino.parent.mkdir(parents=True, exist_ok=True)
+            destino.write_bytes(r.content)
+            log.info(f"🔄 Actualizado: {rel}")
+        except Exception as e:
+            log.warning(f"No se pudo actualizar {rel}: {e}")
+
+def _descargar_extras_faltantes():
+    """Descarga solo los extras que aún no existen en disco."""
+    raiz     = Path(__file__).resolve().parent
+    faltantes = [rel for rel in _UPDATE_EXTRA if not (raiz / rel).exists()]
+    if not faltantes:
+        return
+    log.info(f"Extras faltantes detectados ({len(faltantes)}) — descargando...")
+    for rel in faltantes:
+        url = _UPDATE_EXTRA[rel]
+        try:
+            r = requests.get(url, timeout=30)
+            if r.status_code != 200:
+                continue
+            destino = raiz / rel
+            destino.parent.mkdir(parents=True, exist_ok=True)
+            destino.write_bytes(r.content)
+            log.info(f"✅ Descargado: {rel}")
+        except Exception as e:
+            log.warning(f"No se pudo descargar {rel}: {e}")
+
 def verificar_y_actualizar():
     """
     Compara VERSION local con version.txt del repo.
     Si difiere: descarga main.py, reemplaza el archivo local y relanza el proceso.
+    También actualiza demo.py y demo_live.html en segundo plano.
     Silencioso en caso de error (no interrumpe el bot si hay problema de red).
     """
     import sys as _sys
@@ -29,6 +71,8 @@ def verificar_y_actualizar():
             return
         version_remota = resp.text.strip()
         if not version_remota or version_remota == VERSION:
+            # Sin versión nueva — igual revisa si faltan extras en disco
+            _descargar_extras_faltantes()
             return
 
         log.info(f"🔄 Nueva versión disponible: v{version_remota} (instalada: v{VERSION}). Descargando...")
@@ -38,18 +82,19 @@ def verificar_y_actualizar():
             return
 
         ruta = Path(__file__).resolve()
-        # Backup del archivo actual
         ruta.with_name("main.bak").write_bytes(ruta.read_bytes())
-        # Escribir nueva versión
         ruta.write_bytes(resp2.content)
-        log.info(f"✅ Actualizado a v{version_remota} — relanzando...")
 
+        # Actualizar archivos extra antes de relanzar
+        _actualizar_extras()
+
+        log.info(f"✅ Actualizado a v{version_remota} — relanzando...")
         import subprocess
         subprocess.Popen([_sys.executable] + _sys.argv)
         _sys.exit(0)
 
     except SystemExit:
-        raise  # dejar que el sys.exit() propague
+        raise
     except Exception as e:
         log.warning(f"Auto-update omitido: {e}")
 
@@ -71,6 +116,30 @@ from functools import lru_cache
 METRICAS_PASOS = {}  # {paso: [tiempos]}
 HEALTH_FILE    = "health.json"
 QUEUE_FILE     = "mensajes_pendientes.json"
+
+# ── Estado en vivo para la demostración visual ───────────────
+DEMO_ESTADO_FILE = "demo_estado.json"
+_DEMO_LIVE       = False   # se activa en main() solo si corre con --demo
+_DEMO_CICLO      = 0
+
+def estado_demo(etapa, detalle="", **extra):
+    """Escribe la etapa actual del bot para que demo_live.html la ilumine en
+    tiempo real durante la demostración. Solo escribe en modo demo; silencioso.
+    Etapas: inicio · descarga · sheets · procesa · mensajes · listo."""
+    if not _DEMO_LIVE:
+        return
+    try:
+        data = {
+            "etapa":   etapa,
+            "detalle": detalle,
+            "ciclo":   _DEMO_CICLO,
+            "ts":      datetime.now().isoformat(),
+        }
+        data.update(extra)
+        with open(DEMO_ESTADO_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+    except Exception:
+        pass
 
 def medir_paso(nombre, inicio):
     dur = time.time() - inicio
@@ -111,6 +180,20 @@ def post_chat_con_reintento(url, payload, max_intentos=3):
     # Encolar mensaje fallido
     encolar_mensaje(url, payload)
     return False
+
+def _sheets_con_reintento(fn, *args, **kwargs):
+    """Ejecuta fn(*args) con hasta 3 reintentos si Google Sheets devuelve 429."""
+    for intento in range(3):
+        try:
+            return fn(*args, **kwargs)
+        except Exception as e:
+            es_429 = any(k in str(e) for k in ("429", "RESOURCE_EXHAUSTED", "Quota exceeded"))
+            if es_429 and intento < 2:
+                espera = 10 * (2 ** intento)
+                log.warning(f"Sheets 429 en {fn.__name__} — reintentando en {espera}s")
+                time.sleep(espera)
+            else:
+                raise
 
 def encolar_mensaje(url, payload):
     """Si Chat falla, guardar para reintentar despues."""
@@ -202,9 +285,11 @@ def cargar_estructuras_sheets(ss):
 
 
 # ── Webhooks ──────────────────────────────────────────────────
-WEBHOOK       = "https://chat.googleapis.com/v1/spaces/AAQAQ6DrmfI/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=VzOYmkn9w65FPf64JLq1ySI0VFyD5E8sdc-KQc29nXw"
-WEBHOOK_JEFES  = "https://chat.googleapis.com/v1/spaces/AAAAMBLT-t0/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=W0pDeYnH05xXzjRER8arPy9xm820yM6Fh1iDHOEJftQ"
-WEBHOOK_TIEMPOS = "https://chat.googleapis.com/v1/spaces/AAQAY67HLLk/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=RZGLTs-sAZfBsAamgr7x2y8E6yPVDENsNghyKIOkj6A"
+# Los webhooks de Chat viven en la hoja CONFIG del Sheets (webhook_reporte,
+# webhook_jefes, webhook_tiempos) — NO escribirlos aquí: este repo es público.
+WEBHOOK         = ""
+WEBHOOK_JEFES   = ""
+WEBHOOK_TIEMPOS = ""
 
 # ── Constantes ────────────────────────────────────────────────
 # ── UMBRALES CONFIGURABLES ────────────────────────────────────
@@ -218,6 +303,7 @@ HORA_FIN        = 21
 MINUTO_FIN      = 30
 # ── Frecuencia de mensajes — configurable desde dashboard ─────
 CICLOS_JEFES       = 2       # ciclos entre mensajes al espacio Jefes
+CICLOS_VENDEDORES  = 2       # ciclos entre mensajes individuales a vendedores
 CICLOS_REPORTE     = 1       # ciclos entre mensajes al espacio Reporte
 HORA_RECORDATORIO  = "20:30" # hora objetivo del recordatorio (HH:MM)
 # ── Demo mode ────────────────────────────────────────────────
@@ -233,6 +319,7 @@ APERTURA_FILE     = "apertura.json"
 CIERRE_FILE       = "cierre.json"
 LOCK_FILE         = "bot.lock"
 PAUSA_FILE        = "pausa.txt"
+CSV_HASH_FILE     = "csv_hash.json"
 DIR_CACHE_FILE    = "directorio_cache.json"
 MONITOR_BACKUP    = "monitor_backup.csv"
 HISTORIAL_MAX     = 10
@@ -340,14 +427,103 @@ def cargar_webhooks_jefes(gc, nombres_jefes=None):
         log.warning(f"Error cargando WEBHOOKS_JEFES: {e}")
         return {}
 
+# ── WEBHOOKS POR VENDEDOR ─────────────────────────────────────
+WEBHOOKS_VENDEDORES_CACHE = {}
+
+def cargar_webhooks_vendedores(gc, nombres_vendedores=None):
+    """Lee la hoja WEBHOOKS_VENDEDORES y retorna {NOMBRE_UPPER: {"url", "ciclos"}}.
+    Columnas: A=Vendedor, B=Webhook, C=Activo, D=Ciclos (frecuencia personal;
+    vacio = usa el default global ciclos_vendedores).
+    Agrega automaticamente cualquier vendedor nuevo detectado en el CSV
+    (columna A) para que solo haya que pegar el webhook en la columna B.
+    """
+    try:
+        ss = gc.open_by_key(GOOGLE["sheet_id"])
+        try:
+            hoja = ss.worksheet("WEBHOOKS_VENDEDORES")
+        except gspread.WorksheetNotFound:
+            hoja = ss.add_worksheet("WEBHOOKS_VENDEDORES", rows=300, cols=4)
+            hoja.update([["Vendedor", "Webhook", "Activo", "Ciclos"]], "A1")
+            log.info("Hoja WEBHOOKS_VENDEDORES creada — agrega los webhooks en columna B")
+        rows = hoja.get_all_values()
+
+        # Asegurar encabezado de la columna D (Ciclos) en hojas ya existentes
+        if rows and (len(rows[0]) < 4 or not str(rows[0][3]).strip()):
+            try:
+                hoja.update([["Ciclos"]], "D1")
+            except Exception:
+                pass
+
+        # Nombres ya presentes en la hoja (columna A, normalizados)
+        existentes = {str(r[0]).strip().upper() for r in rows[1:] if r and str(r[0]).strip()}
+
+        # Agregar vendedores nuevos detectados en el CSV
+        if nombres_vendedores:
+            nuevos = sorted({
+                n.strip() for n in nombres_vendedores
+                if n and n.strip().upper() not in existentes
+            })
+            if nuevos:
+                hoja.append_rows([[n, "", "", ""] for n in nuevos], value_input_option="RAW")
+                log.info(f"WEBHOOKS_VENDEDORES: {len(nuevos)} vendedor(es) nuevo(s) agregado(s)")
+                rows = hoja.get_all_values()
+
+        resultado = {}
+        for row in rows[1:]:
+            if row and len(row) >= 2 and str(row[0]).strip() and str(row[1]).strip():
+                nombre  = str(row[0]).strip()
+                webhook = str(row[1]).strip()
+                activo  = True
+                if len(row) >= 3 and str(row[2]).strip().lower() in ("false", "0", "no"):
+                    activo = False
+                # Columna D = ciclos personales (0 = usar default global)
+                ciclos = 0
+                if len(row) >= 4 and str(row[3]).strip().isdigit():
+                    ciclos = max(1, int(str(row[3]).strip()))
+                if nombre and webhook and activo:
+                    resultado[nombre.upper()] = {"url": webhook, "ciclos": ciclos}
+        log.info(f"WEBHOOKS_VENDEDORES cargados: {len(resultado)} vendedor(es) con webhook activo")
+        return resultado
+    except Exception as e:
+        log.warning(f"Error cargando WEBHOOKS_VENDEDORES: {e}")
+        return {}
+
+def _buscar_webhook_vendedor(nombre):
+    """Busca el webhook de un vendedor: exacta primero, luego por 2+ palabras.
+    Retorna (url, ciclos_personales) — ciclos 0 significa usar el default global."""
+    n = nombre.strip().upper()
+    if not n:
+        return "", 0
+    if n in WEBHOOKS_VENDEDORES_CACHE:
+        d = WEBHOOKS_VENDEDORES_CACHE[n]
+        return d["url"], d.get("ciclos", 0)
+    palabras = set(n.split())
+    for clave, d in WEBHOOKS_VENDEDORES_CACHE.items():
+        if d.get("url") and len(palabras & set(clave.split())) >= 2:
+            return d["url"], d.get("ciclos", 0)
+    return "", 0
+
 # ── CONFIG REMOTA (HOJA CONFIG DEL SHEET 1) ──────────────────
 
 CONFIG_REMOTA = {}
 CONFIG_CACHE_FILE = "config_remota_cache.json"
 
+def _validar_url_webhook(url, nombre):
+    """Valida formato de webhook de Google Chat. Retorna True si es válido."""
+    if not url.startswith("https://chat.googleapis.com"):
+        log.warning(f"⚠️ {nombre}: URL inválida (debe iniciar con https://chat.googleapis.com)")
+        return False
+    if "key=" not in url:
+        log.warning(f"⚠️ {nombre}: falta parámetro key= — verifica la URL en hoja CONFIG")
+        return False
+    if "token=" not in url:
+        log.warning(f"⚠️ {nombre}: falta parámetro token= — verifica la URL en hoja CONFIG")
+        return False
+    return True
+
 def cargar_config_remota(gc):
     """Lee la hoja CONFIG del Sheet 1 y actualiza valores globales."""
-    global HORA_INICIO, HORA_FIN, MINUTO_FIN, MINUTOS_VENCIDA, UMBRAL_ANOMALIA, WATCHDOG_MINUTOS, CONFIG_REMOTA, CICLOS_JEFES, CICLOS_REPORTE, HORA_RECORDATORIO, WEBHOOK_DEMO_1, WEBHOOK_DEMO_2, WEBHOOK_DEMO_3, INTERVALO_DEMO
+    global HORA_INICIO, HORA_FIN, MINUTO_FIN, MINUTOS_VENCIDA, UMBRAL_ANOMALIA, WATCHDOG_MINUTOS, CONFIG_REMOTA, CICLOS_JEFES, CICLOS_VENDEDORES, CICLOS_REPORTE, HORA_RECORDATORIO, WEBHOOK_DEMO_1, WEBHOOK_DEMO_2, WEBHOOK_DEMO_3, INTERVALO_DEMO, WEBHOOK, WEBHOOK_JEFES, WEBHOOK_TIEMPOS
     try:
         ss = gc.open_by_key(GOOGLE["sheet_id"])
         try:
@@ -369,6 +545,7 @@ def cargar_config_remota(gc):
                 ["webhook_jefes", WEBHOOK_JEFES],
                 ["webhook_tiempos", WEBHOOK_TIEMPOS],
                 ["ciclos_jefes", "2"],
+                ["ciclos_vendedores", "2"],
                 ["ciclos_reporte", "1"],
                 ["hora_recordatorio", "20:30"],
                 ["webhook_demo_1", ""],
@@ -402,10 +579,30 @@ def cargar_config_remota(gc):
             WATCHDOG_MINUTOS = int(cfg["watchdog_minutos"])
         if cfg.get("ciclos_jefes", "").isdigit():
             CICLOS_JEFES = max(1, int(cfg["ciclos_jefes"]))
+        if cfg.get("ciclos_vendedores", "").isdigit():
+            CICLOS_VENDEDORES = max(1, int(cfg["ciclos_vendedores"]))
+        else:
+            # Parametro nuevo: agregarlo a la hoja para que sea visible/editable
+            try:
+                if "ciclos_vendedores" not in cfg:
+                    hoja.append_row(["ciclos_vendedores", "2"], value_input_option="RAW")
+            except Exception:
+                pass
         if cfg.get("ciclos_reporte", "").isdigit():
             CICLOS_REPORTE = max(1, int(cfg["ciclos_reporte"]))
         if cfg.get("hora_recordatorio"):
             HORA_RECORDATORIO = cfg["hora_recordatorio"].strip()
+        # Webhooks de Chat — fuente única: la hoja CONFIG
+        for _clave, _var_nombre in [("webhook_reporte", "WEBHOOK"),
+                                     ("webhook_jefes",   "WEBHOOK_JEFES"),
+                                     ("webhook_tiempos", "WEBHOOK_TIEMPOS")]:
+            _url = cfg.get(_clave, "").strip()
+            if _url and _validar_url_webhook(_url, _clave):
+                if _var_nombre == "WEBHOOK":        WEBHOOK        = _url
+                elif _var_nombre == "WEBHOOK_JEFES": WEBHOOK_JEFES  = _url
+                else:                                WEBHOOK_TIEMPOS = _url
+        if not WEBHOOK or not WEBHOOK_JEFES:
+            log.warning("⚠️ Webhooks faltantes en hoja CONFIG (webhook_reporte / webhook_jefes) — los mensajes no se enviarán")
         if cfg.get("webhook_demo_1"):
             WEBHOOK_DEMO_1 = cfg["webhook_demo_1"].strip()
         if cfg.get("webhook_demo_2"):
@@ -432,6 +629,13 @@ def cargar_config_remota(gc):
             if os.path.exists(CONFIG_CACHE_FILE):
                 with open(CONFIG_CACHE_FILE, "r", encoding="utf-8") as f:
                     CONFIG_REMOTA = json.load(f)
+                # Aplicar webhooks desde cache (sin red, sin Sheets)
+                if CONFIG_REMOTA.get("webhook_reporte", "").startswith("https://"):
+                    WEBHOOK = CONFIG_REMOTA["webhook_reporte"].strip()
+                if CONFIG_REMOTA.get("webhook_jefes", "").startswith("https://"):
+                    WEBHOOK_JEFES = CONFIG_REMOTA["webhook_jefes"].strip()
+                if CONFIG_REMOTA.get("webhook_tiempos", "").startswith("https://"):
+                    WEBHOOK_TIEMPOS = CONFIG_REMOTA["webhook_tiempos"].strip()
         except: pass
         return CONFIG_REMOTA
 
@@ -1037,7 +1241,7 @@ def detectar_vencidas(datos, dir_dict, hist_dict, descansos):
     ESTATUS_PENDIENTE = ["Etiqueta Generada", "Mercancia en Espera de Entrega"]
     COL_REMISION=1; COL_DESCRIPCION=3; COL_SECCION=5
     COL_FECHA_ASIG=7; COL_STATUS=8; COL_NOMBRE_VEN=13
-    COL_ID_JEFE=15; COL_JEFE=17; COL_TIPO_ENTREGA=19
+    COL_ID_JEFE=15; COL_JEFE=17; COL_TIPO_ENTREGA=22
 
     vencidas = []
     for row in datos:
@@ -1159,7 +1363,13 @@ def enviar_apertura(datos, dir_dict, hist_dict):
 
     mensaje = "\n".join(lineas)
     post_chat_con_reintento(WEBHOOK, {"text": mensaje})
-    post_chat_con_reintento(WEBHOOK_JEFES, {"text": mensaje})
+    # Espacio jefes → Card v2
+    card_apertura = construir_card_apertura(
+        emoji_apertura, msg_apertura,
+        espera_ayer, espera_hoy, etiq_ayer, etiq_hoy,
+        jefes_ayer, dir_dict, fecha_now
+    )
+    post_chat_con_reintento(WEBHOOK_JEFES, card_apertura)
     marcar_apertura_enviada()
     log.info("Mensaje de apertura enviado al espacio reporte y jefes ✅")
     # La apertura también devuelve los datos para que el llamador mande el detallado
@@ -1229,6 +1439,9 @@ def _es_cc(tipo):
     t = tipo.upper()
     return any(k in t for k in _CC_KEYS)
 
+# Tipos que requieren alerta de prioridad (columna W del CSV)
+_TIPOS_ALERTA = {"c&c", "c&c expreso", "xd expreso"}
+
 def generar_linea_jefe(jefe, info_j):
     """Genera las lineas del jefe: mencion + colores + alerta C&C si aplica."""
     verde_jefe    = sum(ds["count"] for ds in info_j["en_tiempo"].values())
@@ -1251,26 +1464,19 @@ def generar_linea_jefe(jefe, info_j):
     if rojo_jefe > 0:     partes_color.append("🔴 *" + str(rojo_jefe) + "* rem")
     if sin_asignar > 0:   partes_color.append("⚠️ *" + str(sin_asignar) + "* sin vendedor")
 
-    # Conteo de C&C por subtipo
-    tipo_counts = info_j.get("tipo_counts", {})
-    cc_por_tipo = {k: v for k, v in tipo_counts.items() if _es_cc(k)}
-    cc_total    = sum(cc_por_tipo.values())
+    # Tipos con alerta de prioridad: C&C, C&C Expreso, XD Expreso
+    tipo_counts  = info_j.get("tipo_counts", {})
+    alerta_tipos = {k: v for k, v in tipo_counts.items() if k.strip().lower() in _TIPOS_ALERTA}
+    alerta_total = sum(alerta_tipos.values())
 
     lineas = [get_mencion(jefe)]
     if partes_color:
         lineas.append("  ".join(partes_color))
-    if cc_total > 0:
-        # Etiqueta corta por subtipo: "CC0D - Mismo dia" → "mismo día", etc.
-        _alias = {
-            "CC0D - Mismo dia":   "mismo día",
-            "CC1D - Manana":      "mañana",
-            "C&C Misma Tienda":   "retiro tienda",
-        }
+    if alerta_total > 0:
         detalle = []
-        for tipo, cnt in sorted(cc_por_tipo.items(), key=lambda x: -x[1]):
-            etiq = _alias.get(tipo, tipo.split(" - ")[-1] if " - " in tipo else tipo)
-            detalle.append("*" + str(cnt) + "* " + etiq)
-        lineas.append("  🚨 *C&C: " + str(cc_total) + "* — " + " · ".join(detalle) + " — *DAR PRIORIDAD*")
+        for tipo, cnt in sorted(alerta_tipos.items(), key=lambda x: -x[1]):
+            detalle.append(tipo + ": *" + str(cnt) + "*")
+        lineas.append("  🚨 " + " · ".join(detalle) + " — *DAR PRIORIDAD*")
     return lineas
 
 
@@ -1329,45 +1535,379 @@ def enviar_mensaje_jefe_individual(jefe, info_j, ubicacion, fecha_now, dir_dict,
         return
     _WEBHOOKS_YA_ENVIADOS.add(webhook_jefe)
 
-    total_jefe = sum(ds["count"] for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]] for ds in grp.values())
+    payload = construir_card_jefe_individual(jefe, info_j, ubicacion, fecha_now, es_sustituto, jefe_original)
 
-    def _lineas_vendedores(grp):
-        """Devuelve líneas ordenadas por tiempo más atrasado (mayor primero)."""
-        lineas = []
-        for ven, ds in sorted(grp.items(), key=lambda x: -x[1]["max_min"]):
-            sufijo = " | más atrasado: " + calcular_tiempo_espera_str(ds["max_min"]) if ds["max_min"] > 0 else ""
-            icono  = "⚠️" if ven == "Sin asignar" else "👤"
-            lineas.append("    " + icono + " " + ven + " — *" + str(ds["count"]) + "* rem" + sufijo)
-        return lineas
-
-    partes = []
-    partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
-    partes.append("🏬 *" + ubicacion + "* — " + fecha_now)
-    partes.append("")
-    if es_sustituto and jefe_original:
-        partes.append("🔄 *Sustituto de " + jefe_original.split()[0].capitalize() + "* (descansa hoy)")
-    partes.append(get_mencion(jefe))
-    partes.append("")
-
-    if info_j["de_ayer"]:
-        partes.append("  📅 *De ayer sin atender:*")
-        partes.extend(_lineas_vendedores(info_j["de_ayer"]))
-
-    if info_j["vencidas"]:
-        partes.append("  🔴 *Vencidas (+20 min):*")
-        partes.extend(_lineas_vendedores(info_j["vencidas"]))
-
-    if info_j["en_tiempo"]:
-        partes.append("  ⏰ *En tiempo:*")
-        partes.extend(_lineas_vendedores(info_j["en_tiempo"]))
-
-    partes.append("")
-    partes.append("  🟢 *Total: " + str(total_jefe) + " remisiones*")
-    partes.append("_Argos — " + fecha_now + "_")
-    partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
-
-    post_chat_con_reintento(webhook_jefe, {"text": "\n".join(partes)})
+    # Una card al día por jefe que se reescribe el resto del día
+    mensajes_jefes = _leer_mensajes_reescribibles(MENSAJES_JEFES_IND_FILE)
+    hoy      = datetime.now().strftime("%d/%m/%Y")
+    clave    = jefe.strip().upper()
+    msg_name = mensajes_jefes.get(clave, {}).get("name", "")
+    nuevo    = _enviar_o_reescribir(webhook_jefe, payload, msg_name)
+    if nuevo:
+        mensajes_jefes[clave] = {"name": nuevo, "fecha": hoy}
+        _guardar_mensajes_reescribibles(MENSAJES_JEFES_IND_FILE, mensajes_jefes)
+    else:
+        post_chat_con_reintento(webhook_jefe, payload)
     log.info(f"Mensaje individual enviado a jefe {jefe}")
+
+
+def construir_card_piso(ubicacion, info_piso, fecha_now):
+    """Construye el payload Card v2 para el mensaje de un piso al espacio jefes."""
+    sections = []
+
+    sections.append({
+        "header": "🟢 < 15 min   🟡 15–20 min   🔴 > 20 min",
+        "widgets": []
+    })
+
+    for jefe, info_j in sorted(info_piso["jefes"].items()):
+        verde = sum(ds["count"] for ds in info_j["en_tiempo"].values())
+        amarillo = sum(
+            ds["count"] for ds in info_j["en_tiempo"].values()
+            if ds["max_min"] >= MINUTOS_VENCIDA * 0.75
+        )
+        verde_puro = verde - amarillo
+        rojo = (
+            sum(ds["count"] for ds in info_j["vencidas"].values()) +
+            sum(ds["count"] for ds in info_j["de_ayer"].values())
+        )
+        sin_asignar = sum(
+            ds["count"]
+            for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]]
+            for ven, ds in grp.items() if ven == "Sin asignar"
+        )
+
+        chips = []
+        if verde_puro > 0:   chips.append({"label": f"🟢 {verde_puro} rem"})
+        if amarillo > 0:     chips.append({"label": f"🟡 {amarillo} rem"})
+        if rojo > 0:         chips.append({"label": f"🔴 {rojo} rem"})
+        if sin_asignar > 0:  chips.append({"label": f"⚠️ {sin_asignar} sin asignar"})
+        if not chips:        chips.append({"label": "Sin remisiones"})
+
+        # chipList de resumen + detalle por vendedor colapsable
+        widgets = [{"chipList": {"chips": chips}}]
+        for emoji, grp in [("📅", info_j["de_ayer"]), ("🔴", info_j["vencidas"]), ("🟢", info_j["en_tiempo"])]:
+            for ven, ds in sorted(grp.items(), key=lambda x: -x[1]["max_min"]):
+                if ds["count"] == 0:
+                    continue
+                icono_ven = "⚠️" if ven == "Sin asignar" else emoji
+                t_str = calcular_tiempo_espera_str(ds["max_min"]) if ds["max_min"] > 0 else ""
+                texto = f"<b>{ds['count']} rem</b>" + (f" · {t_str}" if t_str else "")
+                widgets.append({"decoratedText": {
+                    "topLabel": f"{icono_ven} {ven}", "text": texto,
+                    "startIcon": {"knownIcon": "PERSON"}
+                }})
+        sec = {"header": f"👤 {jefe}", "widgets": widgets}
+        if len(widgets) > 1:
+            sec["collapsible"] = True
+            sec["uncollapsibleWidgetsCount"] = 1
+        sections.append(sec)
+
+    total = sum(
+        sum(ds["count"] for ds in grp.values())
+        for info_j in info_piso["jefes"].values()
+        for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]]
+    )
+    sections.append({
+        "widgets": [
+            {"divider": {}},
+            {
+                "decoratedText": {
+                    "topLabel": f"Total {ubicacion}",
+                    "text": f"<b>{total} remisiones</b>",
+                    "icon": {"knownIcon": "CONFIRMATION_NUMBER_ICON"}
+                }
+            }
+        ]
+    })
+
+    card_id = "piso-" + ubicacion.replace(" ", "_")
+    return {
+        "cardsV2": [{
+            "cardId": card_id,
+            "card": {
+                "header": {
+                    "title": f"🏬 {ubicacion}",
+                    "subtitle": f"Liverpool Tienda 456 — {fecha_now}",
+                    "imageUrl": "https://fonts.gstatic.com/s/i/googlematerialicons/store/v6/24px.svg",
+                    "imageType": "CIRCLE"
+                },
+                "sections": sections
+            }
+        }]
+    }
+
+
+# ── Helpers compartidos para Cards v2 ────────────────────────
+
+def _card_total_section(label, total):
+    return {
+        "widgets": [
+            {"divider": {}},
+            {"decoratedText": {
+                "topLabel": label,
+                "text": f"<b>{total} remisiones</b>",
+                "icon": {"knownIcon": "CONFIRMATION_NUMBER_ICON"}
+            }}
+        ]
+    }
+
+def _card_seccion_grp(titulo, grp, emoji_grp):
+    """Sección colapsable con chipList de resumen + fila por vendedor."""
+    total = sum(ds["count"] for ds in grp.values())
+    if total == 0:
+        return None
+    sin_asignar = sum(ds["count"] for ven, ds in grp.items() if ven == "Sin asignar")
+    con_ven     = total - sin_asignar
+    chips = []
+    if con_ven > 0:      chips.append({"label": f"{emoji_grp} {con_ven} rem"})
+    if sin_asignar > 0:  chips.append({"label": f"⚠️ {sin_asignar} sin asignar"})
+    widgets = [{"chipList": {"chips": chips}}]
+    for ven, ds in sorted(grp.items(), key=lambda x: -x[1]["max_min"]):
+        if ds["count"] == 0:
+            continue
+        icono = "⚠️" if ven == "Sin asignar" else emoji_grp
+        t_str = calcular_tiempo_espera_str(ds["max_min"]) if ds["max_min"] > 0 else ""
+        texto = f"<b>{ds['count']} rem</b>" + (f" · {t_str}" if t_str else "")
+        widgets.append({"decoratedText": {
+            "topLabel": f"{icono} {ven}", "text": texto,
+            "startIcon": {"knownIcon": "PERSON"}
+        }})
+    sec = {"header": titulo, "widgets": widgets}
+    if len(widgets) > 1:
+        sec["collapsible"] = True
+        sec["uncollapsibleWidgetsCount"] = 1
+    return sec
+
+
+def construir_card_jefe_individual(jefe, info_j, ubicacion, fecha_now, es_sustituto=False, jefe_original=""):
+    sections = []
+    if es_sustituto and jefe_original:
+        primer = jefe_original.split()[0].capitalize()
+        sections.append({"widgets": [{"textParagraph": {
+            "text": f"🔄 <b>Sustituto de {primer}</b> (descansa hoy)"
+        }}]})
+
+    for titulo, grp, emoji in [
+        ("📅 De ayer sin atender", info_j["de_ayer"],  "📅"),
+        ("🔴 Vencidas (+20 min)",  info_j["vencidas"], "🔴"),
+        ("⏰ En tiempo",           info_j["en_tiempo"],"🟢"),
+    ]:
+        sec = _card_seccion_grp(titulo, grp, emoji)
+        if sec:
+            sections.append(sec)
+
+    total = sum(ds["count"] for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]] for ds in grp.values())
+    sections.append(_card_total_section("Total", total))
+
+    genero  = get_genero(jefe)
+    emoji_g = "👩‍💼" if genero == "jefa" else "👨‍💼"
+    return {
+        "cardsV2": [{
+            "cardId": "jefe-" + jefe.replace(" ", "_"),
+            "card": {
+                "header": {
+                    "title": f"{emoji_g} {jefe}",
+                    "subtitle": f"{ubicacion} — {fecha_now}",
+                    "imageUrl": "https://fonts.gstatic.com/s/i/googlematerialicons/person/v6/24px.svg",
+                    "imageType": "CIRCLE"
+                },
+                "sections": sections
+            }
+        }]
+    }
+
+
+def construir_card_apertura(emoji, msg_texto, espera_ayer, espera_hoy, etiq_ayer, etiq_hoy, jefes_ayer, dir_dict, fecha_now):
+    sections = [{"widgets": [{"textParagraph": {"text": msg_texto}}]}]
+
+    total_espera = espera_ayer + espera_hoy
+    total_etiq   = etiq_ayer   + etiq_hoy
+    widgets_desglose = []
+    if total_espera > 0:
+        widgets_desglose.append({"decoratedText": {
+            "topLabel": "🔴 Mercancía en Espera",
+            "text": f"<b>{total_espera}</b>  ·  📅 ayer: {espera_ayer}  |  hoy: {espera_hoy}",
+            "startIcon": {"knownIcon": "CLOCK"}
+        }})
+    if total_etiq > 0:
+        widgets_desglose.append({"decoratedText": {
+            "topLabel": "🏷️ Etiquetas Generadas",
+            "text": f"<b>{total_etiq}</b>  ·  📅 ayer: {etiq_ayer}  |  hoy: {etiq_hoy}",
+            "startIcon": {"knownIcon": "BOOKMARK"}
+        }})
+    if widgets_desglose:
+        sections.append({"header": "📊 Desglose inicial", "widgets": widgets_desglose})
+
+    for jefe, info in sorted(jefes_ayer.items(), key=lambda x: -x[1]["count"]):
+        nom_secs = " | ".join(
+            "Sec " + s + (" " + dir_dict.get(s, {}).get("nombre_seccion", "") if dir_dict.get(s, {}).get("nombre_seccion") else "")
+            for s in sorted(info["secciones"])
+        )
+        sections.append({"header": f"⚠️ {jefe}", "widgets": [{"decoratedText": {
+            "topLabel": f"{info['count']} pendientes de ayer",
+            "text": nom_secs or "—",
+            "startIcon": {"knownIcon": "CONFIRMATION_NUMBER_ICON"}
+        }}]})
+
+    return {
+        "cardsV2": [{
+            "cardId": "apertura",
+            "card": {
+                "header": {
+                    "title": f"{emoji} Buenos días",
+                    "subtitle": f"Liverpool Tienda 456 — {fecha_now}",
+                    "imageUrl": "https://fonts.gstatic.com/s/i/googlematerialicons/wb_sunny/v6/24px.svg",
+                    "imageType": "CIRCLE"
+                },
+                "sections": sections
+            }
+        }]
+    }
+
+
+def construir_card_cierre(emoji, msg_texto, espera, etiq, jefes_pendientes, fecha_now):
+    sections = [{"widgets": [{"textParagraph": {"text": msg_texto}}]}]
+    sections.append({"header": "📊 Resumen de cierre", "widgets": [
+        {"decoratedText": {"topLabel": "🔴 Mercancía en Espera", "text": f"<b>{espera}</b>", "startIcon": {"knownIcon": "CLOCK"}}},
+        {"decoratedText": {"topLabel": "🏷️ Etiquetas Generadas",  "text": f"<b>{etiq}</b>",   "startIcon": {"knownIcon": "BOOKMARK"}}},
+    ]})
+
+    for jefe, secciones in sorted(jefes_pendientes.items()):
+        total_j = sum(len(v) for v in secciones.values())
+        widgets = [{"chipList": {"chips": [{"label": f"📋 {total_j} rem"}]}}]
+        for sec_key, minutos_list in sorted(secciones.items()):
+            widgets.append({"decoratedText": {
+                "topLabel": f"📍 {sec_key}",
+                "text": calcular_tiempo_espera_str(max(minutos_list)),
+                "startIcon": {"knownIcon": "PERSON"}
+            }})
+        sec = {"header": f"⚠️ {jefe}", "widgets": widgets}
+        if len(widgets) > 1:
+            sec["collapsible"] = True
+            sec["uncollapsibleWidgetsCount"] = 1
+        sections.append(sec)
+
+    return {
+        "cardsV2": [{
+            "cardId": "cierre",
+            "card": {
+                "header": {
+                    "title": f"{emoji} Buenas noches",
+                    "subtitle": f"Liverpool Tienda 456 — {fecha_now}",
+                    "imageUrl": "https://fonts.gstatic.com/s/i/googlematerialicons/nights_stay/v6/24px.svg",
+                    "imageType": "CIRCLE"
+                },
+                "sections": sections
+            }
+        }]
+    }
+
+
+def construir_card_pendientes_ayer(por_jefe, total_ayer, fecha_now):
+    sections = []
+    for jefe, secciones in sorted(por_jefe.items(), key=lambda x: -sum(d["count"] for d in x[1].values())):
+        total_j = sum(d["count"] for d in secciones.values())
+        sin_ven = sum(d["sin_vendedor"] for d in secciones.values())
+        chips   = [{"label": f"📅 {total_j} rem"}]
+        if sin_ven > 0:
+            chips.append({"label": f"⚠️ {sin_ven} sin vendedor"})
+        widgets = [{"chipList": {"chips": chips}}]
+        for sec_key, ds in sorted(secciones.items()):
+            texto = f"<b>{ds['count']} rem</b> · {calcular_tiempo_espera_str(ds['max_min'])}"
+            if ds["sin_vendedor"]:
+                texto += f" · ⚠️ {ds['sin_vendedor']} sin vendedor"
+            widgets.append({"decoratedText": {
+                "topLabel": f"📍 {sec_key}", "text": texto,
+                "startIcon": {"knownIcon": "BOOKMARK"}
+            }})
+        sec = {"header": f"⚠️ {jefe}", "widgets": widgets}
+        if len(widgets) > 1:
+            sec["collapsible"] = True
+            sec["uncollapsibleWidgetsCount"] = 1
+        sections.append(sec)
+
+    return {
+        "cardsV2": [{
+            "cardId": "pendientes-ayer",
+            "card": {
+                "header": {
+                    "title": "📅 Pendientes de ayer",
+                    "subtitle": f"{total_ayer} sin resolver — {fecha_now}",
+                    "imageUrl": "https://fonts.gstatic.com/s/i/googlematerialicons/warning/v6/24px.svg",
+                    "imageType": "CIRCLE"
+                },
+                "sections": sections
+            }
+        }]
+    }
+
+
+# ── Mensajes que se reescriben en lugar (pisos y jefes) ──────────
+MENSAJES_PISOS_FILE      = "mensajes_pisos.json"
+MENSAJES_JEFES_IND_FILE  = "mensajes_jefes_ind.json"
+
+def _leer_mensajes_reescribibles(archivo):
+    """Lee el registro {clave: {name, fecha}} y descarta entradas de días anteriores."""
+    hoy = datetime.now().strftime("%d/%m/%Y")
+    try:
+        if os.path.exists(archivo):
+            with open(archivo) as f:
+                data = json.load(f)
+            # Limpieza: solo conservar entradas de hoy (formato nuevo)
+            return {k: v for k, v in data.items()
+                    if isinstance(v, dict) and v.get("fecha") == hoy}
+    except Exception:
+        pass
+    return {}
+
+def _guardar_mensajes_reescribibles(archivo, d):
+    try:
+        with open(archivo, "w") as f:
+            json.dump(d, f)
+    except Exception:
+        pass
+
+def _construir_texto_vendedor(vendedor, v, fecha_now):
+    todos = v["de_ayer"] + v["vencidas"] + v["en_tiempo"]
+    partes = [fecha_now, "👤 *" + vendedor.title() + "*"]
+    for it in sorted(todos, key=lambda x: -x["minutos"]):
+        sku_txt  = " · SKU " + it["sku"] if it["sku"] else ""
+        tipo_txt = "  " + it["tipo"] + " (prioridad)" if it.get("tipo") else ""
+        partes.append("    • *" + it["remision"] + "*" + sku_txt +
+                      " — lleva " + calcular_tiempo_espera_str(it["minutos"]) + tipo_txt)
+    partes.append("  🟢 *Total: " + str(len(todos)) + " remisiones*")
+    return "\n".join(partes)
+
+def _enviar_o_reescribir(webhook_url, payload, msg_name):
+    """Reescribe el mensaje existente (PATCH) o crea uno nuevo (POST).
+    Funciona para texto y para cardsV2 usando la misma key+token del webhook.
+    Devuelve el name del mensaje para guardarlo."""
+    from urllib.parse import urlparse, parse_qs
+    parsed = urlparse(webhook_url)
+    params = parse_qs(parsed.query)
+    key    = params.get("key",   [""])[0]
+    token  = params.get("token", [""])[0]
+    update_mask = "cardsV2" if "cardsV2" in payload else "text"
+
+    if msg_name and key and token:
+        patch_url = (f"https://chat.googleapis.com/v1/{msg_name}"
+                     f"?key={key}&token={token}&updateMask={update_mask}")
+        try:
+            r = requests.patch(patch_url, json=payload, timeout=15)
+            if 200 <= r.status_code < 300:
+                return msg_name
+            log.info(f"PATCH {r.status_code} — creando nuevo mensaje")
+        except Exception as e:
+            log.info(f"PATCH error: {e} — creando nuevo mensaje")
+
+    try:
+        r = requests.post(webhook_url, json=payload, timeout=15)
+        if 200 <= r.status_code < 300:
+            return r.json().get("name", "")
+    except Exception as e:
+        log.warning(f"Error enviando mensaje reescribible: {e}")
+    return ""
 
 
 def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes_en_descanso=None):
@@ -1376,7 +1916,7 @@ def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes
         jefes_en_descanso = {}
     ESTATUS_ACTIVOS = ["Etiqueta Generada", "Mercancia en Espera de Entrega"]
     COL_STATUS=8; COL_SECCION=5; COL_FECHA_ASIG=7; COL_JEFE=17
-    COL_NOMBRE_VEN=13; COL_TIPO_ENTREGA=19
+    COL_NOMBRE_VEN=13; COL_TIPO_ENTREGA=22
 
     fecha_now = datetime.now().strftime("%d/%m/%Y %H:%M")
     por_piso  = {}
@@ -1431,13 +1971,8 @@ def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes
 
         info_j = por_piso[p_idx]["jefes"][jefe]
         if tipo_entrega:
-            # Normalizar contra TIPOS_PRIORIDAD; si no hay match usar el raw
-            tipo_key = tipo_entrega
-            for tp in TIPOS_PRIORIDAD:
-                if tp.lower() in tipo_entrega.lower():
-                    tipo_key = tp
-                    break
-            info_j["tipo_counts"][tipo_key] = info_j["tipo_counts"].get(tipo_key, 0) + 1
+            # Usar el valor tal como viene en columna W (C&C, C&C Expreso, XD, XD Expreso)
+            info_j["tipo_counts"][tipo_entrega] = info_j["tipo_counts"].get(tipo_entrega, 0) + 1
 
         grp = info_j["de_ayer"] if es_ayer else (info_j["vencidas"] if vencida else info_j["en_tiempo"])
 
@@ -1451,40 +1986,128 @@ def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes
         log.info("Sin remisiones activas para mensaje de jefes")
         return
 
+    # Las cards de piso se mandan una vez al día y se reescriben el resto del día
+    mensajes_pisos = _leer_mensajes_reescribibles(MENSAJES_PISOS_FILE)
+    hoy = datetime.now().strftime("%d/%m/%Y")
+
     for p_idx in sorted(por_piso.keys()):
         info_piso = por_piso[p_idx]
         ubicacion = info_piso["ubicacion"]
 
-        total_piso = 0
-        for info_j in info_piso["jefes"].values():
-            for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]]:
-                for ds in grp.values():
-                    total_piso += ds["count"]
-
-        partes = []
-        partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
-        partes.append("🏬 *" + ubicacion + "* — " + fecha_now)
-        partes.append("")
-        partes.append("🟢 menos de 15 min  🟡 15-20 min  🔴 más de 20 min")
-        partes.append("")
-
-        for jefe, info_j in sorted(info_piso["jefes"].items()):
-            for linea in generar_linea_jefe(jefe, info_j):
-                partes.append(linea)
-            partes.append("")
-
-        partes.append("📋 *Total " + ubicacion + ": " + str(total_piso) + " remisiones*")
-        partes.append("_Argos — " + fecha_now + "_")
-        partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
-
-        post_chat_con_reintento(WEBHOOK_JEFES, {"text": "\n".join(partes)})
+        payload  = construir_card_piso(ubicacion, info_piso, fecha_now)
+        clave    = "piso-" + ubicacion.replace(" ", "_")
+        msg_name = mensajes_pisos.get(clave, {}).get("name", "")
+        nuevo    = _enviar_o_reescribir(WEBHOOK_JEFES, payload, msg_name)
+        if nuevo:
+            mensajes_pisos[clave] = {"name": nuevo, "fecha": hoy}
+        else:
+            # Fallback: si la creación directa falló, intentar con la cola de reintentos
+            post_chat_con_reintento(WEBHOOK_JEFES, payload)
         log.info("Mensaje enviado al espacio jefes — piso: " + ubicacion)
 
         for jefe, info_j in sorted(info_piso["jefes"].items()):
             jefe_original = info_j.get("jefe_original", "")
             enviar_mensaje_jefe_individual(jefe, info_j, ubicacion, fecha_now, dir_dict, jefe_original=jefe_original)
 
+    _guardar_mensajes_reescribibles(MENSAJES_PISOS_FILE, mensajes_pisos)
     log.info("4 mensajes por piso enviados al espacio jefes ✅")
+
+def enviar_mensajes_vendedores(todas_remisiones, dir_dict, descansos=None):
+    """Manda a cada vendedor (con webhook activo en WEBHOOKS_VENDEDORES) un
+    mensaje con SUS pendientes. Mismo formato/cadencia que el mensaje individual
+    de jefe. Vendedores sin webhook o sin pendientes no reciben nada.
+    """
+    if not WEBHOOKS_VENDEDORES_CACHE:
+        log.info("Sin webhooks de vendedores configurados — omitiendo mensajes individuales")
+        return
+    ESTATUS_ACTIVOS = ["Etiqueta Generada", "Mercancia en Espera de Entrega"]
+    COL_REMISION=1; COL_SKU=2; COL_SECCION=5; COL_FECHA_ASIG=7
+    COL_STATUS=8; COL_NOMBRE_VEN=13; COL_TIPO_ENTREGA=22
+
+    fecha_now    = datetime.now().strftime("%d/%m/%Y %H:%M")
+    por_vendedor = {}
+
+    for row in todas_remisiones:
+        if not row or len(row) <= COL_NOMBRE_VEN:
+            continue
+        status = str(row[COL_STATUS]).strip() if len(row) > COL_STATUS else ""
+        if status not in ESTATUS_ACTIVOS:
+            continue
+        nom_vendedor = str(row[COL_NOMBRE_VEN]).strip() if len(row) > COL_NOMBRE_VEN else ""
+        if not nom_vendedor or nom_vendedor in ("nan", "Sin Asignar", "UNASSIGNED"):
+            continue
+
+        fecha_asig   = row[COL_FECHA_ASIG] if len(row) > COL_FECHA_ASIG else ""
+        minutos      = calcular_minutos(fecha_asig)
+        remision     = str(row[COL_REMISION]).strip().replace(".0", "") if len(row) > COL_REMISION else ""
+        sku          = str(row[COL_SKU]).strip().replace(".0", "") if len(row) > COL_SKU else ""
+        tipo_entrega = str(row[COL_TIPO_ENTREGA]).strip() if len(row) > COL_TIPO_ENTREGA else ""
+        es_ayer      = es_de_ayer(fecha_asig)
+        vencida      = minutos >= MINUTOS_VENCIDA
+
+        # Ubicacion / piso (igual que en mensaje de jefes)
+        sec_raw = str(row[COL_SECCION]).strip().replace(".0","") if len(row) > COL_SECCION else ""
+        try:
+            sec = str(int(sec_raw))
+        except Exception:
+            sec = sec_raw
+        ubicacion_raw = dir_dict.get(sec, {}).get("ubicacion", "") or dir_dict.get(sec_raw, {}).get("ubicacion", "") or ""
+        p_idx     = orden_piso(ubicacion_raw)
+        ubicacion = NOMBRES_PISOS.get(p_idx, ubicacion_raw.upper() if ubicacion_raw else "SIN PISO")
+
+        if nom_vendedor not in por_vendedor:
+            por_vendedor[nom_vendedor] = {
+                "en_tiempo": [], "vencidas": [], "de_ayer": [],
+                "ubicacion": ubicacion,
+            }
+        tipo_norm = tipo_entrega.strip()
+        item = {
+            "remision":  remision,
+            "sku":       sku,
+            "minutos":   minutos,
+            "tipo":      tipo_norm if tipo_norm.lower() in _TIPOS_ALERTA else "",
+        }
+        v = por_vendedor[nom_vendedor]
+        if es_ayer:
+            v["de_ayer"].append(item)
+        elif vencida:
+            v["vencidas"].append(item)
+        else:
+            v["en_tiempo"].append(item)
+
+    # Contadores individuales por vendedor (persisten entre ciclos)
+    contador   = leer_contador()
+    ven_counts = contador.get("ven_counts", {})
+
+    enviados    = 0
+    ya_enviados = set()
+    for vendedor, v in sorted(por_vendedor.items()):
+        webhook, ciclos_pers = _buscar_webhook_vendedor(vendedor)
+        if not webhook or webhook in ya_enviados:
+            continue
+
+        total = len(v["en_tiempo"]) + len(v["vencidas"]) + len(v["de_ayer"])
+        if total == 0:
+            continue
+
+        # Frecuencia personal (columna D de la hoja) o default global
+        ciclos_req = ciclos_pers if ciclos_pers > 0 else CICLOS_VENDEDORES
+        clave      = vendedor.strip().upper()
+        ven_counts[clave] = ven_counts.get(clave, 0) + 1
+        if ven_counts[clave] < ciclos_req:
+            log.info(f"Vendedor {vendedor}: {ven_counts[clave]}/{ciclos_req} ciclos — aún no toca")
+            continue
+        ven_counts[clave] = 0
+        ya_enviados.add(webhook)
+
+        texto = _construir_texto_vendedor(vendedor, v, fecha_now)
+        post_chat_con_reintento(webhook, {"text": texto})
+        enviados += 1
+
+    # Persistir contadores individuales
+    contador["ven_counts"] = ven_counts
+    guardar_contador(contador)
+    log.info(f"Mensajes individuales a vendedores enviados: {enviados}")
 
 def enviar_cierre(datos, dir_dict):
     fecha_now  = datetime.now().strftime("%d/%m/%Y %H:%M")
@@ -1543,8 +2166,9 @@ def enviar_cierre(datos, dir_dict):
     lineas.append("")
     lineas.append("_Argos — " + fecha_now + "_")
 
-    # ── Mensaje buenas noches → espacio Jefes ────────────────────────
-    post_chat_con_reintento(WEBHOOK_JEFES, {"text": "\n".join(lineas)})
+    # ── Mensaje buenas noches → espacio Jefes (Card v2) ─────────────
+    card_cierre = construir_card_cierre(emoji_cierre, msg_cierre, espera, etiq, jefes_pendientes, fecha_now)
+    post_chat_con_reintento(WEBHOOK_JEFES, card_cierre)
     log.info("Mensaje de cierre enviado al espacio jefes ✅")
 
     # ── KPI tiempos → espacio Tiempos (simultáneo al cierre) ─────────
@@ -1555,6 +2179,41 @@ def enviar_cierre(datos, dir_dict):
         log.error(f"Error enviando KPI en cierre: {e}")
 
     marcar_cierre_enviado()
+
+
+def enviar_reporte_salud(resumen, vencidas):
+    """Resumen operativo del bot al cierre → espacio Reporte.
+    Comunica el valor diario: ciclos de monitoreo, remisiones procesadas e
+    incidencias. Pensado para que el negocio vea cuánto trabajó Argos.
+    """
+    fecha_now = datetime.now().strftime("%d/%m/%Y %H:%M")
+    c = leer_contador()
+    ciclos  = c.get("ciclos_dia", 0)
+    errores = c.get("errores_dia", 0)
+
+    try:
+        horario = f"{int(HORA_INICIO):02d}:00 – {int(HORA_FIN):02d}:{int(MINUTO_FIN):02d}"
+    except Exception:
+        horario = ""
+
+    estado = "✅ Sin incidencias" if errores == 0 else f"⚠️ {errores} incidencia(s) — recuperado automáticamente"
+
+    lineas = [
+        "🤖 *Argos — Reporte del día*",
+        "📅 " + fecha_now,
+        "",
+        "🔁 Ciclos de monitoreo hoy: *" + str(ciclos) + "*",
+        "📦 Remisiones en el último corte: *" + str(resumen.get("total", 0)) + "*",
+        "🏷️ Etiquetas generadas: *" + str(resumen.get("etiquetas", 0)) + "*",
+        "🔴 Vencidas al cierre: *" + str(len(vencidas)) + "*",
+        "⚙️ Estado del sistema: " + estado,
+    ]
+    if horario:
+        lineas.append("🕐 Operación: " + horario)
+    lineas += ["", "_Argos v" + VERSION + " — monitoreo automático_"]
+
+    post_chat_con_reintento(WEBHOOK, {"text": "\n".join(lineas)})
+    log.info("Reporte de salud diario enviado al espacio reporte ✅")
 
 
 def enviar_pendientes_ayer(datos, dir_dict, descansos=None):
@@ -1614,29 +2273,8 @@ def enviar_pendientes_ayer(datos, dir_dict, descansos=None):
 
     total_ayer = sum(d["count"] for secs in por_jefe.values() for d in secs.values())
 
-    lineas = [
-        "〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰",
-        "📅 *Pendientes de ayer — " + fecha_now + "*",
-        "_Remisiones del día anterior que aún no han sido atendidas_",
-        "",
-        "⚠️ *" + str(total_ayer) + " remisiones de ayer sin resolver:*",
-        "",
-    ]
-
-    for jefe, secciones in sorted(por_jefe.items(), key=lambda x: -sum(d["count"] for d in x[1].values())):
-        total_j = sum(d["count"] for d in secciones.values())
-        lineas.append(get_mencion(jefe) + " — *" + str(total_j) + "* pendientes")
-        for sec_key, ds in sorted(secciones.items()):
-            linea = "    📍 " + sec_key + " — " + calcular_tiempo_espera_str(ds["max_min"]) + " | " + str(ds["count"]) + " rem"
-            if ds["sin_vendedor"]:
-                linea += " | ⚠️ *" + str(ds["sin_vendedor"]) + "* sin vendedor"
-            lineas.append(linea)
-        lineas.append("")
-
-    lineas.append("_Argos — " + fecha_now + "_")
-    lineas.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
-
-    post_chat_con_reintento(WEBHOOK_JEFES, {"text": "\n".join(lineas)})
+    card_ayer = construir_card_pendientes_ayer(por_jefe, total_ayer, fecha_now)
+    post_chat_con_reintento(WEBHOOK_JEFES, card_ayer)
     log.info(f"Pendientes de ayer enviados al espacio jefes: {total_ayer} remisiones")
     return True
 
@@ -2108,6 +2746,35 @@ def validar_csv(ruta):
     except Exception as e:
         return False, str(e)
 
+def _verificar_csv_congelado(ruta):
+    """Detecta si el CSV lleva 3+ ciclos sin cambios y alerta al chat de reporte."""
+    try:
+        with open(ruta, "rb") as f:
+            h = hashlib.md5(f.read()).hexdigest()
+        estado = {}
+        if os.path.exists(CSV_HASH_FILE):
+            with open(CSV_HASH_FILE) as f:
+                estado = json.load(f)
+        if estado.get("hash") == h:
+            estado["ciclos_igual"] = estado.get("ciclos_igual", 1) + 1
+        else:
+            estado = {"hash": h, "ciclos_igual": 1, "alerta_enviada": False}
+        with open(CSV_HASH_FILE, "w") as f:
+            json.dump(estado, f)
+        if estado["ciclos_igual"] >= 3 and not estado.get("alerta_enviada"):
+            fecha_now = datetime.now().strftime("%d/%m/%Y %H:%M")
+            msg = (f"⚠️ *Argos — Datos posiblemente congelados*\n\n"
+                   f"El CSV de OMS lleva *{estado['ciclos_igual']} ciclos* consecutivos "
+                   f"sin cambios. Es posible que el sistema OMS no esté actualizando.\n\n"
+                   f"_Verificar OMS manualmente_\n_{fecha_now}_")
+            post_chat_con_reintento(WEBHOOK, {"text": msg})
+            estado["alerta_enviada"] = True
+            with open(CSV_HASH_FILE, "w") as f:
+                json.dump(estado, f)
+            log.warning(f"⚠️ CSV congelado: {estado['ciclos_igual']} ciclos sin cambios — alerta enviada")
+    except Exception as e:
+        log.warning(f"Error verificando hash CSV: {e}")
+
 def tomar_screenshot(page, nombre):
     """Guarda screenshot en errores."""
     try:
@@ -2206,32 +2873,6 @@ def verificar_hora_sistema():
         return True
     except Exception:
         return True  # no bloquear por esto
-
-# ── MEJORA 5: WATCHDOG — NOTIFICAR SI NO HA CORRIDO ─────────
-
-def verificar_watchdog(gc):
-    """Si la ultima ejecucion exitosa fue hace mas de 30 min, alertar."""
-    try:
-        ss   = gc.open_by_key("135lsymm5A67_ieYZLaKIfvPpkyqRWbUf9UV-mv3b7js")
-        hoja = ss.worksheet("MONITOR")
-        rows = hoja.get_all_values()
-        if len(rows) < 2:
-            return
-        fecha_hoy = datetime.now().strftime("%d/%m/%Y")
-        exitosas_hoy = [r for r in rows[1:] if r and r[0] == fecha_hoy and r[5] == "exitosa"]
-        if not exitosas_hoy:
-            return
-        ultima = exitosas_hoy[-1]
-        hora_str = ultima[0] + " " + ultima[1]
-        ultima_dt = datetime.strptime(hora_str, "%d/%m/%Y %H:%M:%S")
-        diff_min  = (datetime.now() - ultima_dt).total_seconds() / 60
-        if diff_min > 30 and dentro_de_horario():
-            fecha_now = datetime.now().strftime("%d/%m/%Y %H:%M")
-            msg = "🚨 *Watchdog — Bot inactivo*\n\nUltima ejecucion exitosa: " + ultima[1] + " (hace " + str(int(diff_min)) + " min)\n\n_Favor de verificar la PC_\n_Argos — " + fecha_now + "_"
-            post_chat_con_reintento(WEBHOOK, {"text": msg})
-            log.warning("⚠️ Watchdog: bot inactivo mas de 30 min")
-    except Exception as e:
-        log.warning(f"Watchdog error: {e}")
 
 # ── MEJORA 6: HOJA METRICAS DIARIAS ──────────────────────────
 
@@ -2597,6 +3238,15 @@ def main():
     FORZAR    = "--forzar" in sys.argv
     DEMO_MODE = "--demo" in sys.argv
 
+    global _DEMO_LIVE, _DEMO_CICLO
+    if DEMO_MODE:
+        _DEMO_LIVE = True
+        try:
+            _DEMO_CICLO = int(os.environ.get("ARGOS_DEMO_CICLO", "0"))
+        except Exception:
+            _DEMO_CICLO = 0
+        estado_demo("inicio", "Argos arrancando...")
+
     log.info("=" * 50)
     if DRY_RUN: log.info("🧪 MODO DRY-RUN — no se mandaran mensajes ni se actualizaran Sheets")
     log.info("Iniciando Argos")
@@ -2651,7 +3301,7 @@ def main():
         gc_global = gspread.authorize(creds)
 
         # Cargar config remota desde hoja CONFIG
-        cargar_config_remota(gc_global)
+        _sheets_con_reintento(cargar_config_remota, gc_global)
 
         # Modo demo — redirigir webhooks y abrir browser visible
         if DEMO_MODE:
@@ -2688,6 +3338,7 @@ def main():
             liberar_lock()
             return
 
+        estado_demo("descarga", "Abriendo OMS con 3 navegadores en paralelo y descargando el CSV...")
         ruta, intentos_descarga        = descargar_csv(visible=DEMO_MODE)
 
         # Validar CSV
@@ -2695,8 +3346,11 @@ def main():
         if not es_valido:
             raise Exception(f"CSV invalido: {info_csv}")
         log.info(f"CSV validado: {info_csv}")
+        _verificar_csv_congelado(ruta)
 
         datos, resumen                 = leer_csv(ruta)
+        estado_demo("sheets", "Volcando " + str(resumen.get("total", 0)) + " remisiones a Google Sheets...",
+                    total=resumen.get("total", 0))
 
         # Cache del DIRECTORIO
         cache = cargar_dir_cache()
@@ -2704,9 +3358,9 @@ def main():
             log.info("Usando cache del DIRECTORIO")
             dir_dict, hist_dict = cache["dir"], cache["hist"]
             # Seguir actualizando sheets pero sin releer DIRECTORIO
-            _, _, descansos, jefes_en_descanso = actualizar_sheets(gc_global, datos) if not DRY_RUN else ({}, {}, {}, {})
+            _, _, descansos, jefes_en_descanso = (_sheets_con_reintento(actualizar_sheets, gc_global, datos) if not DRY_RUN else ({}, {}, {}, {}))
         else:
-            dir_dict, hist_dict, descansos, jefes_en_descanso = actualizar_sheets(gc_global, datos) if not DRY_RUN else ({}, {}, {}, {})
+            dir_dict, hist_dict, descansos, jefes_en_descanso = (_sheets_con_reintento(actualizar_sheets, gc_global, datos) if not DRY_RUN else ({}, {}, {}, {}))
             if not DRY_RUN:
                 guardar_dir_cache(dir_dict, hist_dict)
 
@@ -2720,7 +3374,20 @@ def main():
             if nombres:
                 WEBHOOKS_JEFES_CACHE = cargar_webhooks_jefes(gc_global, nombres_jefes=nombres)
 
+        # Cargar/autollenar webhooks de vendedores con los nombres del CSV (col 13)
+        global WEBHOOKS_VENDEDORES_CACHE
+        nombres_ven = {
+            str(r[13]).strip() for r in datos
+            if len(r) > 13 and str(r[13]).strip()
+            and str(r[13]).strip() not in ("nan", "Sin Asignar", "UNASSIGNED")
+        }
+        WEBHOOKS_VENDEDORES_CACHE = cargar_webhooks_vendedores(gc_global, nombres_vendedores=nombres_ven)
+
+        estado_demo("procesa", "Detectando vencidas, calculando tiempos y priorizando C&C / XD Expreso...",
+                    total=resumen.get("total", 0))
         vencidas                       = detectar_vencidas(datos, dir_dict, hist_dict, descansos)
+        estado_demo("procesa", str(len(vencidas)) + " remisiones vencidas detectadas",
+                    total=resumen.get("total", 0), vencidas=len(vencidas))
         gc_mod.collect()  # liberar memoria
 
         # Verificar pausa manual
@@ -2751,6 +3418,11 @@ def main():
         if es_hora_apertura() and not apertura_ya_enviada():
             enviar_apertura(datos, dir_dict, hist_dict)
             enviar_pendientes_ayer(datos, dir_dict, descansos)
+            # Reiniciar contadores diarios para el reporte de salud
+            _c = leer_contador()
+            _c["ciclos_dia"] = 0
+            _c["errores_dia"] = 0
+            guardar_contador(_c)
             log.info("Primera ejecución: buenos días + pendientes de ayer enviados ✅")
 
         # ── RECORDATORIO 9:20 PM ──────────────────────────────────────────────
@@ -2761,6 +3433,10 @@ def main():
         elif es_hora_cierre() and not cierre_ya_enviado():
             # enviar_cierre manda buenas noches a Jefes y KPI tiempos a Tiempos
             enviar_cierre(datos, dir_dict)
+            try:
+                enviar_reporte_salud(resumen, vencidas)
+            except Exception as e:
+                log.error(f"Error enviando reporte de salud: {e}")
             guardar_health("cierre_enviado")
             liberar_lock()
             return  # no mandar más mensajes este ciclo
@@ -2780,8 +3456,11 @@ def main():
             mandar_alerta_anomalia(len(vencidas), prom_venc)
 
         # ── Mensajes — espacio REPORTE ────────────────────────────────────────
+        estado_demo("mensajes", "Enviando avisos a Google Chat: jefes, vendedores y reporte...",
+                    total=resumen.get("total", 0), vencidas=len(vencidas))
         enviar_notificaciones_vencidas(vencidas)
         contador = leer_contador()
+        contador["ciclos_dia"] = contador.get("ciclos_dia", 0) + 1
         contador["reporte_count"] = contador.get("reporte_count", 0) + 1
         if contador["reporte_count"] >= CICLOS_REPORTE:
             enviar_chat(resumen, exito=True)
@@ -2800,11 +3479,17 @@ def main():
             log.info(f"Mensajes jefes enviados, contador reiniciado (cada {CICLOS_JEFES} ciclo(s))")
         else:
             log.info(f"Contador jefes: {contador['count']}/{CICLOS_JEFES}")
+
         guardar_contador(contador)
 
-        guardar_metricas_dia(gc_global, resumen, len(vencidas))
+        # ── Mensajes individuales — VENDEDORES ──────────────────────────────
+        # Se evalúa cada ciclo; la frecuencia es por vendedor (columna Ciclos
+        # de WEBHOOKS_VENDEDORES) con default global ciclos_vendedores.
+        enviar_mensajes_vendedores(datos, dir_dict, descansos)
+
+        _sheets_con_reintento(guardar_metricas_dia, gc_global, resumen, len(vencidas))
         duracion = time.time() - t_inicio
-        guardar_en_monitor(gc_global, True, duracion, resumen, len(vencidas), intentos_descarga)
+        _sheets_con_reintento(guardar_en_monitor, gc_global, True, duracion, resumen, len(vencidas), intentos_descarga)
         respaldo_monitor_local(resumen, len(vencidas), intentos_descarga, True, duracion)
 
         # Verificar max ejecucion
@@ -2818,6 +3503,9 @@ def main():
             intentos=intentos_descarga,
             duracion_seg=round(duracion,1))
 
+        estado_demo("listo", "Ciclo completado en " + str(round(duracion, 1)) + "s — avisos entregados",
+                    total=resumen.get("total", 0), vencidas=len(vencidas), duracion=round(duracion, 1))
+
         # Archivar MONITOR cada 6 meses (>180 dias)
         try:
             archivar_monitor_si_necesario(gc_global)
@@ -2830,12 +3518,18 @@ def main():
         log.error(f"Error: {e}")
         guardar_health("error", error=str(e)[:200])
         try:
+            _c = leer_contador()
+            _c["errores_dia"] = _c.get("errores_dia", 0) + 1
+            guardar_contador(_c)
+        except Exception:
+            pass
+        try:
             duracion = time.time() - t_inicio
         except Exception:
             duracion = 0
         try:
             if gc_global:
-                guardar_en_monitor(gc_global, False, duracion, {}, 0)
+                _sheets_con_reintento(guardar_en_monitor, gc_global, False, duracion, {}, 0)
             respaldo_monitor_local({}, 0, 0, False, duracion)
         except Exception:
             pass
@@ -3351,7 +4045,11 @@ def enviar_kpi_jefes_tiempos(csv_oms=None, csv_xd=None, dir_dict=None):
             except Exception:
                 hoja_t = ss2.add_worksheet("KPI_TIEMPOS", rows=5000, cols=7)
 
-            if hoja_t.row_count == 0 or not hoja_t.get("A1"):
+            try:
+                a1 = hoja_t.acell("A1").value or ""
+            except Exception:
+                a1 = ""
+            if "dia" not in a1.lower():
                 hoja_t.update(
                     [["Dia", "Jefe", "Min (min)", "Promedio (min)", "Max (min)", "Remisiones", "Hora_cierre"]],
                     "A1"
