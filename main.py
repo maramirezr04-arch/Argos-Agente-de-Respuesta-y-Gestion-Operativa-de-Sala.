@@ -1,4 +1,4 @@
-﻿import os, logging, requests, csv, time, json, random
+﻿import os, logging, requests, csv, time, json, random, hashlib
 from datetime import datetime, timedelta
 from pathlib import Path
 from playwright.sync_api import sync_playwright
@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.3.6"
+VERSION = "1.4.0"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
@@ -181,6 +181,20 @@ def post_chat_con_reintento(url, payload, max_intentos=3):
     encolar_mensaje(url, payload)
     return False
 
+def _sheets_con_reintento(fn, *args, **kwargs):
+    """Ejecuta fn(*args) con hasta 3 reintentos si Google Sheets devuelve 429."""
+    for intento in range(3):
+        try:
+            return fn(*args, **kwargs)
+        except Exception as e:
+            es_429 = any(k in str(e) for k in ("429", "RESOURCE_EXHAUSTED", "Quota exceeded"))
+            if es_429 and intento < 2:
+                espera = 10 * (2 ** intento)
+                log.warning(f"Sheets 429 en {fn.__name__} — reintentando en {espera}s")
+                time.sleep(espera)
+            else:
+                raise
+
 def encolar_mensaje(url, payload):
     """Si Chat falla, guardar para reintentar despues."""
     try:
@@ -305,6 +319,7 @@ APERTURA_FILE     = "apertura.json"
 CIERRE_FILE       = "cierre.json"
 LOCK_FILE         = "bot.lock"
 PAUSA_FILE        = "pausa.txt"
+CSV_HASH_FILE     = "csv_hash.json"
 DIR_CACHE_FILE    = "directorio_cache.json"
 MONITOR_BACKUP    = "monitor_backup.csv"
 HISTORIAL_MAX     = 10
@@ -493,6 +508,19 @@ def _buscar_webhook_vendedor(nombre):
 CONFIG_REMOTA = {}
 CONFIG_CACHE_FILE = "config_remota_cache.json"
 
+def _validar_url_webhook(url, nombre):
+    """Valida formato de webhook de Google Chat. Retorna True si es válido."""
+    if not url.startswith("https://chat.googleapis.com"):
+        log.warning(f"⚠️ {nombre}: URL inválida (debe iniciar con https://chat.googleapis.com)")
+        return False
+    if "key=" not in url:
+        log.warning(f"⚠️ {nombre}: falta parámetro key= — verifica la URL en hoja CONFIG")
+        return False
+    if "token=" not in url:
+        log.warning(f"⚠️ {nombre}: falta parámetro token= — verifica la URL en hoja CONFIG")
+        return False
+    return True
+
 def cargar_config_remota(gc):
     """Lee la hoja CONFIG del Sheet 1 y actualiza valores globales."""
     global HORA_INICIO, HORA_FIN, MINUTO_FIN, MINUTOS_VENCIDA, UMBRAL_ANOMALIA, WATCHDOG_MINUTOS, CONFIG_REMOTA, CICLOS_JEFES, CICLOS_VENDEDORES, CICLOS_REPORTE, HORA_RECORDATORIO, WEBHOOK_DEMO_1, WEBHOOK_DEMO_2, WEBHOOK_DEMO_3, INTERVALO_DEMO, WEBHOOK, WEBHOOK_JEFES, WEBHOOK_TIEMPOS
@@ -565,12 +593,14 @@ def cargar_config_remota(gc):
         if cfg.get("hora_recordatorio"):
             HORA_RECORDATORIO = cfg["hora_recordatorio"].strip()
         # Webhooks de Chat — fuente única: la hoja CONFIG
-        if cfg.get("webhook_reporte", "").startswith("https://"):
-            WEBHOOK = cfg["webhook_reporte"].strip()
-        if cfg.get("webhook_jefes", "").startswith("https://"):
-            WEBHOOK_JEFES = cfg["webhook_jefes"].strip()
-        if cfg.get("webhook_tiempos", "").startswith("https://"):
-            WEBHOOK_TIEMPOS = cfg["webhook_tiempos"].strip()
+        for _clave, _var_nombre in [("webhook_reporte", "WEBHOOK"),
+                                     ("webhook_jefes",   "WEBHOOK_JEFES"),
+                                     ("webhook_tiempos", "WEBHOOK_TIEMPOS")]:
+            _url = cfg.get(_clave, "").strip()
+            if _url and _validar_url_webhook(_url, _clave):
+                if _var_nombre == "WEBHOOK":        WEBHOOK        = _url
+                elif _var_nombre == "WEBHOOK_JEFES": WEBHOOK_JEFES  = _url
+                else:                                WEBHOOK_TIEMPOS = _url
         if not WEBHOOK or not WEBHOOK_JEFES:
             log.warning("⚠️ Webhooks faltantes en hoja CONFIG (webhook_reporte / webhook_jefes) — los mensajes no se enviarán")
         if cfg.get("webhook_demo_1"):
@@ -2716,6 +2746,35 @@ def validar_csv(ruta):
     except Exception as e:
         return False, str(e)
 
+def _verificar_csv_congelado(ruta):
+    """Detecta si el CSV lleva 3+ ciclos sin cambios y alerta al chat de reporte."""
+    try:
+        with open(ruta, "rb") as f:
+            h = hashlib.md5(f.read()).hexdigest()
+        estado = {}
+        if os.path.exists(CSV_HASH_FILE):
+            with open(CSV_HASH_FILE) as f:
+                estado = json.load(f)
+        if estado.get("hash") == h:
+            estado["ciclos_igual"] = estado.get("ciclos_igual", 1) + 1
+        else:
+            estado = {"hash": h, "ciclos_igual": 1, "alerta_enviada": False}
+        with open(CSV_HASH_FILE, "w") as f:
+            json.dump(estado, f)
+        if estado["ciclos_igual"] >= 3 and not estado.get("alerta_enviada"):
+            fecha_now = datetime.now().strftime("%d/%m/%Y %H:%M")
+            msg = (f"⚠️ *Argos — Datos posiblemente congelados*\n\n"
+                   f"El CSV de OMS lleva *{estado['ciclos_igual']} ciclos* consecutivos "
+                   f"sin cambios. Es posible que el sistema OMS no esté actualizando.\n\n"
+                   f"_Verificar OMS manualmente_\n_{fecha_now}_")
+            post_chat_con_reintento(WEBHOOK, {"text": msg})
+            estado["alerta_enviada"] = True
+            with open(CSV_HASH_FILE, "w") as f:
+                json.dump(estado, f)
+            log.warning(f"⚠️ CSV congelado: {estado['ciclos_igual']} ciclos sin cambios — alerta enviada")
+    except Exception as e:
+        log.warning(f"Error verificando hash CSV: {e}")
+
 def tomar_screenshot(page, nombre):
     """Guarda screenshot en errores."""
     try:
@@ -2814,32 +2873,6 @@ def verificar_hora_sistema():
         return True
     except Exception:
         return True  # no bloquear por esto
-
-# ── MEJORA 5: WATCHDOG — NOTIFICAR SI NO HA CORRIDO ─────────
-
-def verificar_watchdog(gc):
-    """Si la ultima ejecucion exitosa fue hace mas de 30 min, alertar."""
-    try:
-        ss   = gc.open_by_key("135lsymm5A67_ieYZLaKIfvPpkyqRWbUf9UV-mv3b7js")
-        hoja = ss.worksheet("MONITOR")
-        rows = hoja.get_all_values()
-        if len(rows) < 2:
-            return
-        fecha_hoy = datetime.now().strftime("%d/%m/%Y")
-        exitosas_hoy = [r for r in rows[1:] if r and r[0] == fecha_hoy and r[5] == "exitosa"]
-        if not exitosas_hoy:
-            return
-        ultima = exitosas_hoy[-1]
-        hora_str = ultima[0] + " " + ultima[1]
-        ultima_dt = datetime.strptime(hora_str, "%d/%m/%Y %H:%M:%S")
-        diff_min  = (datetime.now() - ultima_dt).total_seconds() / 60
-        if diff_min > 30 and dentro_de_horario():
-            fecha_now = datetime.now().strftime("%d/%m/%Y %H:%M")
-            msg = "🚨 *Watchdog — Bot inactivo*\n\nUltima ejecucion exitosa: " + ultima[1] + " (hace " + str(int(diff_min)) + " min)\n\n_Favor de verificar la PC_\n_Argos — " + fecha_now + "_"
-            post_chat_con_reintento(WEBHOOK, {"text": msg})
-            log.warning("⚠️ Watchdog: bot inactivo mas de 30 min")
-    except Exception as e:
-        log.warning(f"Watchdog error: {e}")
 
 # ── MEJORA 6: HOJA METRICAS DIARIAS ──────────────────────────
 
@@ -3268,7 +3301,7 @@ def main():
         gc_global = gspread.authorize(creds)
 
         # Cargar config remota desde hoja CONFIG
-        cargar_config_remota(gc_global)
+        _sheets_con_reintento(cargar_config_remota, gc_global)
 
         # Modo demo — redirigir webhooks y abrir browser visible
         if DEMO_MODE:
@@ -3313,6 +3346,7 @@ def main():
         if not es_valido:
             raise Exception(f"CSV invalido: {info_csv}")
         log.info(f"CSV validado: {info_csv}")
+        _verificar_csv_congelado(ruta)
 
         datos, resumen                 = leer_csv(ruta)
         estado_demo("sheets", "Volcando " + str(resumen.get("total", 0)) + " remisiones a Google Sheets...",
@@ -3324,9 +3358,9 @@ def main():
             log.info("Usando cache del DIRECTORIO")
             dir_dict, hist_dict = cache["dir"], cache["hist"]
             # Seguir actualizando sheets pero sin releer DIRECTORIO
-            _, _, descansos, jefes_en_descanso = actualizar_sheets(gc_global, datos) if not DRY_RUN else ({}, {}, {}, {})
+            _, _, descansos, jefes_en_descanso = (_sheets_con_reintento(actualizar_sheets, gc_global, datos) if not DRY_RUN else ({}, {}, {}, {}))
         else:
-            dir_dict, hist_dict, descansos, jefes_en_descanso = actualizar_sheets(gc_global, datos) if not DRY_RUN else ({}, {}, {}, {})
+            dir_dict, hist_dict, descansos, jefes_en_descanso = (_sheets_con_reintento(actualizar_sheets, gc_global, datos) if not DRY_RUN else ({}, {}, {}, {}))
             if not DRY_RUN:
                 guardar_dir_cache(dir_dict, hist_dict)
 
@@ -3453,9 +3487,9 @@ def main():
         # de WEBHOOKS_VENDEDORES) con default global ciclos_vendedores.
         enviar_mensajes_vendedores(datos, dir_dict, descansos)
 
-        guardar_metricas_dia(gc_global, resumen, len(vencidas))
+        _sheets_con_reintento(guardar_metricas_dia, gc_global, resumen, len(vencidas))
         duracion = time.time() - t_inicio
-        guardar_en_monitor(gc_global, True, duracion, resumen, len(vencidas), intentos_descarga)
+        _sheets_con_reintento(guardar_en_monitor, gc_global, True, duracion, resumen, len(vencidas), intentos_descarga)
         respaldo_monitor_local(resumen, len(vencidas), intentos_descarga, True, duracion)
 
         # Verificar max ejecucion
@@ -3495,7 +3529,7 @@ def main():
             duracion = 0
         try:
             if gc_global:
-                guardar_en_monitor(gc_global, False, duracion, {}, 0)
+                _sheets_con_reintento(guardar_en_monitor, gc_global, False, duracion, {}, 0)
             respaldo_monitor_local({}, 0, 0, False, duracion)
         except Exception:
             pass

@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════════════════════
 //  Argos — Google Apps Script
-//  Versión: 1.2.4
-//  Última actualización: 2026-06-09
+//  Versión: 1.4.0
+//  Última actualización: 2026-06-10
 //
 //  CÓMO USAR:
 //  1. Abre tu proyecto en script.google.com
@@ -431,4 +431,88 @@ function doPost(e) {
   }
 
   return json({ error: "accion no reconocida: " + accion });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  WATCHDOG — alerta si el bot lleva mucho tiempo sin correr
+//
+//  CÓMO ACTIVAR (solo una vez):
+//  1. En script.google.com → Triggers (ícono reloj) → + Agregar trigger
+//  2. Función a ejecutar : watchdogArgos
+//  3. Tipo de evento      : Basado en tiempo
+//  4. Temporizador        : Por minutos → Cada 20 minutos
+//  5. Guardar
+//
+//  El watchdog revisa la hoja MONITOR. Si la última ejecución
+//  exitosa tiene más de `watchdog_minutos` minutos Y el bot está
+//  en horario laboral, manda alerta al chat de reporte.
+// ══════════════════════════════════════════════════════════════
+function watchdogArgos() {
+  var ss = SpreadsheetApp.openById(SHEET_ID);
+
+  // Leer CONFIG
+  var hojaConfig = ss.getSheetByName("CONFIG");
+  if (!hojaConfig) return;
+  var cfgRows = hojaConfig.getDataRange().getValues();
+  var cfg = {};
+  for (var i = 1; i < cfgRows.length; i++) {
+    if (cfgRows[i][0]) cfg[String(cfgRows[i][0])] = String(cfgRows[i][1]).trim();
+  }
+
+  var webhookReporte = cfg["webhook_reporte"] || "";
+  if (!webhookReporte || webhookReporte.indexOf("https://") !== 0) return;
+
+  var watchdogMin = parseInt(cfg["watchdog_minutos"] || "30", 10);
+  var horaInicio  = parseInt(cfg["hora_inicio"]      || "10", 10);
+  var horaFin     = parseInt(cfg["hora_fin"]         || "21", 10);
+  var minutoFin   = parseInt(cfg["minuto_fin"]       || "30", 10);
+  var pausado     = (cfg["pausado"] || "").toLowerCase();
+
+  if (pausado === "si" || pausado === "yes" || pausado === "true" || pausado === "1") return;
+
+  // Verificar horario laboral (zona México)
+  var ahora   = new Date();
+  var ahoraMx = new Date(ahora.toLocaleString("en-US", { timeZone: "America/Mexico_City" }));
+  var hora    = ahoraMx.getHours();
+  var minuto  = ahoraMx.getMinutes();
+  var enHorario = (hora > horaInicio || hora === horaInicio) &&
+                  (hora < horaFin    || (hora === horaFin && minuto <= minutoFin));
+  if (!enHorario) return;
+
+  // Leer MONITOR — buscar última ejecución exitosa de hoy
+  var hojaMonitor = ss.getSheetByName("MONITOR");
+  if (!hojaMonitor) return;
+  var rows = hojaMonitor.getDataRange().getValues();
+  if (rows.length < 2) return;
+
+  var fechaHoy = Utilities.formatDate(ahoraMx, "America/Mexico_City", "dd/MM/yyyy");
+  var exitosasHoy = [];
+  for (var j = 1; j < rows.length; j++) {
+    if (rows[j][0] === fechaHoy && rows[j][5] === "exitosa") exitosasHoy.push(rows[j]);
+  }
+  if (!exitosasHoy.length) return;
+
+  var ultima  = exitosasHoy[exitosasHoy.length - 1];
+  var horaStr = String(ultima[1]);  // "HH:MM:SS"
+  var partes  = horaStr.split(":");
+  var ultimaDt = new Date(ahoraMx);
+  ultimaDt.setHours(parseInt(partes[0], 10), parseInt(partes[1] || "0", 10), parseInt(partes[2] || "0", 10), 0);
+
+  var diffMin = (ahoraMx - ultimaDt) / 60000;
+  if (diffMin <= watchdogMin) return;
+
+  var fechaNow = Utilities.formatDate(ahoraMx, "America/Mexico_City", "dd/MM/yyyy HH:mm");
+  var msg = "🚨 *Argos — Bot inactivo*\n\n" +
+            "Última ejecución exitosa: *" + horaStr + "* (hace " + Math.round(diffMin) + " min)\n\n" +
+            "_Favor de verificar la PC_\n_" + fechaNow + "_";
+  try {
+    UrlFetchApp.fetch(webhookReporte, {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify({ text: msg })
+    });
+    Logger.log("Watchdog: alerta enviada — inactivo " + Math.round(diffMin) + " min");
+  } catch (ex) {
+    Logger.log("Watchdog error al enviar alerta: " + ex);
+  }
 }
