@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.2.9"
+VERSION = "1.3.0"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
@@ -2058,10 +2058,15 @@ def enviar_mensajes_vendedores(todas_remisiones, dir_dict, descansos=None):
         ya_enviados.add(webhook)
 
         texto    = _construir_texto_vendedor(vendedor, v, fecha_now)
-        msg_name = mensajes_ven.get(clave, "")
+        hoy      = datetime.now().strftime("%d/%m/%Y")
+        entrada  = mensajes_ven.get(clave, {})
+        if isinstance(entrada, str):
+            entrada = {}  # migración de formato anterior
+        # Solo reutilizar el mensaje si es del mismo día
+        msg_name = entrada.get("name", "") if entrada.get("fecha") == hoy else ""
         nuevo    = _enviar_o_reescribir_vendedor(webhook, texto, msg_name)
         if nuevo:
-            mensajes_ven[clave] = nuevo
+            mensajes_ven[clave] = {"name": nuevo, "fecha": hoy}
         enviados += 1
 
     # Persistir contadores y nombres de mensajes
