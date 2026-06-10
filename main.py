@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.2.7"
+VERSION = "1.2.7"  # thread keys para espacio jefes
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
@@ -1540,75 +1540,6 @@ def enviar_mensaje_jefe_individual(jefe, info_j, ubicacion, fecha_now, dir_dict,
     log.info(f"Mensaje individual enviado a jefe {jefe}")
 
 
-# ── Chat API — actualización de mensajes en lugar ────────────
-# Para activar: habilitar "Google Chat API" en Google Cloud Console y
-# agregar el service account como miembro del espacio "jefes".
-# Si no está configurado el bot usa el webhook como fallback.
-
-MENSAJES_JEFES_FILE = "mensajes_jefes.json"
-
-def _leer_mensajes_jefes():
-    try:
-        if os.path.exists(MENSAJES_JEFES_FILE):
-            with open(MENSAJES_JEFES_FILE) as f:
-                return json.load(f)
-    except Exception:
-        pass
-    return {}
-
-def _guardar_mensajes_jefes(d):
-    try:
-        with open(MENSAJES_JEFES_FILE, "w") as f:
-            json.dump(d, f)
-    except Exception:
-        pass
-
-def _chat_access_token():
-    """Token de acceso del service account para la Chat REST API (scope chat.bot)."""
-    import google.auth.transport.requests as ga_req
-    creds_file = GOOGLE.get("credentials_file", "credentials.json")
-    creds = Credentials.from_service_account_file(
-        creds_file,
-        scopes=["https://www.googleapis.com/auth/chat.bot"]
-    )
-    creds.refresh(ga_req.Request())
-    return creds.token
-
-def _space_id_from_webhook(url):
-    import re
-    m = re.search(r"/spaces/([^/?]+)", url)
-    return m.group(1) if m else ""
-
-def _api_enviar_o_actualizar(space_id, token, card_id, payload, mensajes):
-    """Crea la card si no existe; la actualiza en su lugar si ya fue enviada antes."""
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-    msg_name = mensajes.get(card_id)
-
-    if msg_name:
-        r = requests.patch(
-            f"https://chat.googleapis.com/v1/{msg_name}?updateMask=cardsV2",
-            json=payload, headers=headers, timeout=15
-        )
-        if 200 <= r.status_code < 300:
-            log.info(f"Card actualizada en lugar — {card_id}")
-            return True
-        log.warning(f"No se pudo actualizar card {card_id} ({r.status_code}) — creando nueva")
-
-    r = requests.post(
-        f"https://chat.googleapis.com/v1/spaces/{space_id}/messages",
-        json=payload, headers=headers, timeout=15
-    )
-    if 200 <= r.status_code < 300:
-        name = r.json().get("name", "")
-        if name:
-            mensajes[card_id] = name
-            _guardar_mensajes_jefes(mensajes)
-        log.info(f"Card creada — {card_id}")
-        return True
-    log.warning(f"Error Chat API {r.status_code} — fallback a webhook")
-    return False
-
-
 def construir_card_piso(ubicacion, info_piso, fecha_now):
     """Construye el payload Card v2 para el mensaje de un piso al espacio jefes."""
     sections = []
@@ -1780,27 +1711,22 @@ def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes
         log.info("Sin remisiones activas para mensaje de jefes")
         return
 
-    # Intentar Chat API para actualizaciones en lugar; fallback a webhook si falla
-    mensajes  = _leer_mensajes_jefes()
-    space_id  = _space_id_from_webhook(WEBHOOK_JEFES) if WEBHOOK_JEFES else ""
-    try:
-        api_token = _chat_access_token() if space_id else ""
-    except Exception as e:
-        log.info(f"Chat API no disponible ({e}) — usando webhook")
-        api_token = ""
+    # Webhook con threadKey: todos los mensajes de un piso van al mismo hilo,
+    # el chat no se llena de mensajes sueltos.
+    webhook_hilo = WEBHOOK_JEFES
+    if WEBHOOK_JEFES:
+        sep = "&" if "?" in WEBHOOK_JEFES else "?"
+        webhook_hilo = WEBHOOK_JEFES + sep + "messageReplyOption=REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD"
 
     for p_idx in sorted(por_piso.keys()):
         info_piso = por_piso[p_idx]
         ubicacion = info_piso["ubicacion"]
 
-        payload = construir_card_piso(ubicacion, info_piso, fecha_now)
-        card_id  = "piso-" + ubicacion.replace(" ", "_")
+        payload         = construir_card_piso(ubicacion, info_piso, fecha_now)
+        card_id         = "piso-" + ubicacion.replace(" ", "_")
+        payload["thread"] = {"threadKey": card_id}
 
-        enviado = False
-        if space_id and api_token:
-            enviado = _api_enviar_o_actualizar(space_id, api_token, card_id, payload, mensajes)
-        if not enviado:
-            post_chat_con_reintento(WEBHOOK_JEFES, payload)
+        post_chat_con_reintento(webhook_hilo, payload)
         log.info("Mensaje enviado al espacio jefes — piso: " + ubicacion)
 
         for jefe, info_j in sorted(info_piso["jefes"].items()):
