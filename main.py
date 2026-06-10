@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.2.6"
+VERSION = "1.2.7"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
@@ -1333,7 +1333,13 @@ def enviar_apertura(datos, dir_dict, hist_dict):
 
     mensaje = "\n".join(lineas)
     post_chat_con_reintento(WEBHOOK, {"text": mensaje})
-    post_chat_con_reintento(WEBHOOK_JEFES, {"text": mensaje})
+    # Espacio jefes → Card v2
+    card_apertura = construir_card_apertura(
+        emoji_apertura, msg_apertura,
+        espera_ayer, espera_hoy, etiq_ayer, etiq_hoy,
+        jefes_ayer, dir_dict, fecha_now
+    )
+    post_chat_con_reintento(WEBHOOK_JEFES, card_apertura)
     marcar_apertura_enviada()
     log.info("Mensaje de apertura enviado al espacio reporte y jefes ✅")
     # La apertura también devuelve los datos para que el llamador mande el detallado
@@ -1499,44 +1505,8 @@ def enviar_mensaje_jefe_individual(jefe, info_j, ubicacion, fecha_now, dir_dict,
         return
     _WEBHOOKS_YA_ENVIADOS.add(webhook_jefe)
 
-    total_jefe = sum(ds["count"] for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]] for ds in grp.values())
-
-    def _lineas_vendedores(grp):
-        """Devuelve líneas ordenadas por tiempo más atrasado (mayor primero)."""
-        lineas = []
-        for ven, ds in sorted(grp.items(), key=lambda x: -x[1]["max_min"]):
-            sufijo = " | más atrasado: " + calcular_tiempo_espera_str(ds["max_min"]) if ds["max_min"] > 0 else ""
-            icono  = "⚠️" if ven == "Sin asignar" else "👤"
-            lineas.append("    " + icono + " " + ven + " — *" + str(ds["count"]) + "* rem" + sufijo)
-        return lineas
-
-    partes = []
-    partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
-    partes.append("🏬 *" + ubicacion + "* — " + fecha_now)
-    partes.append("")
-    if es_sustituto and jefe_original:
-        partes.append("🔄 *Sustituto de " + jefe_original.split()[0].capitalize() + "* (descansa hoy)")
-    partes.append(get_mencion(jefe))
-    partes.append("")
-
-    if info_j["de_ayer"]:
-        partes.append("  📅 *De ayer sin atender:*")
-        partes.extend(_lineas_vendedores(info_j["de_ayer"]))
-
-    if info_j["vencidas"]:
-        partes.append("  🔴 *Vencidas (+20 min):*")
-        partes.extend(_lineas_vendedores(info_j["vencidas"]))
-
-    if info_j["en_tiempo"]:
-        partes.append("  ⏰ *En tiempo:*")
-        partes.extend(_lineas_vendedores(info_j["en_tiempo"]))
-
-    partes.append("")
-    partes.append("  🟢 *Total: " + str(total_jefe) + " remisiones*")
-    partes.append("_Argos — " + fecha_now + "_")
-    partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
-
-    post_chat_con_reintento(webhook_jefe, {"text": "\n".join(partes)})
+    payload = construir_card_jefe_individual(jefe, info_j, ubicacion, fecha_now, es_sustituto, jefe_original)
+    post_chat_con_reintento(webhook_jefe, payload)
     log.info(f"Mensaje individual enviado a jefe {jefe}")
 
 
@@ -1573,32 +1543,24 @@ def construir_card_piso(ubicacion, info_piso, fecha_now):
         if sin_asignar > 0:  chips.append({"label": f"⚠️ {sin_asignar} sin asignar"})
         if not chips:        chips.append({"label": "Sin remisiones"})
 
-        # Widgets: chipList siempre visible + detalle por vendedor colapsable
+        # chipList de resumen + detalle por vendedor colapsable
         widgets = [{"chipList": {"chips": chips}}]
         for emoji, grp in [("📅", info_j["de_ayer"]), ("🔴", info_j["vencidas"]), ("🟢", info_j["en_tiempo"])]:
             for ven, ds in sorted(grp.items(), key=lambda x: -x[1]["max_min"]):
                 if ds["count"] == 0:
                     continue
                 icono_ven = "⚠️" if ven == "Sin asignar" else emoji
-                tiempo_str = calcular_tiempo_espera_str(ds["max_min"]) if ds["max_min"] > 0 else ""
-                texto = f"<b>{ds['count']} rem</b>" + (f" · {tiempo_str}" if tiempo_str else "")
-                widgets.append({
-                    "decoratedText": {
-                        "topLabel": f"{icono_ven} {ven}",
-                        "text": texto,
-                        "startIcon": {"knownIcon": "PERSON"}
-                    }
-                })
-
-        tiene_detalle = len(widgets) > 1
-        section = {
-            "header": f"👤 {jefe}",
-            "widgets": widgets,
-        }
-        if tiene_detalle:
-            section["collapsible"] = True
-            section["uncollapsibleWidgetsCount"] = 1
-        sections.append(section)
+                t_str = calcular_tiempo_espera_str(ds["max_min"]) if ds["max_min"] > 0 else ""
+                texto = f"<b>{ds['count']} rem</b>" + (f" · {t_str}" if t_str else "")
+                widgets.append({"decoratedText": {
+                    "topLabel": f"{icono_ven} {ven}", "text": texto,
+                    "startIcon": {"knownIcon": "PERSON"}
+                }})
+        sec = {"header": f"👤 {jefe}", "widgets": widgets}
+        if len(widgets) > 1:
+            sec["collapsible"] = True
+            sec["uncollapsibleWidgetsCount"] = 1
+        sections.append(sec)
 
     total = sum(
         sum(ds["count"] for ds in grp.values())
@@ -1627,6 +1589,211 @@ def construir_card_piso(ubicacion, info_piso, fecha_now):
                     "title": f"🏬 {ubicacion}",
                     "subtitle": f"Liverpool Tienda 456 — {fecha_now}",
                     "imageUrl": "https://fonts.gstatic.com/s/i/googlematerialicons/store/v6/24px.svg",
+                    "imageType": "CIRCLE"
+                },
+                "sections": sections
+            }
+        }]
+    }
+
+
+# ── Helpers compartidos para Cards v2 ────────────────────────
+
+def _card_total_section(label, total):
+    return {
+        "widgets": [
+            {"divider": {}},
+            {"decoratedText": {
+                "topLabel": label,
+                "text": f"<b>{total} remisiones</b>",
+                "icon": {"knownIcon": "CONFIRMATION_NUMBER_ICON"}
+            }}
+        ]
+    }
+
+def _card_seccion_grp(titulo, grp, emoji_grp):
+    """Sección colapsable con chipList de resumen + fila por vendedor."""
+    total = sum(ds["count"] for ds in grp.values())
+    if total == 0:
+        return None
+    sin_asignar = sum(ds["count"] for ven, ds in grp.items() if ven == "Sin asignar")
+    con_ven     = total - sin_asignar
+    chips = []
+    if con_ven > 0:      chips.append({"label": f"{emoji_grp} {con_ven} rem"})
+    if sin_asignar > 0:  chips.append({"label": f"⚠️ {sin_asignar} sin asignar"})
+    widgets = [{"chipList": {"chips": chips}}]
+    for ven, ds in sorted(grp.items(), key=lambda x: -x[1]["max_min"]):
+        if ds["count"] == 0:
+            continue
+        icono = "⚠️" if ven == "Sin asignar" else emoji_grp
+        t_str = calcular_tiempo_espera_str(ds["max_min"]) if ds["max_min"] > 0 else ""
+        texto = f"<b>{ds['count']} rem</b>" + (f" · {t_str}" if t_str else "")
+        widgets.append({"decoratedText": {
+            "topLabel": f"{icono} {ven}", "text": texto,
+            "startIcon": {"knownIcon": "PERSON"}
+        }})
+    sec = {"header": titulo, "widgets": widgets}
+    if len(widgets) > 1:
+        sec["collapsible"] = True
+        sec["uncollapsibleWidgetsCount"] = 1
+    return sec
+
+
+def construir_card_jefe_individual(jefe, info_j, ubicacion, fecha_now, es_sustituto=False, jefe_original=""):
+    sections = []
+    if es_sustituto and jefe_original:
+        primer = jefe_original.split()[0].capitalize()
+        sections.append({"widgets": [{"textParagraph": {
+            "text": f"🔄 <b>Sustituto de {primer}</b> (descansa hoy)"
+        }}]})
+
+    for titulo, grp, emoji in [
+        ("📅 De ayer sin atender", info_j["de_ayer"],  "📅"),
+        ("🔴 Vencidas (+20 min)",  info_j["vencidas"], "🔴"),
+        ("⏰ En tiempo",           info_j["en_tiempo"],"🟢"),
+    ]:
+        sec = _card_seccion_grp(titulo, grp, emoji)
+        if sec:
+            sections.append(sec)
+
+    total = sum(ds["count"] for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]] for ds in grp.values())
+    sections.append(_card_total_section("Total", total))
+
+    genero  = get_genero(jefe)
+    emoji_g = "👩‍💼" if genero == "jefa" else "👨‍💼"
+    return {
+        "cardsV2": [{
+            "cardId": "jefe-" + jefe.replace(" ", "_"),
+            "card": {
+                "header": {
+                    "title": f"{emoji_g} {jefe}",
+                    "subtitle": f"{ubicacion} — {fecha_now}",
+                    "imageUrl": "https://fonts.gstatic.com/s/i/googlematerialicons/person/v6/24px.svg",
+                    "imageType": "CIRCLE"
+                },
+                "sections": sections
+            }
+        }]
+    }
+
+
+def construir_card_apertura(emoji, msg_texto, espera_ayer, espera_hoy, etiq_ayer, etiq_hoy, jefes_ayer, dir_dict, fecha_now):
+    sections = [{"widgets": [{"textParagraph": {"text": msg_texto}}]}]
+
+    total_espera = espera_ayer + espera_hoy
+    total_etiq   = etiq_ayer   + etiq_hoy
+    widgets_desglose = []
+    if total_espera > 0:
+        widgets_desglose.append({"decoratedText": {
+            "topLabel": "🔴 Mercancía en Espera",
+            "text": f"<b>{total_espera}</b>  ·  📅 ayer: {espera_ayer}  |  hoy: {espera_hoy}",
+            "startIcon": {"knownIcon": "CLOCK"}
+        }})
+    if total_etiq > 0:
+        widgets_desglose.append({"decoratedText": {
+            "topLabel": "🏷️ Etiquetas Generadas",
+            "text": f"<b>{total_etiq}</b>  ·  📅 ayer: {etiq_ayer}  |  hoy: {etiq_hoy}",
+            "startIcon": {"knownIcon": "BOOKMARK"}
+        }})
+    if widgets_desglose:
+        sections.append({"header": "📊 Desglose inicial", "widgets": widgets_desglose})
+
+    for jefe, info in sorted(jefes_ayer.items(), key=lambda x: -x[1]["count"]):
+        nom_secs = " | ".join(
+            "Sec " + s + (" " + dir_dict.get(s, {}).get("nombre_seccion", "") if dir_dict.get(s, {}).get("nombre_seccion") else "")
+            for s in sorted(info["secciones"])
+        )
+        sections.append({"header": f"⚠️ {jefe}", "widgets": [{"decoratedText": {
+            "topLabel": f"{info['count']} pendientes de ayer",
+            "text": nom_secs or "—",
+            "startIcon": {"knownIcon": "CONFIRMATION_NUMBER_ICON"}
+        }}]})
+
+    return {
+        "cardsV2": [{
+            "cardId": "apertura",
+            "card": {
+                "header": {
+                    "title": f"{emoji} Buenos días",
+                    "subtitle": f"Liverpool Tienda 456 — {fecha_now}",
+                    "imageUrl": "https://fonts.gstatic.com/s/i/googlematerialicons/wb_sunny/v6/24px.svg",
+                    "imageType": "CIRCLE"
+                },
+                "sections": sections
+            }
+        }]
+    }
+
+
+def construir_card_cierre(emoji, msg_texto, espera, etiq, jefes_pendientes, fecha_now):
+    sections = [{"widgets": [{"textParagraph": {"text": msg_texto}}]}]
+    sections.append({"header": "📊 Resumen de cierre", "widgets": [
+        {"decoratedText": {"topLabel": "🔴 Mercancía en Espera", "text": f"<b>{espera}</b>", "startIcon": {"knownIcon": "CLOCK"}}},
+        {"decoratedText": {"topLabel": "🏷️ Etiquetas Generadas",  "text": f"<b>{etiq}</b>",   "startIcon": {"knownIcon": "BOOKMARK"}}},
+    ]})
+
+    for jefe, secciones in sorted(jefes_pendientes.items()):
+        total_j = sum(len(v) for v in secciones.values())
+        widgets = [{"chipList": {"chips": [{"label": f"📋 {total_j} rem"}]}}]
+        for sec_key, minutos_list in sorted(secciones.items()):
+            widgets.append({"decoratedText": {
+                "topLabel": f"📍 {sec_key}",
+                "text": calcular_tiempo_espera_str(max(minutos_list)),
+                "startIcon": {"knownIcon": "PERSON"}
+            }})
+        sec = {"header": f"⚠️ {jefe}", "widgets": widgets}
+        if len(widgets) > 1:
+            sec["collapsible"] = True
+            sec["uncollapsibleWidgetsCount"] = 1
+        sections.append(sec)
+
+    return {
+        "cardsV2": [{
+            "cardId": "cierre",
+            "card": {
+                "header": {
+                    "title": f"{emoji} Buenas noches",
+                    "subtitle": f"Liverpool Tienda 456 — {fecha_now}",
+                    "imageUrl": "https://fonts.gstatic.com/s/i/googlematerialicons/nights_stay/v6/24px.svg",
+                    "imageType": "CIRCLE"
+                },
+                "sections": sections
+            }
+        }]
+    }
+
+
+def construir_card_pendientes_ayer(por_jefe, total_ayer, fecha_now):
+    sections = []
+    for jefe, secciones in sorted(por_jefe.items(), key=lambda x: -sum(d["count"] for d in x[1].values())):
+        total_j = sum(d["count"] for d in secciones.values())
+        sin_ven = sum(d["sin_vendedor"] for d in secciones.values())
+        chips   = [{"label": f"📅 {total_j} rem"}]
+        if sin_ven > 0:
+            chips.append({"label": f"⚠️ {sin_ven} sin vendedor"})
+        widgets = [{"chipList": {"chips": chips}}]
+        for sec_key, ds in sorted(secciones.items()):
+            texto = f"<b>{ds['count']} rem</b> · {calcular_tiempo_espera_str(ds['max_min'])}"
+            if ds["sin_vendedor"]:
+                texto += f" · ⚠️ {ds['sin_vendedor']} sin vendedor"
+            widgets.append({"decoratedText": {
+                "topLabel": f"📍 {sec_key}", "text": texto,
+                "startIcon": {"knownIcon": "BOOKMARK"}
+            }})
+        sec = {"header": f"⚠️ {jefe}", "widgets": widgets}
+        if len(widgets) > 1:
+            sec["collapsible"] = True
+            sec["uncollapsibleWidgetsCount"] = 1
+        sections.append(sec)
+
+    return {
+        "cardsV2": [{
+            "cardId": "pendientes-ayer",
+            "card": {
+                "header": {
+                    "title": "📅 Pendientes de ayer",
+                    "subtitle": f"{total_ayer} sin resolver — {fecha_now}",
+                    "imageUrl": "https://fonts.gstatic.com/s/i/googlematerialicons/warning/v6/24px.svg",
                     "imageType": "CIRCLE"
                 },
                 "sections": sections
@@ -1909,8 +2076,9 @@ def enviar_cierre(datos, dir_dict):
     lineas.append("")
     lineas.append("_Argos — " + fecha_now + "_")
 
-    # ── Mensaje buenas noches → espacio Jefes ────────────────────────
-    post_chat_con_reintento(WEBHOOK_JEFES, {"text": "\n".join(lineas)})
+    # ── Mensaje buenas noches → espacio Jefes (Card v2) ─────────────
+    card_cierre = construir_card_cierre(emoji_cierre, msg_cierre, espera, etiq, jefes_pendientes, fecha_now)
+    post_chat_con_reintento(WEBHOOK_JEFES, card_cierre)
     log.info("Mensaje de cierre enviado al espacio jefes ✅")
 
     # ── KPI tiempos → espacio Tiempos (simultáneo al cierre) ─────────
@@ -2015,29 +2183,8 @@ def enviar_pendientes_ayer(datos, dir_dict, descansos=None):
 
     total_ayer = sum(d["count"] for secs in por_jefe.values() for d in secs.values())
 
-    lineas = [
-        "〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰",
-        "📅 *Pendientes de ayer — " + fecha_now + "*",
-        "_Remisiones del día anterior que aún no han sido atendidas_",
-        "",
-        "⚠️ *" + str(total_ayer) + " remisiones de ayer sin resolver:*",
-        "",
-    ]
-
-    for jefe, secciones in sorted(por_jefe.items(), key=lambda x: -sum(d["count"] for d in x[1].values())):
-        total_j = sum(d["count"] for d in secciones.values())
-        lineas.append(get_mencion(jefe) + " — *" + str(total_j) + "* pendientes")
-        for sec_key, ds in sorted(secciones.items()):
-            linea = "    📍 " + sec_key + " — " + calcular_tiempo_espera_str(ds["max_min"]) + " | " + str(ds["count"]) + " rem"
-            if ds["sin_vendedor"]:
-                linea += " | ⚠️ *" + str(ds["sin_vendedor"]) + "* sin vendedor"
-            lineas.append(linea)
-        lineas.append("")
-
-    lineas.append("_Argos — " + fecha_now + "_")
-    lineas.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
-
-    post_chat_con_reintento(WEBHOOK_JEFES, {"text": "\n".join(lineas)})
+    card_ayer = construir_card_pendientes_ayer(por_jefe, total_ayer, fecha_now)
+    post_chat_con_reintento(WEBHOOK_JEFES, card_ayer)
     log.info(f"Pendientes de ayer enviados al espacio jefes: {total_ayer} remisiones")
     return True
 
