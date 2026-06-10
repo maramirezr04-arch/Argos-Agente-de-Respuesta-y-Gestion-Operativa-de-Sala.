@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.3.3"
+VERSION = "1.3.4"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
@@ -1823,14 +1823,13 @@ def _guardar_mensajes_vendedores(d):
 
 def _construir_texto_vendedor(vendedor, v, fecha_now):
     todos = v["de_ayer"] + v["vencidas"] + v["en_tiempo"]
-    partes = [fecha_now, "👤 *" + vendedor.title() + "*", ""]
+    partes = [fecha_now, "👤 *" + vendedor.title() + "*"]
     for it in sorted(todos, key=lambda x: -x["minutos"]):
         sku_txt  = " · SKU " + it["sku"] if it["sku"] else ""
         tipo_txt = "  " + it["tipo"] + " (prioridad)" if it.get("tipo") else ""
-        partes.append("• *" + it["remision"] + "*" + sku_txt +
+        partes.append("    • *" + it["remision"] + "*" + sku_txt +
                       " — lleva " + calcular_tiempo_espera_str(it["minutos"]) + tipo_txt)
-    partes += ["", "🟢 *Total: " + str(len(todos)) + " remisiones*",
-               "〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰"]
+    partes.append("  🟢 *Total: " + str(len(todos)) + " remisiones*")
     return "\n".join(partes)
 
 def _enviar_o_reescribir_vendedor(webhook_url, texto, msg_name):
