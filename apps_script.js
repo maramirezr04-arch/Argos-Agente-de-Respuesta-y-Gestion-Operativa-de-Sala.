@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════
 //  Argos — Google Apps Script
-//  Versión: 1.2.3
+//  Versión: 1.2.4
 //  Última actualización: 2026-06-09
 //
 //  CÓMO USAR:
@@ -226,6 +226,30 @@ function doPost(e) {
       cambios++;
     }
     return json({ ok: true, cambios: cambios });
+  }
+
+  // ── MENSAJE DE PRUEBA (lee el webhook desde CONFIG) ───────
+  if (accion === "prueba_mensaje") {
+    var hojaC = ss.getSheetByName("CONFIG");
+    if (!hojaC) return json({ error: "Hoja CONFIG no existe" });
+    var clave = "webhook_" + (body.espacio || "");
+    var filas = hojaC.getDataRange().getValues();
+    var url = "";
+    for (var i = 1; i < filas.length; i++) {
+      if (String(filas[i][0]).trim() === clave) { url = String(filas[i][1]).trim(); break; }
+    }
+    if (!url || url.indexOf("https://") !== 0)
+      return json({ error: "Webhook '" + clave + "' no configurado en CONFIG" });
+    try {
+      UrlFetchApp.fetch(url, {
+        method: "post",
+        contentType: "application/json",
+        payload: JSON.stringify({ text: body.mensaje || "" })
+      });
+      return json({ ok: true });
+    } catch (ex) {
+      return json({ error: "No se pudo enviar: " + ex });
+    }
   }
 
   // ── AGREGAR DESCANSO ──────────────────────────────────────

@@ -28,29 +28,42 @@ except Exception:
 VERSION = "1.1.9"
 RAIZ    = os.path.dirname(os.path.abspath(__file__))
 
-# ── Extraer space IDs de los webhooks definidos en main.py ────
-# Formato: …/spaces/<SPACE_ID>/messages…
-def _space_id(webhook_line):
-    m = re.search(r"/spaces/([^/]+)/", webhook_line)
+# ── Extraer space IDs de los webhooks (desde el cache de CONFIG) ──
+# Los webhooks viven en la hoja CONFIG del Sheets; el bot guarda una copia
+# local en config_remota_cache.json. Formato: …/spaces/<SPACE_ID>/messages…
+def _space_id(webhook_url):
+    m = re.search(r"/spaces/([^/]+)/", str(webhook_url))
     return m.group(1) if m else None
 
-# Leer webhooks directamente del archivo para no importar main.py
-_WEBHOOKS = {}
-try:
-    with open(os.path.join(RAIZ, "main.py"), encoding="utf-8") as f:
-        for line in f:
-            for key in ("WEBHOOK_JEFES", "WEBHOOK_TIEMPOS", "WEBHOOK "):
-                if line.strip().startswith(key) and "chat.googleapis.com" in line:
-                    sid = _space_id(line)
-                    if sid:
-                        _WEBHOOKS[key.strip()] = sid
-                    break
-except Exception:
-    pass
+def _leer_space_jefes():
+    # 1. Cache local escrito por el bot
+    try:
+        with open(os.path.join(RAIZ, "config_remota_cache.json"), encoding="utf-8") as f:
+            cfg = json.load(f)
+        sid = _space_id(cfg.get("webhook_jefes", ""))
+        if sid:
+            return sid
+    except Exception:
+        pass
+    # 2. Directo del Sheets
+    if _GSPREAD_OK:
+        try:
+            scopes = ["https://www.googleapis.com/auth/spreadsheets",
+                      "https://www.googleapis.com/auth/drive"]
+            creds = Credentials.from_service_account_file(GOOGLE["credentials"], scopes=scopes)
+            gc    = gspread.authorize(creds)
+            hoja  = gc.open_by_key(GOOGLE["sheet_id"]).worksheet("CONFIG")
+            for row in hoja.get_all_values()[1:]:
+                if row and len(row) >= 2 and row[0].strip() == "webhook_jefes":
+                    return _space_id(row[1])
+        except Exception:
+            pass
+    return None
 
 SHEET_ID   = GOOGLE.get("sheet_id", "")
 URL_SHEETS = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}" if SHEET_ID else None
-URL_JEFES  = f"https://chat.google.com/room/{_WEBHOOKS.get('WEBHOOK_JEFES','')}" if _WEBHOOKS.get("WEBHOOK_JEFES") else None
+_SPACE_JEFES = _leer_space_jefes()
+URL_JEFES  = f"https://chat.google.com/room/{_SPACE_JEFES}" if _SPACE_JEFES else None
 URL_DIAG   = None   # se asigna tras levantar el servidor
 
 # ── Servidor local para la pantalla animada ───────────────────

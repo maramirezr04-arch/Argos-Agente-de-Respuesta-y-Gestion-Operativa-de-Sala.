@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.2.3"
+VERSION = "1.2.4"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
@@ -271,9 +271,11 @@ def cargar_estructuras_sheets(ss):
 
 
 # ── Webhooks ──────────────────────────────────────────────────
-WEBHOOK       = "https://chat.googleapis.com/v1/spaces/AAQAQ6DrmfI/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=VzOYmkn9w65FPf64JLq1ySI0VFyD5E8sdc-KQc29nXw"
-WEBHOOK_JEFES  = "https://chat.googleapis.com/v1/spaces/AAAAMBLT-t0/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=W0pDeYnH05xXzjRER8arPy9xm820yM6Fh1iDHOEJftQ"
-WEBHOOK_TIEMPOS = "https://chat.googleapis.com/v1/spaces/AAQAY67HLLk/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=RZGLTs-sAZfBsAamgr7x2y8E6yPVDENsNghyKIOkj6A"
+# Los webhooks de Chat viven en la hoja CONFIG del Sheets (webhook_reporte,
+# webhook_jefes, webhook_tiempos) — NO escribirlos aquí: este repo es público.
+WEBHOOK         = ""
+WEBHOOK_JEFES   = ""
+WEBHOOK_TIEMPOS = ""
 
 # ── Constantes ────────────────────────────────────────────────
 # ── UMBRALES CONFIGURABLES ────────────────────────────────────
@@ -493,7 +495,7 @@ CONFIG_CACHE_FILE = "config_remota_cache.json"
 
 def cargar_config_remota(gc):
     """Lee la hoja CONFIG del Sheet 1 y actualiza valores globales."""
-    global HORA_INICIO, HORA_FIN, MINUTO_FIN, MINUTOS_VENCIDA, UMBRAL_ANOMALIA, WATCHDOG_MINUTOS, CONFIG_REMOTA, CICLOS_JEFES, CICLOS_VENDEDORES, CICLOS_REPORTE, HORA_RECORDATORIO, WEBHOOK_DEMO_1, WEBHOOK_DEMO_2, WEBHOOK_DEMO_3, INTERVALO_DEMO
+    global HORA_INICIO, HORA_FIN, MINUTO_FIN, MINUTOS_VENCIDA, UMBRAL_ANOMALIA, WATCHDOG_MINUTOS, CONFIG_REMOTA, CICLOS_JEFES, CICLOS_VENDEDORES, CICLOS_REPORTE, HORA_RECORDATORIO, WEBHOOK_DEMO_1, WEBHOOK_DEMO_2, WEBHOOK_DEMO_3, INTERVALO_DEMO, WEBHOOK, WEBHOOK_JEFES, WEBHOOK_TIEMPOS
     try:
         ss = gc.open_by_key(GOOGLE["sheet_id"])
         try:
@@ -562,6 +564,15 @@ def cargar_config_remota(gc):
             CICLOS_REPORTE = max(1, int(cfg["ciclos_reporte"]))
         if cfg.get("hora_recordatorio"):
             HORA_RECORDATORIO = cfg["hora_recordatorio"].strip()
+        # Webhooks de Chat — fuente única: la hoja CONFIG
+        if cfg.get("webhook_reporte", "").startswith("https://"):
+            WEBHOOK = cfg["webhook_reporte"].strip()
+        if cfg.get("webhook_jefes", "").startswith("https://"):
+            WEBHOOK_JEFES = cfg["webhook_jefes"].strip()
+        if cfg.get("webhook_tiempos", "").startswith("https://"):
+            WEBHOOK_TIEMPOS = cfg["webhook_tiempos"].strip()
+        if not WEBHOOK or not WEBHOOK_JEFES:
+            log.warning("⚠️ Webhooks faltantes en hoja CONFIG (webhook_reporte / webhook_jefes) — los mensajes no se enviarán")
         if cfg.get("webhook_demo_1"):
             WEBHOOK_DEMO_1 = cfg["webhook_demo_1"].strip()
         if cfg.get("webhook_demo_2"):
@@ -588,6 +599,13 @@ def cargar_config_remota(gc):
             if os.path.exists(CONFIG_CACHE_FILE):
                 with open(CONFIG_CACHE_FILE, "r", encoding="utf-8") as f:
                     CONFIG_REMOTA = json.load(f)
+                # Aplicar webhooks desde cache (sin red, sin Sheets)
+                if CONFIG_REMOTA.get("webhook_reporte", "").startswith("https://"):
+                    WEBHOOK = CONFIG_REMOTA["webhook_reporte"].strip()
+                if CONFIG_REMOTA.get("webhook_jefes", "").startswith("https://"):
+                    WEBHOOK_JEFES = CONFIG_REMOTA["webhook_jefes"].strip()
+                if CONFIG_REMOTA.get("webhook_tiempos", "").startswith("https://"):
+                    WEBHOOK_TIEMPOS = CONFIG_REMOTA["webhook_tiempos"].strip()
         except: pass
         return CONFIG_REMOTA
 
