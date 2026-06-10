@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.2.1"
+VERSION = "1.2.2"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
@@ -287,6 +287,7 @@ HORA_FIN        = 21
 MINUTO_FIN      = 30
 # ── Frecuencia de mensajes — configurable desde dashboard ─────
 CICLOS_JEFES       = 2       # ciclos entre mensajes al espacio Jefes
+CICLOS_VENDEDORES  = 2       # ciclos entre mensajes individuales a vendedores
 CICLOS_REPORTE     = 1       # ciclos entre mensajes al espacio Reporte
 HORA_RECORDATORIO  = "20:30" # hora objetivo del recordatorio (HH:MM)
 # ── Demo mode ────────────────────────────────────────────────
@@ -478,7 +479,7 @@ CONFIG_CACHE_FILE = "config_remota_cache.json"
 
 def cargar_config_remota(gc):
     """Lee la hoja CONFIG del Sheet 1 y actualiza valores globales."""
-    global HORA_INICIO, HORA_FIN, MINUTO_FIN, MINUTOS_VENCIDA, UMBRAL_ANOMALIA, WATCHDOG_MINUTOS, CONFIG_REMOTA, CICLOS_JEFES, CICLOS_REPORTE, HORA_RECORDATORIO, WEBHOOK_DEMO_1, WEBHOOK_DEMO_2, WEBHOOK_DEMO_3, INTERVALO_DEMO
+    global HORA_INICIO, HORA_FIN, MINUTO_FIN, MINUTOS_VENCIDA, UMBRAL_ANOMALIA, WATCHDOG_MINUTOS, CONFIG_REMOTA, CICLOS_JEFES, CICLOS_VENDEDORES, CICLOS_REPORTE, HORA_RECORDATORIO, WEBHOOK_DEMO_1, WEBHOOK_DEMO_2, WEBHOOK_DEMO_3, INTERVALO_DEMO
     try:
         ss = gc.open_by_key(GOOGLE["sheet_id"])
         try:
@@ -500,6 +501,7 @@ def cargar_config_remota(gc):
                 ["webhook_jefes", WEBHOOK_JEFES],
                 ["webhook_tiempos", WEBHOOK_TIEMPOS],
                 ["ciclos_jefes", "2"],
+                ["ciclos_vendedores", "2"],
                 ["ciclos_reporte", "1"],
                 ["hora_recordatorio", "20:30"],
                 ["webhook_demo_1", ""],
@@ -533,6 +535,15 @@ def cargar_config_remota(gc):
             WATCHDOG_MINUTOS = int(cfg["watchdog_minutos"])
         if cfg.get("ciclos_jefes", "").isdigit():
             CICLOS_JEFES = max(1, int(cfg["ciclos_jefes"]))
+        if cfg.get("ciclos_vendedores", "").isdigit():
+            CICLOS_VENDEDORES = max(1, int(cfg["ciclos_vendedores"]))
+        else:
+            # Parametro nuevo: agregarlo a la hoja para que sea visible/editable
+            try:
+                if "ciclos_vendedores" not in cfg:
+                    hoja.append_row(["ciclos_vendedores", "2"], value_input_option="RAW")
+            except Exception:
+                pass
         if cfg.get("ciclos_reporte", "").isdigit():
             CICLOS_REPORTE = max(1, int(cfg["ciclos_reporte"]))
         if cfg.get("hora_recordatorio"):
@@ -3100,12 +3111,20 @@ def main():
         if contador["count"] >= CICLOS_JEFES:
             _WEBHOOKS_YA_ENVIADOS.clear()
             enviar_mensaje_jefes(datos, dir_dict, hist_dict, descansos, jefes_en_descanso)
-            enviar_mensajes_vendedores(datos, dir_dict, descansos)
             enviar_pendientes_ayer(datos, dir_dict, descansos)
             contador["count"] = 0
             log.info(f"Mensajes jefes enviados, contador reiniciado (cada {CICLOS_JEFES} ciclo(s))")
         else:
             log.info(f"Contador jefes: {contador['count']}/{CICLOS_JEFES}")
+
+        # ── Mensajes individuales — VENDEDORES (frecuencia propia) ──────────
+        contador["vendedores_count"] = contador.get("vendedores_count", 0) + 1
+        if contador["vendedores_count"] >= CICLOS_VENDEDORES:
+            enviar_mensajes_vendedores(datos, dir_dict, descansos)
+            contador["vendedores_count"] = 0
+            log.info(f"Mensajes vendedores enviados, contador reiniciado (cada {CICLOS_VENDEDORES} ciclo(s))")
+        else:
+            log.info(f"Contador vendedores: {contador['vendedores_count']}/{CICLOS_VENDEDORES}")
         guardar_contador(contador)
 
         guardar_metricas_dia(gc_global, resumen, len(vencidas))

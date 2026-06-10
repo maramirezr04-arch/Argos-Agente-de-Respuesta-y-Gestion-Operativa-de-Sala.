@@ -225,7 +225,7 @@ input:checked + .slider:before { transform:translateX(22px); }
 <div class="header">
   <div>
     <h1>🤖 Argos</h1>
-    <div class="sub">Panel de control · Tienda 456 Parque Antenas · <span style="opacity:.7">v1.2.1</span> · <span id="hdr-fecha" style="opacity:.8"></span></div>
+    <div class="sub">Panel de control · Tienda 456 Parque Antenas · <span style="opacity:.7">v1.2.2</span> · <span id="hdr-fecha" style="opacity:.8"></span></div>
   </div>
   <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
     <div class="status-pill"><span class="dot dot-off" id="dot"></span><span id="status-txt">Cargando...</span></div>
@@ -399,6 +399,13 @@ input:checked + .slider:before { transform:translateX(22px); }
       <div style="display:flex;align-items:center;gap:6px">
         <input type="number" id="cfg-ciclos-jefes" min="1" max="20" value="2" style="width:70px" oninput="actualizarLabelCiclos('cfg-ciclos-jefes','lbl-ciclos-jefes')">
         <span id="lbl-ciclos-jefes" style="font-size:11px;color:#888">ciclos (~30 min)</span>
+      </div>
+    </div>
+    <div class="cfg-row" style="margin-top:10px">
+      <label class="tooltip-wrap">Ciclos entre mensajes de vendedores <span class="tooltip-icon">i</span><span class="tooltip-box">Cada cuántos ciclos se manda a cada vendedor su mensaje individual con sus remisiones. 2 = cada ~30 min, 4 = cada ~1 hora.</span></label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="number" id="cfg-ciclos-vendedores" min="1" max="20" value="2" style="width:70px" oninput="actualizarLabelCiclos('cfg-ciclos-vendedores','lbl-ciclos-vendedores')">
+        <span id="lbl-ciclos-vendedores" style="font-size:11px;color:#888">ciclos (~30 min)</span>
       </div>
     </div>
     <div class="cfg-row" style="margin-top:10px">
@@ -1279,9 +1286,11 @@ async function cargarConfig(){
     document.getElementById('cfg-env-jefes').checked=(c.enviar_jefes||'si').toLowerCase()==='si';
     document.getElementById('cfg-env-tiempos').checked=(c.enviar_tiempos||'si').toLowerCase()==='si';
     document.getElementById('cfg-ciclos-jefes').value=num(c.ciclos_jefes,2);
+    document.getElementById('cfg-ciclos-vendedores').value=num(c.ciclos_vendedores,2);
     document.getElementById('cfg-ciclos-reporte').value=num(c.ciclos_reporte,1);
     document.getElementById('cfg-hora-record').value=c.hora_recordatorio||'20:30';
     actualizarLabelCiclos('cfg-ciclos-jefes','lbl-ciclos-jefes');
+    actualizarLabelCiclos('cfg-ciclos-vendedores','lbl-ciclos-vendedores');
     actualizarLabelCiclos('cfg-ciclos-reporte','lbl-ciclos-reporte');
     // Demo fields
     if(document.getElementById('cfg-wh-demo1'))document.getElementById('cfg-wh-demo1').value=c.webhook_demo_1||'';
@@ -1298,7 +1307,7 @@ async function cargarConfig(){
 async function guardarConfig(){
   const btn=document.getElementById('btn-guardar');btn.disabled=true;btn.textContent='⏳ Guardando...';
   const dias=[...document.querySelectorAll('.dia-chip.active')].map(c=>c.dataset.dia).join(',');
-  const cfg={hora_inicio:document.getElementById('cfg-hora-inicio').value,hora_fin:document.getElementById('cfg-hora-fin').value,minuto_fin:document.getElementById('cfg-minuto-fin').value,pausado:document.getElementById('cfg-pausado').checked?'si':'no',dias_activos:dias,minutos_vencida:document.getElementById('cfg-vencida').value,umbral_anomalia:document.getElementById('cfg-anomalia').value,watchdog_minutos:document.getElementById('cfg-watchdog').value,watchdog_activo:document.getElementById('cfg-watchdog-activo').checked?'si':'no',webhook_reporte:document.getElementById('cfg-wh-reporte').value,webhook_jefes:document.getElementById('cfg-wh-jefes').value,webhook_tiempos:document.getElementById('cfg-wh-tiempos').value,enviar_reporte:document.getElementById('cfg-env-reporte').checked?'si':'no',enviar_jefes:document.getElementById('cfg-env-jefes').checked?'si':'no',enviar_tiempos:document.getElementById('cfg-env-tiempos').checked?'si':'no',ciclos_jefes:document.getElementById('cfg-ciclos-jefes').value,ciclos_reporte:document.getElementById('cfg-ciclos-reporte').value,hora_recordatorio:document.getElementById('cfg-hora-record').value};
+  const cfg={hora_inicio:document.getElementById('cfg-hora-inicio').value,hora_fin:document.getElementById('cfg-hora-fin').value,minuto_fin:document.getElementById('cfg-minuto-fin').value,pausado:document.getElementById('cfg-pausado').checked?'si':'no',dias_activos:dias,minutos_vencida:document.getElementById('cfg-vencida').value,umbral_anomalia:document.getElementById('cfg-anomalia').value,watchdog_minutos:document.getElementById('cfg-watchdog').value,watchdog_activo:document.getElementById('cfg-watchdog-activo').checked?'si':'no',webhook_reporte:document.getElementById('cfg-wh-reporte').value,webhook_jefes:document.getElementById('cfg-wh-jefes').value,webhook_tiempos:document.getElementById('cfg-wh-tiempos').value,enviar_reporte:document.getElementById('cfg-env-reporte').checked?'si':'no',enviar_jefes:document.getElementById('cfg-env-jefes').checked?'si':'no',enviar_tiempos:document.getElementById('cfg-env-tiempos').checked?'si':'no',ciclos_jefes:document.getElementById('cfg-ciclos-jefes').value,ciclos_vendedores:document.getElementById('cfg-ciclos-vendedores').value,ciclos_reporte:document.getElementById('cfg-ciclos-reporte').value,hora_recordatorio:document.getElementById('cfg-hora-record').value};
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'config',config:cfg})});
     const data=await r.json();
