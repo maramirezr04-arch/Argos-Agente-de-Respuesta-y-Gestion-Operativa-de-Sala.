@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.3.4"
+VERSION = "1.3.5"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
@@ -1506,7 +1506,18 @@ def enviar_mensaje_jefe_individual(jefe, info_j, ubicacion, fecha_now, dir_dict,
     _WEBHOOKS_YA_ENVIADOS.add(webhook_jefe)
 
     payload = construir_card_jefe_individual(jefe, info_j, ubicacion, fecha_now, es_sustituto, jefe_original)
-    post_chat_con_reintento(webhook_jefe, payload)
+
+    # Una card al día por jefe que se reescribe el resto del día
+    mensajes_jefes = _leer_mensajes_reescribibles(MENSAJES_JEFES_IND_FILE)
+    hoy      = datetime.now().strftime("%d/%m/%Y")
+    clave    = jefe.strip().upper()
+    msg_name = mensajes_jefes.get(clave, {}).get("name", "")
+    nuevo    = _enviar_o_reescribir(webhook_jefe, payload, msg_name)
+    if nuevo:
+        mensajes_jefes[clave] = {"name": nuevo, "fecha": hoy}
+        _guardar_mensajes_reescribibles(MENSAJES_JEFES_IND_FILE, mensajes_jefes)
+    else:
+        post_chat_con_reintento(webhook_jefe, payload)
     log.info(f"Mensaje individual enviado a jefe {jefe}")
 
 
@@ -1802,21 +1813,28 @@ def construir_card_pendientes_ayer(por_jefe, total_ayer, fecha_now):
     }
 
 
-# ── Mensajes vendedores — texto plano, se reescriben en lugar ────
+# ── Mensajes que se reescriben en lugar (vendedores y jefes) ─────
 MENSAJES_VENDEDORES_FILE = "mensajes_vendedores.json"
+MENSAJES_PISOS_FILE      = "mensajes_pisos.json"
+MENSAJES_JEFES_IND_FILE  = "mensajes_jefes_ind.json"
 
-def _leer_mensajes_vendedores():
+def _leer_mensajes_reescribibles(archivo):
+    """Lee el registro {clave: {name, fecha}} y descarta entradas de días anteriores."""
+    hoy = datetime.now().strftime("%d/%m/%Y")
     try:
-        if os.path.exists(MENSAJES_VENDEDORES_FILE):
-            with open(MENSAJES_VENDEDORES_FILE) as f:
-                return json.load(f)
+        if os.path.exists(archivo):
+            with open(archivo) as f:
+                data = json.load(f)
+            # Limpieza: solo conservar entradas de hoy (formato nuevo)
+            return {k: v for k, v in data.items()
+                    if isinstance(v, dict) and v.get("fecha") == hoy}
     except Exception:
         pass
     return {}
 
-def _guardar_mensajes_vendedores(d):
+def _guardar_mensajes_reescribibles(archivo, d):
     try:
-        with open(MENSAJES_VENDEDORES_FILE, "w") as f:
+        with open(archivo, "w") as f:
             json.dump(d, f)
     except Exception:
         pass
@@ -1832,20 +1850,20 @@ def _construir_texto_vendedor(vendedor, v, fecha_now):
     partes.append("  🟢 *Total: " + str(len(todos)) + " remisiones*")
     return "\n".join(partes)
 
-def _enviar_o_reescribir_vendedor(webhook_url, texto, msg_name):
+def _enviar_o_reescribir(webhook_url, payload, msg_name):
     """Reescribe el mensaje existente (PATCH) o crea uno nuevo (POST).
-    Usa la misma key+token del webhook — no requiere configuración extra.
+    Funciona para texto y para cardsV2 usando la misma key+token del webhook.
     Devuelve el name del mensaje para guardarlo."""
     from urllib.parse import urlparse, parse_qs
     parsed = urlparse(webhook_url)
     params = parse_qs(parsed.query)
     key    = params.get("key",   [""])[0]
     token  = params.get("token", [""])[0]
-    payload = {"text": texto}
+    update_mask = "cardsV2" if "cardsV2" in payload else "text"
 
     if msg_name and key and token:
         patch_url = (f"https://chat.googleapis.com/v1/{msg_name}"
-                     f"?key={key}&token={token}&updateMask=text")
+                     f"?key={key}&token={token}&updateMask={update_mask}")
         try:
             r = requests.patch(patch_url, json=payload, timeout=15)
             if 200 <= r.status_code < 300:
@@ -1859,7 +1877,7 @@ def _enviar_o_reescribir_vendedor(webhook_url, texto, msg_name):
         if 200 <= r.status_code < 300:
             return r.json().get("name", "")
     except Exception as e:
-        log.warning(f"Error enviando mensaje vendedor: {e}")
+        log.warning(f"Error enviando mensaje reescribible: {e}")
     return ""
 
 
@@ -1939,18 +1957,30 @@ def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes
         log.info("Sin remisiones activas para mensaje de jefes")
         return
 
+    # Las cards de piso se mandan una vez al día y se reescriben el resto del día
+    mensajes_pisos = _leer_mensajes_reescribibles(MENSAJES_PISOS_FILE)
+    hoy = datetime.now().strftime("%d/%m/%Y")
+
     for p_idx in sorted(por_piso.keys()):
         info_piso = por_piso[p_idx]
         ubicacion = info_piso["ubicacion"]
 
-        payload = construir_card_piso(ubicacion, info_piso, fecha_now)
-        post_chat_con_reintento(WEBHOOK_JEFES, payload)
+        payload  = construir_card_piso(ubicacion, info_piso, fecha_now)
+        clave    = "piso-" + ubicacion.replace(" ", "_")
+        msg_name = mensajes_pisos.get(clave, {}).get("name", "")
+        nuevo    = _enviar_o_reescribir(WEBHOOK_JEFES, payload, msg_name)
+        if nuevo:
+            mensajes_pisos[clave] = {"name": nuevo, "fecha": hoy}
+        else:
+            # Fallback: si la creación directa falló, intentar con la cola de reintentos
+            post_chat_con_reintento(WEBHOOK_JEFES, payload)
         log.info("Mensaje enviado al espacio jefes — piso: " + ubicacion)
 
         for jefe, info_j in sorted(info_piso["jefes"].items()):
             jefe_original = info_j.get("jefe_original", "")
             enviar_mensaje_jefe_individual(jefe, info_j, ubicacion, fecha_now, dir_dict, jefe_original=jefe_original)
 
+    _guardar_mensajes_reescribibles(MENSAJES_PISOS_FILE, mensajes_pisos)
     log.info("4 mensajes por piso enviados al espacio jefes ✅")
 
 def enviar_mensajes_vendedores(todas_remisiones, dir_dict, descansos=None):
@@ -2019,7 +2049,7 @@ def enviar_mensajes_vendedores(todas_remisiones, dir_dict, descansos=None):
     # Contadores individuales por vendedor (persisten entre ciclos)
     contador   = leer_contador()
     ven_counts = contador.get("ven_counts", {})
-    mensajes_ven = _leer_mensajes_vendedores()
+    mensajes_ven = _leer_mensajes_reescribibles(MENSAJES_VENDEDORES_FILE)
 
     enviados    = 0
     ya_enviados = set()
@@ -2044,12 +2074,9 @@ def enviar_mensajes_vendedores(todas_remisiones, dir_dict, descansos=None):
 
         texto    = _construir_texto_vendedor(vendedor, v, fecha_now)
         hoy      = datetime.now().strftime("%d/%m/%Y")
-        entrada  = mensajes_ven.get(clave, {})
-        if isinstance(entrada, str):
-            entrada = {}  # migración de formato anterior
-        # Solo reutilizar el mensaje si es del mismo día
-        msg_name = entrada.get("name", "") if entrada.get("fecha") == hoy else ""
-        nuevo    = _enviar_o_reescribir_vendedor(webhook, texto, msg_name)
+        # _leer_mensajes_reescribibles ya filtró las entradas de días anteriores
+        msg_name = mensajes_ven.get(clave, {}).get("name", "")
+        nuevo    = _enviar_o_reescribir(webhook, {"text": texto}, msg_name)
         if nuevo:
             mensajes_ven[clave] = {"name": nuevo, "fecha": hoy}
         enviados += 1
@@ -2057,7 +2084,7 @@ def enviar_mensajes_vendedores(todas_remisiones, dir_dict, descansos=None):
     # Persistir contadores y nombres de mensajes
     contador["ven_counts"] = ven_counts
     guardar_contador(contador)
-    _guardar_mensajes_vendedores(mensajes_ven)
+    _guardar_mensajes_reescribibles(MENSAJES_VENDEDORES_FILE, mensajes_ven)
     log.info(f"Mensajes individuales a vendedores enviados: {enviados}")
 
 def enviar_cierre(datos, dir_dict):
