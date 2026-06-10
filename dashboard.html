@@ -225,7 +225,7 @@ input:checked + .slider:before { transform:translateX(22px); }
 <div class="header">
   <div>
     <h1>🤖 Argos</h1>
-    <div class="sub">Panel de control · Tienda 456 Parque Antenas · <span style="opacity:.7">v1.2.2</span> · <span id="hdr-fecha" style="opacity:.8"></span></div>
+    <div class="sub">Panel de control · Tienda 456 Parque Antenas · <span style="opacity:.7">v1.2.3</span> · <span id="hdr-fecha" style="opacity:.8"></span></div>
   </div>
   <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
     <div class="status-pill"><span class="dot dot-off" id="dot"></span><span id="status-txt">Cargando...</span></div>
@@ -402,7 +402,7 @@ input:checked + .slider:before { transform:translateX(22px); }
       </div>
     </div>
     <div class="cfg-row" style="margin-top:10px">
-      <label class="tooltip-wrap">Ciclos entre mensajes de vendedores <span class="tooltip-icon">i</span><span class="tooltip-box">Cada cuántos ciclos se manda a cada vendedor su mensaje individual con sus remisiones. 2 = cada ~30 min, 4 = cada ~1 hora.</span></label>
+      <label class="tooltip-wrap">Ciclos entre mensajes de vendedores <span class="tooltip-icon">i</span><span class="tooltip-box">Frecuencia predeterminada para todos los vendedores. 2 = cada ~30 min, 4 = cada ~1 hora. Para una frecuencia distinta por vendedor, usa la columna "Ciclos" de la hoja WEBHOOKS_VENDEDORES.</span></label>
       <div style="display:flex;align-items:center;gap:6px">
         <input type="number" id="cfg-ciclos-vendedores" min="1" max="20" value="2" style="width:70px" oninput="actualizarLabelCiclos('cfg-ciclos-vendedores','lbl-ciclos-vendedores')">
         <span id="lbl-ciclos-vendedores" style="font-size:11px;color:#888">ciclos (~30 min)</span>

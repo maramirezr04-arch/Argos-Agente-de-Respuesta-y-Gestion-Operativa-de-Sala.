@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.2.2"
+VERSION = "1.2.3"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 _UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
@@ -414,20 +414,28 @@ def cargar_webhooks_jefes(gc, nombres_jefes=None):
 WEBHOOKS_VENDEDORES_CACHE = {}
 
 def cargar_webhooks_vendedores(gc, nombres_vendedores=None):
-    """Lee la hoja WEBHOOKS_VENDEDORES y retorna {NOMBRE_UPPER: webhook_url}.
+    """Lee la hoja WEBHOOKS_VENDEDORES y retorna {NOMBRE_UPPER: {"url", "ciclos"}}.
+    Columnas: A=Vendedor, B=Webhook, C=Activo, D=Ciclos (frecuencia personal;
+    vacio = usa el default global ciclos_vendedores).
     Agrega automaticamente cualquier vendedor nuevo detectado en el CSV
     (columna A) para que solo haya que pegar el webhook en la columna B.
-    La hoja se va llenando sola conforme aparecen vendedores en el archivo.
     """
     try:
         ss = gc.open_by_key(GOOGLE["sheet_id"])
         try:
             hoja = ss.worksheet("WEBHOOKS_VENDEDORES")
         except gspread.WorksheetNotFound:
-            hoja = ss.add_worksheet("WEBHOOKS_VENDEDORES", rows=300, cols=3)
-            hoja.update([["Vendedor", "Webhook", "Activo"]], "A1")
+            hoja = ss.add_worksheet("WEBHOOKS_VENDEDORES", rows=300, cols=4)
+            hoja.update([["Vendedor", "Webhook", "Activo", "Ciclos"]], "A1")
             log.info("Hoja WEBHOOKS_VENDEDORES creada — agrega los webhooks en columna B")
         rows = hoja.get_all_values()
+
+        # Asegurar encabezado de la columna D (Ciclos) en hojas ya existentes
+        if rows and (len(rows[0]) < 4 or not str(rows[0][3]).strip()):
+            try:
+                hoja.update([["Ciclos"]], "D1")
+            except Exception:
+                pass
 
         # Nombres ya presentes en la hoja (columna A, normalizados)
         existentes = {str(r[0]).strip().upper() for r in rows[1:] if r and str(r[0]).strip()}
@@ -439,7 +447,7 @@ def cargar_webhooks_vendedores(gc, nombres_vendedores=None):
                 if n and n.strip().upper() not in existentes
             })
             if nuevos:
-                hoja.append_rows([[n, "", ""] for n in nuevos], value_input_option="RAW")
+                hoja.append_rows([[n, "", "", ""] for n in nuevos], value_input_option="RAW")
                 log.info(f"WEBHOOKS_VENDEDORES: {len(nuevos)} vendedor(es) nuevo(s) agregado(s)")
                 rows = hoja.get_all_values()
 
@@ -451,8 +459,12 @@ def cargar_webhooks_vendedores(gc, nombres_vendedores=None):
                 activo  = True
                 if len(row) >= 3 and str(row[2]).strip().lower() in ("false", "0", "no"):
                     activo = False
+                # Columna D = ciclos personales (0 = usar default global)
+                ciclos = 0
+                if len(row) >= 4 and str(row[3]).strip().isdigit():
+                    ciclos = max(1, int(str(row[3]).strip()))
                 if nombre and webhook and activo:
-                    resultado[nombre.upper()] = webhook
+                    resultado[nombre.upper()] = {"url": webhook, "ciclos": ciclos}
         log.info(f"WEBHOOKS_VENDEDORES cargados: {len(resultado)} vendedor(es) con webhook activo")
         return resultado
     except Exception as e:
@@ -460,17 +472,19 @@ def cargar_webhooks_vendedores(gc, nombres_vendedores=None):
         return {}
 
 def _buscar_webhook_vendedor(nombre):
-    """Busca el webhook de un vendedor: exacta primero, luego por 2+ palabras."""
+    """Busca el webhook de un vendedor: exacta primero, luego por 2+ palabras.
+    Retorna (url, ciclos_personales) — ciclos 0 significa usar el default global."""
     n = nombre.strip().upper()
     if not n:
-        return ""
+        return "", 0
     if n in WEBHOOKS_VENDEDORES_CACHE:
-        return WEBHOOKS_VENDEDORES_CACHE[n]
+        d = WEBHOOKS_VENDEDORES_CACHE[n]
+        return d["url"], d.get("ciclos", 0)
     palabras = set(n.split())
-    for clave, url in WEBHOOKS_VENDEDORES_CACHE.items():
-        if url and len(palabras & set(clave.split())) >= 2:
-            return url
-    return ""
+    for clave, d in WEBHOOKS_VENDEDORES_CACHE.items():
+        if d.get("url") and len(palabras & set(clave.split())) >= 2:
+            return d["url"], d.get("ciclos", 0)
+    return "", 0
 
 # ── CONFIG REMOTA (HOJA CONFIG DEL SHEET 1) ──────────────────
 
@@ -1692,17 +1706,30 @@ def enviar_mensajes_vendedores(todas_remisiones, dir_dict, descansos=None):
                           " — lleva " + calcular_tiempo_espera_str(it["minutos"]) + prio)
         return lineas
 
+    # Contadores individuales por vendedor (persisten entre ciclos)
+    contador   = leer_contador()
+    ven_counts = contador.get("ven_counts", {})
+
     enviados    = 0
     ya_enviados = set()
     for vendedor, v in sorted(por_vendedor.items()):
-        webhook = _buscar_webhook_vendedor(vendedor)
+        webhook, ciclos_pers = _buscar_webhook_vendedor(vendedor)
         if not webhook or webhook in ya_enviados:
             continue
-        ya_enviados.add(webhook)
 
-        total  = len(v["en_tiempo"]) + len(v["vencidas"]) + len(v["de_ayer"])
+        total = len(v["en_tiempo"]) + len(v["vencidas"]) + len(v["de_ayer"])
         if total == 0:
             continue
+
+        # Frecuencia personal (columna D de la hoja) o default global
+        ciclos_req = ciclos_pers if ciclos_pers > 0 else CICLOS_VENDEDORES
+        clave      = vendedor.strip().upper()
+        ven_counts[clave] = ven_counts.get(clave, 0) + 1
+        if ven_counts[clave] < ciclos_req:
+            log.info(f"Vendedor {vendedor}: {ven_counts[clave]}/{ciclos_req} ciclos — aún no toca")
+            continue
+        ven_counts[clave] = 0
+        ya_enviados.add(webhook)
 
         partes = []
         partes.append("〰〰〰〰〰〰〰〰〰〰〰〰〰〰〰")
@@ -1728,6 +1755,9 @@ def enviar_mensajes_vendedores(todas_remisiones, dir_dict, descansos=None):
         post_chat_con_reintento(webhook, {"text": "\n".join(partes)})
         enviados += 1
 
+    # Persistir contadores individuales
+    contador["ven_counts"] = ven_counts
+    guardar_contador(contador)
     log.info(f"Mensajes individuales a vendedores enviados: {enviados}")
 
 def enviar_cierre(datos, dir_dict):
@@ -3117,15 +3147,12 @@ def main():
         else:
             log.info(f"Contador jefes: {contador['count']}/{CICLOS_JEFES}")
 
-        # ── Mensajes individuales — VENDEDORES (frecuencia propia) ──────────
-        contador["vendedores_count"] = contador.get("vendedores_count", 0) + 1
-        if contador["vendedores_count"] >= CICLOS_VENDEDORES:
-            enviar_mensajes_vendedores(datos, dir_dict, descansos)
-            contador["vendedores_count"] = 0
-            log.info(f"Mensajes vendedores enviados, contador reiniciado (cada {CICLOS_VENDEDORES} ciclo(s))")
-        else:
-            log.info(f"Contador vendedores: {contador['vendedores_count']}/{CICLOS_VENDEDORES}")
         guardar_contador(contador)
+
+        # ── Mensajes individuales — VENDEDORES ──────────────────────────────
+        # Se evalúa cada ciclo; la frecuencia es por vendedor (columna Ciclos
+        # de WEBHOOKS_VENDEDORES) con default global ciclos_vendedores.
+        enviar_mensajes_vendedores(datos, dir_dict, descansos)
 
         guardar_metricas_dia(gc_global, resumen, len(vencidas))
         duracion = time.time() - t_inicio
