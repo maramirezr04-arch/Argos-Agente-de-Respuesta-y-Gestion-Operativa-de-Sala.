@@ -990,7 +990,15 @@ input:checked + .slider:before { transform:translateX(22px); }
 
 <div id="toast" class="toast"></div>
 <script>
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxBSox6hX-SfSemrq-CQAx_w_iCGP-4uUsMB1eKD8HCYJJC_Ul9BoEItLAAVNVm5ELtzA/exec";
+// URL inyectada por Apps Script al servir la página; si se abre como
+// archivo local se usa la URL fija como respaldo.
+const APPS_SCRIPT_URL = (function(){
+  try {
+    var tag = document.querySelector('meta[name="apps-script-url"]');
+    if (tag && tag.content && tag.content.startsWith('https://')) return tag.content;
+  } catch(e){}
+  return "https://script.google.com/macros/s/AKfycbxBSox6hX-SfSemrq-CQAx_w_iCGP-4uUsMB1eKD8HCYJJC_Ul9BoEItLAAVNVm5ELtzA/exec";
+})();
 const SHEET_ID = "135lsymm5A67_ieYZLaKIfvPpkyqRWbUf9UV-mv3b7js";
 const URL_MONITOR  = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=MONITOR";
 const URL_METRICAS = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=METRICAS";

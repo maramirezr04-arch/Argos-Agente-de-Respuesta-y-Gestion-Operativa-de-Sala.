@@ -27,6 +27,17 @@ function json(obj) {
 // ═══════════════════════════════════════════════════════════════
 function doGet(e) {
   var accion = e.parameter.accion || e.parameter.action || "";
+
+  // Sin parámetros → servir el dashboard como página web
+  if (!accion) {
+    var scriptUrl = ScriptApp.getService().getUrl();
+    return HtmlService.createTemplateFromFile('dashboard').evaluate()
+      .setTitle('Argos — Panel de Control')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1.0')
+      .addMetaTag('apps-script-url', scriptUrl);
+  }
+
   var ss = SpreadsheetApp.openById(SHEET_ID);
 
   // ── CONFIG ────────────────────────────────────────────────
