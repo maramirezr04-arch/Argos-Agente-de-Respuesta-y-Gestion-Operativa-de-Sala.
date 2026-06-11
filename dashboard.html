@@ -4,16 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Argos — Panel de Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f7f6f3; color: #1a1a1a; }
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(180deg, #faf8f6 0%, #f5f2ee 100%); min-height: 100vh; color: #1a1a1a; -webkit-font-smoothing: antialiased; }
 
 /* ── HEADER ── */
 .header {
-  background: linear-gradient(135deg, #c9254e 0%, #E8416C 60%, #f06090 100%);
+  background: linear-gradient(120deg, #8e1136 0%, #c9254e 35%, #E8416C 70%, #f0719a 100%);
   color: #fff;
-  padding: 1.75rem 2rem;
+  padding: 2rem 2.25rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -22,6 +25,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   position: relative;
   overflow: hidden;
 }
+.header::after {
+  content: '';
+  position: absolute;
+  width: 420px; height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.14) 0%, transparent 70%);
+  top: -220px; right: -80px;
+  pointer-events: none;
+}
 .header::before {
   content: '';
   position: absolute;
@@ -29,8 +41,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   background-image: url("data:image/svg+xml,%3Csvg width='52' height='26' viewBox='0 0 52 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Cpath d='M10 10c0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6h2c0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4v2c-3.314 0-6-2.686-6-6 0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6zm25.464-1.95l8.486 8.486-1.414 1.414-8.486-8.486 1.414-1.414z' /%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   pointer-events: none;
 }
-.header h1 { font-size: 24px; font-weight: 800; letter-spacing: -.5px; position: relative; }
-.header .sub { font-size: 13px; opacity: .88; margin-top: 4px; font-weight: 400; position: relative; letter-spacing: .2px; }
+.header h1 { font-size: 26px; font-weight: 900; letter-spacing: -.6px; position: relative; text-shadow: 0 2px 8px rgba(0,0,0,.15); }
+.header .sub { font-size: 13px; opacity: .9; margin-top: 5px; font-weight: 400; position: relative; letter-spacing: .2px; }
 
 /* ── STATUS PILL ── */
 .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 6px; flex-shrink: 0; }
@@ -40,10 +52,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .status-pill { display:flex;align-items:center;font-size:13px;background:rgba(255,255,255,.22);padding:6px 14px;border-radius:20px;font-weight:500;position:relative; }
 
 /* ── NAV TABS ── */
-.nav { display:flex;background:#fff;border-bottom:2px solid rgba(0,0,0,.07);overflow-x:auto;position:sticky;top:0;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.08);padding:0 8px; }
-.nav button { flex-shrink:0;padding:14px 18px;font-size:13px;background:none;border:none;cursor:pointer;color:#888;border-bottom:3px solid transparent;white-space:nowrap;transition:.2s;font-weight:500;border-radius:8px 8px 0 0;margin:0 2px; }
-.nav button.active { color:#c9254e;border-bottom-color:#c9254e;font-weight:700;background:rgba(201,37,78,.05); }
-.nav button:hover:not(.active) { background:#f8f4f5;color:#444; }
+.nav { display:flex;align-items:center;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(0,0,0,.06);overflow-x:auto;position:sticky;top:0;z-index:10;box-shadow:0 2px 12px rgba(0,0,0,.06);padding:8px 12px; }
+.nav button { flex-shrink:0;padding:9px 16px;font-size:13px;background:none;border:none;cursor:pointer;color:#777;white-space:nowrap;transition:.2s;font-weight:500;border-radius:20px;margin:0 2px; }
+.nav button.active { color:#fff;font-weight:700;background:linear-gradient(135deg,#c9254e,#e8416c);box-shadow:0 3px 10px rgba(201,37,78,.32); }
+.nav button:hover:not(.active) { background:#f6edf0;color:#9c2042; }
 
 /* ── LAYOUT ── */
 .content { padding:1.75rem;max-width:1100px;margin:0 auto; }
@@ -56,26 +68,26 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 }
 
 /* ── METRIC CARDS ── */
-.metric { background:#fff;border-radius:16px;padding:1.4rem 1.2rem;box-shadow:0 2px 12px rgba(0,0,0,.07);transition:.2s;border:1px solid rgba(0,0,0,.05); }
-.metric:hover { box-shadow:0 6px 20px rgba(0,0,0,.12);transform:translateY(-2px); }
-.metric .lbl { font-size:11px;color:#999;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.5px; }
-.metric .val { font-size:32px;font-weight:800;color:#1a1a1a;line-height:1; }
-.metric .sub { font-size:11px;color:#bbb;margin-top:8px; }
+.metric { background:#fff;border-radius:18px;padding:1.5rem 1.3rem;box-shadow:0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.05);transition:.25s cubic-bezier(.2,.8,.3,1);border:1px solid rgba(0,0,0,.04); }
+.metric:hover { box-shadow:0 4px 12px rgba(0,0,0,.08), 0 16px 40px rgba(201,37,78,.1);transform:translateY(-3px); }
+.metric .lbl { font-size:11px;color:#9a948e;margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px; }
+.metric .val { font-size:34px;font-weight:800;color:#1a1a1a;line-height:1;letter-spacing:-1px;font-variant-numeric:tabular-nums; }
+.metric .sub { font-size:11px;color:#b6b0aa;margin-top:9px; }
 
 /* ── CARDS ── */
-.card { background:#fff;border:1px solid rgba(0,0,0,.07);border-radius:16px;padding:1.4rem 1.6rem;margin-bottom:1.4rem;box-shadow:0 2px 8px rgba(0,0,0,.05); }
-.card-title { font-size:13px;font-weight:700;color:#333;margin-bottom:1rem;display:flex;align-items:center;gap:8px;padding-bottom:.75rem;border-bottom:1px solid rgba(0,0,0,.06); }
+.card { background:#fff;border:1px solid rgba(0,0,0,.05);border-radius:18px;padding:1.5rem 1.7rem;margin-bottom:1.4rem;box-shadow:0 1px 3px rgba(0,0,0,.03), 0 6px 20px rgba(0,0,0,.04); }
+.card-title { font-size:13px;font-weight:700;color:#2b2622;margin-bottom:1rem;display:flex;align-items:center;gap:8px;padding-bottom:.8rem;border-bottom:1px solid rgba(0,0,0,.05);letter-spacing:.1px; }
 
 /* ── TABLES ── */
-table { width:100%;border-collapse:collapse;font-size:13px; }
-th { text-align:left;font-weight:700;color:#444;padding:10px 12px;border-bottom:2px solid #f0eeea;font-size:11px;background:#faf9f7;text-transform:uppercase;letter-spacing:.4px; }
-td { padding:10px 12px;border-bottom:.5px solid rgba(0,0,0,.05); }
+table { width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border-radius:12px;overflow:hidden; }
+th { text-align:left;font-weight:700;color:#857f78;padding:11px 13px;border-bottom:2px solid #f0ebe6;font-size:10.5px;background:#faf7f4;text-transform:uppercase;letter-spacing:.6px; }
+td { padding:11px 13px;border-bottom:1px solid rgba(0,0,0,.04);font-variant-numeric:tabular-nums; }
 tr:last-child td { border-bottom:none; }
-tbody tr:nth-child(odd) td { background:#faf9f7; }
-tbody tr:hover td { background:#fff0f4; }
+tbody tr:nth-child(odd) td { background:#fbf9f7; }
+tbody tr:hover td { background:#fdf0f4; }
 
 /* ── BADGES ── */
-.badge { display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600; }
+.badge { display:inline-block;padding:3px 11px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.2px; }
 .ok { background:#eaf3de;color:#3b6d11; }
 .err { background:#fcebeb;color:#a32d2d; }
 .warn { background:#faeeda;color:#854f0b; }
@@ -101,9 +113,10 @@ tbody tr:hover td { background:#fff0f4; }
 .bar-wrap { background:#e0e0e0;border-radius:4px;height:6px;overflow:hidden;flex:1; }
 .bar { height:6px;border-radius:4px;background:#E8416C; }
 .controls { display:flex;gap:10px;margin-bottom:1.25rem;align-items:center;flex-wrap:wrap; }
-select, button, input, textarea { font-size:13px;padding:6px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;font-family:inherit; }
+select, button, input, textarea { font-size:13px;padding:7px 13px;border:1.5px solid #e5dfd9;border-radius:10px;background:#fff;cursor:pointer;font-family:inherit;transition:.15s; }
 input[type="text"], input[type="number"], input[type="date"], textarea { cursor:text; }
-button:hover { background:#f0f0f0; }
+input:focus, select:focus, textarea:focus { outline:none;border-color:#E8416C;box-shadow:0 0 0 3px rgba(232,65,108,.12); }
+button:hover { background:#f7f2ee;border-color:#d8d0c8; }
 .section { display:none; }
 .section.active { display:block; }
 .feature { border-left:3px solid #E8416C;padding:9px 13px;background:#faf9f7;margin-bottom:8px;border-radius:0 8px 8px 0; }
@@ -113,8 +126,8 @@ button:hover { background:#f0f0f0; }
 /* ── CONFIG ── */
 .cfg-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:1rem; }
 @media (max-width: 700px) { .cfg-grid { grid-template-columns: 1fr; } }
-.cfg-card { background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:16px;padding:1.25rem 1.4rem;transition:.2s; }
-.cfg-card:hover { border-color:rgba(232,65,108,.3);box-shadow:0 4px 16px rgba(232,65,108,.08); }
+.cfg-card { background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:18px;padding:1.35rem 1.5rem;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.03); }
+.cfg-card:hover { border-color:rgba(232,65,108,.3);box-shadow:0 6px 20px rgba(232,65,108,.09); }
 .cfg-card h3 { font-size:13px;font-weight:700;color:#222;margin-bottom:1rem;display:flex;align-items:center;gap:8px; }
 .cfg-row { display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;gap:10px; }
 .cfg-row label { color:#555; }
@@ -134,10 +147,11 @@ input:checked + .slider:before { transform:translateX(22px); }
 
 /* ── GLOBAL STATUS BAR ── */
 .global-status {
-  position: sticky; top: 47px; z-index: 9;
-  background: #fff; border-bottom: 1px solid rgba(0,0,0,.07);
-  box-shadow: 0 2px 6px rgba(0,0,0,.06);
-  padding: 8px 1.75rem;
+  position: sticky; top: 53px; z-index: 9;
+  background: rgba(255,255,255,.94); backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0,0,0,.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  padding: 9px 1.75rem;
   display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
   font-size: 12px;
 }
@@ -219,15 +233,54 @@ input:checked + .slider:before { transform:translateX(22px); }
 .tl-time { font-size:12px;font-weight:600;color:#E8416C; }
 .tl-text { font-size:13px;color:#444;line-height:1.5;margin-top:2px; }
 .chip { display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;background:#f0eeea;color:#555;margin:2px; }
+
+/* ── NAV AGRUPADO ── */
+.nav-group-label { flex-shrink:0;display:flex;align-items:center;font-size:10px;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:.8px;padding:0 6px 0 14px;border-left:1px solid #eee;margin-left:6px;user-select:none; }
+.nav-group-label:first-of-type { border-left:none;margin-left:0;padding-left:6px; }
+
+/* ── PESTAÑA INICIO ── */
+.home-hero { background:linear-gradient(130deg,#fff 0%,#fff3f7 55%,#ffeaf1 100%);border:1px solid rgba(232,65,108,.14);border-radius:22px;padding:2.5rem 2rem;margin-bottom:1.75rem;text-align:center;position:relative;overflow:hidden;box-shadow:0 2px 8px rgba(232,65,108,.05); }
+.home-hero::before { content:'';position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(232,65,108,.07) 0%,transparent 70%);top:-150px;left:-60px;pointer-events:none; }
+.home-hero::after  { content:'';position:absolute;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(232,65,108,.06) 0%,transparent 70%);bottom:-130px;right:-50px;pointer-events:none; }
+.home-hero h2 { font-size:24px;font-weight:800;color:#1a1a1a;margin-bottom:10px;letter-spacing:-.4px;position:relative; }
+.home-hero p { font-size:14px;color:#6b6560;line-height:1.75;max-width:580px;margin:0 auto;position:relative; }
+.home-group-title { font-size:11.5px;font-weight:800;color:#a39d96;text-transform:uppercase;letter-spacing:1px;margin:1.75rem 0 .8rem;display:flex;align-items:center;gap:10px; }
+.home-group-title::after { content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(0,0,0,.08),transparent); }
+.home-grid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px; }
+@media (max-width:700px){ .home-grid { grid-template-columns:1fr; } }
+.home-card { background:#fff;border:1.5px solid rgba(0,0,0,.06);border-radius:18px;padding:1.4rem 1.4rem;cursor:pointer;transition:.25s cubic-bezier(.2,.8,.3,1);text-align:left;position:relative;overflow:hidden; }
+.home-card::before { content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#c9254e,#f0719a);opacity:0;transition:.25s; }
+.home-card:hover { border-color:rgba(232,65,108,.45);box-shadow:0 10px 28px rgba(232,65,108,.16);transform:translateY(-3px); }
+.home-card:hover::before { opacity:1; }
+.home-card .hc-icon { font-size:28px;margin-bottom:10px; }
+.home-card .hc-title { font-size:14.5px;font-weight:700;color:#1a1a1a;margin-bottom:5px;letter-spacing:-.1px; }
+.home-card .hc-desc { font-size:12px;color:#8b857f;line-height:1.6; }
+
+/* ── TOUR DE BIENVENIDA ── */
+.tour-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:600;align-items:center;justify-content:center; }
+.tour-overlay.show { display:flex; }
+.tour-box { background:#fff;border-radius:20px;padding:2rem;max-width:440px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:modalIn .25s; }
+.tour-icon { font-size:44px;text-align:center;margin-bottom:1rem; }
+.tour-title { font-size:17px;font-weight:800;color:#1a1a1a;text-align:center;margin-bottom:10px; }
+.tour-desc { font-size:13px;color:#555;text-align:center;line-height:1.7;margin-bottom:1.5rem; }
+.tour-dots { display:flex;gap:6px;justify-content:center;margin-bottom:1.25rem; }
+.tour-dot { width:8px;height:8px;border-radius:50%;background:#e5e0dc;transition:.2s; }
+.tour-dot.active { background:#E8416C;width:22px;border-radius:5px; }
+.tour-btns { display:flex;gap:10px;justify-content:center; }
+.tour-skip { padding:10px 20px;border-radius:20px;border:1.5px solid #ddd;background:#fff;font-size:13px;cursor:pointer;color:#888; }
+.tour-next { padding:10px 26px;border-radius:20px;border:none;background:linear-gradient(135deg,#c9254e,#e8416c);color:#fff;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 12px rgba(201,37,78,.3); }
+.btn-ayuda { display:flex;align-items:center;gap:5px;font-size:13px;background:rgba(255,255,255,.22);padding:6px 14px;border-radius:20px;font-weight:500;border:none;color:#fff;cursor:pointer;position:relative;transition:.2s; }
+.btn-ayuda:hover { background:rgba(255,255,255,.35); }
 </style>
 </head>
 <body>
 <div class="header">
   <div>
     <h1>🤖 Argos</h1>
-    <div class="sub">Panel de control · Tienda 456 Parque Antenas · <span style="opacity:.7">v1.2.4</span> · <span id="hdr-fecha" style="opacity:.8"></span></div>
+    <div class="sub">Panel de control · Tienda 456 Parque Antenas · <span style="opacity:.7">v1.4.0</span> · <span id="hdr-fecha" style="opacity:.8"></span></div>
   </div>
   <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <button class="btn-ayuda" onclick="iniciarTour()" title="Ver el tour de bienvenida">❓ Ayuda</button>
     <div class="status-pill"><span class="dot dot-off" id="dot"></span><span id="status-txt">Cargando...</span></div>
     <div style="font-size:12px;opacity:.8;background:rgba(255,255,255,.15);padding:4px 12px;border-radius:12px" id="hdr-ultima">—</div>
   </div>
@@ -247,22 +300,106 @@ input:checked + .slider:before { transform:translateX(22px); }
   <span style="margin-left:auto;font-size:11px;color:#ccc" id="gsb-refresh"></span>
 </div>
 <div class="nav">
-  <button class="active" onclick="showTab('monitor',this)">📊 Monitor</button>
-  <button onclick="showTab('config',this)">⚙️ Configuracion</button>
-  <button onclick="showTab('descansos',this)">🏖️ Descansos</button>
-  <button onclick="showTab('jefes',this)">👔 Jefes</button>
-  <button onclick="showTab('routing',this)">📨 Rutas mensajes</button>
-  <button onclick="showTab('pcs',this)">💻 PCs</button>
-  <button onclick="showTab('acciones',this)">🔧 Acciones</button>
-  <button onclick="showTab('mensajes',this)">📅 Mensajes</button>
-  <button onclick="showTab('pruebas',this)">🧪 Pruebas</button>
-  <button onclick="showTab('logs',this)">📜 Logs</button>
-  <button onclick="showTab('tiempos',this)">⏱ KPI Tiempos</button>
+  <button class="active" data-tab="inicio" onclick="showTab('inicio',this)">🏠 Inicio</button>
+  <span class="nav-group-label">Día a día</span>
+  <button data-tab="monitor" onclick="showTab('monitor',this)">📊 Monitor</button>
+  <button data-tab="tiempos" onclick="showTab('tiempos',this)">⏱ KPI Tiempos</button>
+  <button data-tab="logs" onclick="showTab('logs',this)">📜 Logs</button>
+  <span class="nav-group-label">Equipo</span>
+  <button data-tab="jefes" onclick="showTab('jefes',this)">👔 Jefes</button>
+  <button data-tab="descansos" onclick="showTab('descansos',this)">🏖️ Descansos</button>
+  <button data-tab="routing" onclick="showTab('routing',this)">📨 Rutas mensajes</button>
+  <span class="nav-group-label">Sistema</span>
+  <button data-tab="config" onclick="showTab('config',this)">⚙️ Configuración</button>
+  <button data-tab="acciones" onclick="showTab('acciones',this)">🔧 Acciones</button>
+  <button data-tab="mensajes" onclick="showTab('mensajes',this)">📅 Mensajes</button>
+  <button data-tab="pcs" onclick="showTab('pcs',this)">💻 PCs</button>
+  <button data-tab="pruebas" onclick="showTab('pruebas',this)">🧪 Pruebas</button>
 </div>
 <div class="content">
 
+<!-- ── INICIO ── -->
+<div id="tab-inicio" class="section active" style="margin-top:1rem">
+  <div class="home-hero">
+    <h2>👋 Bienvenido al panel de Argos</h2>
+    <p>Argos es el bot que vigila las remisiones de OMS y avisa por Google Chat a jefes y vendedores cuando hay artículos pendientes de entregar. Desde este panel puedes ver cómo va el día, gestionar al equipo y configurar el bot — <b>elige abajo qué quieres hacer</b>.</p>
+  </div>
+
+  <div class="home-group-title">📈 Ver cómo va el día</div>
+  <div class="home-grid">
+    <div class="home-card" onclick="irATab('monitor')">
+      <div class="hc-icon">📊</div>
+      <div class="hc-title">Monitor</div>
+      <div class="hc-desc">Cuántas remisiones hay ahorita, cuántas están vencidas y si el bot está corriendo bien.</div>
+    </div>
+    <div class="home-card" onclick="irATab('tiempos')">
+      <div class="hc-icon">⏱</div>
+      <div class="hc-title">KPI Tiempos</div>
+      <div class="hc-desc">Cuánto tardan los vendedores en surtir cada remisión, con semáforo de colores.</div>
+    </div>
+    <div class="home-card" onclick="irATab('logs')">
+      <div class="hc-icon">📜</div>
+      <div class="hc-title">Logs</div>
+      <div class="hc-desc">El registro detallado de todo lo que el bot ha hecho, por si algo salió raro.</div>
+    </div>
+  </div>
+
+  <div class="home-group-title">👥 Gestionar al equipo</div>
+  <div class="home-grid">
+    <div class="home-card" onclick="irATab('jefes')">
+      <div class="hc-icon">👔</div>
+      <div class="hc-title">Jefes</div>
+      <div class="hc-desc">Ver qué jefe es responsable de cada sección y en qué piso está.</div>
+    </div>
+    <div class="home-card" onclick="irATab('descansos')">
+      <div class="hc-icon">🏖️</div>
+      <div class="hc-title">Descansos</div>
+      <div class="hc-desc">Registrar cuándo descansa un jefe y quién lo cubre, para que los avisos lleguen a la persona correcta.</div>
+    </div>
+    <div class="home-card" onclick="irATab('routing')">
+      <div class="hc-icon">📨</div>
+      <div class="hc-title">Rutas de mensajes</div>
+      <div class="hc-desc">A qué chat le llega el mensaje de cada jefe, y activar o desactivar sus avisos personales.</div>
+    </div>
+  </div>
+
+  <div class="home-group-title">⚙️ Configurar el sistema</div>
+  <div class="home-grid">
+    <div class="home-card" onclick="irATab('config')">
+      <div class="hc-icon">⚙️</div>
+      <div class="hc-title">Configuración</div>
+      <div class="hc-desc">Horario del bot, días activos, frecuencia de mensajes y pausa total.</div>
+    </div>
+    <div class="home-card" onclick="irATab('acciones')">
+      <div class="hc-icon">🔧</div>
+      <div class="hc-title">Acciones rápidas</div>
+      <div class="hc-desc">Pausar o reanudar el bot con un clic, limpiar la cola de mensajes y más.</div>
+    </div>
+    <div class="home-card" onclick="irATab('mensajes')">
+      <div class="hc-icon">📅</div>
+      <div class="hc-title">Mensajes programados</div>
+      <div class="hc-desc">Crear recordatorios automáticos que el bot manda cada cierto número de ciclos.</div>
+    </div>
+    <div class="home-card" onclick="irATab('pcs')">
+      <div class="hc-icon">💻</div>
+      <div class="hc-title">PCs</div>
+      <div class="hc-desc">Ver desde qué computadoras corre el bot y pausar alguna en específico.</div>
+    </div>
+    <div class="home-card" onclick="irATab('pruebas')">
+      <div class="hc-icon">🧪</div>
+      <div class="hc-title">Pruebas</div>
+      <div class="hc-desc">Mandar un mensaje de prueba a cualquier chat para verificar que los webhooks funcionan.</div>
+    </div>
+    <div class="home-card" onclick="iniciarTour()" style="border-style:dashed">
+      <div class="hc-icon">❓</div>
+      <div class="hc-title">¿Primera vez aquí?</div>
+      <div class="hc-desc">Haz el tour de bienvenida de 1 minuto para conocer el panel paso a paso.</div>
+    </div>
+  </div>
+</div>
+
 <!-- ── MONITOR ── -->
-<div id="tab-monitor" class="section active" style="margin-top:1rem">
+<div id="tab-monitor" class="section" style="margin-top:1rem">
   <div class="section-intro">📊 <b>Monitor en tiempo real</b> — Aquí puedes ver el historial de ejecuciones del bot, métricas de rendimiento y el estado actual de las remisiones.</div>
   <div class="controls">
     <select id="filtro" onchange="renderAll()">
@@ -837,6 +974,20 @@ input:checked + .slider:before { transform:translateX(22px); }
   </div>
 </div>
 
+<!-- ── TOUR DE BIENVENIDA ── -->
+<div class="tour-overlay" id="tour-overlay">
+  <div class="tour-box">
+    <div class="tour-icon" id="tour-icon">👋</div>
+    <div class="tour-title" id="tour-title"></div>
+    <div class="tour-desc" id="tour-desc"></div>
+    <div class="tour-dots" id="tour-dots"></div>
+    <div class="tour-btns">
+      <button class="tour-skip" onclick="cerrarTour()">Saltar</button>
+      <button class="tour-next" id="tour-next-btn" onclick="tourSiguiente()">Siguiente →</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 <script>
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxBSox6hX-SfSemrq-CQAx_w_iCGP-4uUsMB1eKD8HCYJJC_Ul9BoEItLAAVNVm5ELtzA/exec";
@@ -921,6 +1072,57 @@ function limpiarFiltroFecha(){
 }
 
 function showTab(id,btn){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');btn.classList.add('active');if(id==='routing')cargarWebhooksJefes();if(id==='tiempos')cargarKpiTiempos();if(id==='pcs')cargarPcs();if(id==='mensajes')cargarMensajesProgramados();}
+
+// Navegar a una pestaña desde las tarjetas de Inicio
+function irATab(id){
+  const btn = document.querySelector('.nav button[data-tab="'+id+'"]');
+  if(btn) showTab(id, btn);
+}
+
+// ── TOUR DE BIENVENIDA ──────────────────────────────────────
+const TOUR_PASOS = [
+  { icon:'👋', titulo:'¡Bienvenido a Argos!',
+    desc:'Argos vigila las remisiones de OMS todo el día y avisa por Google Chat cuando hay artículos pendientes. Este panel es tu centro de control. Te enseñamos lo básico en 5 pasos.' },
+  { icon:'🟢', titulo:'La barra de estado',
+    desc:'La barra gris debajo del encabezado siempre te dice si el bot está corriendo, cuándo fue su última ejecución y cuántas remisiones y vencidas hay. <b>Es visible desde cualquier pestaña.</b>' },
+  { icon:'📊', titulo:'Pestaña Monitor',
+    desc:'Es la pestaña que más vas a usar: muestra cuántas remisiones hay en espera, cuántas están vencidas (+20 min) y el historial de cada ejecución del bot.' },
+  { icon:'🏖️', titulo:'Descansos de jefes',
+    desc:'Cuando un jefe descansa, regístralo en la pestaña Descansos e indica quién lo cubre. Así los avisos de sus secciones le llegan al jefe correcto ese día.' },
+  { icon:'🔧', titulo:'¿Necesitas pausar el bot?',
+    desc:'En la pestaña Acciones puedes pausar y reanudar el bot con un clic. Y si algo no funciona, en Pruebas puedes mandar un mensaje de prueba para verificar los chats.<br><br><b>¡Listo! Ya conoces el panel.</b> Puedes repetir este tour con el botón ❓ Ayuda de arriba.' }
+];
+let tourPaso = 0;
+
+function iniciarTour(){
+  tourPaso = 0;
+  renderTourPaso();
+  document.getElementById('tour-overlay').classList.add('show');
+}
+function renderTourPaso(){
+  const p = TOUR_PASOS[tourPaso];
+  document.getElementById('tour-icon').textContent  = p.icon;
+  document.getElementById('tour-title').textContent = p.titulo;
+  document.getElementById('tour-desc').innerHTML    = p.desc;
+  document.getElementById('tour-dots').innerHTML    = TOUR_PASOS.map((_,i)=>
+    '<span class="tour-dot'+(i===tourPaso?' active':'')+'"></span>').join('');
+  document.getElementById('tour-next-btn').textContent =
+    tourPaso === TOUR_PASOS.length-1 ? '✓ Terminar' : 'Siguiente →';
+}
+function tourSiguiente(){
+  if(tourPaso < TOUR_PASOS.length-1){ tourPaso++; renderTourPaso(); }
+  else cerrarTour();
+}
+function cerrarTour(){
+  document.getElementById('tour-overlay').classList.remove('show');
+  try{ localStorage.setItem('argos_tour_visto','1'); }catch(e){}
+}
+document.getElementById('tour-overlay').addEventListener('click', function(e){ if(e.target===this) cerrarTour(); });
+
+// Mostrar el tour automáticamente la primera vez que alguien abre el panel
+try{
+  if(!localStorage.getItem('argos_tour_visto')) setTimeout(iniciarTour, 800);
+}catch(e){}
 
 // ── PCS ──────────────────────────────────────────────────────────────
 async function cargarPcs(){

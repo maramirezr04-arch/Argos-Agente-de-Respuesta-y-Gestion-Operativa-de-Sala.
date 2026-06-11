@@ -6,10 +6,12 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.4.0"
+VERSION = "1.4.1"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
-_UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/liverpool-bot/main"
+# El repo se renombró: el nombre viejo (liverpool-bot) redirige por ahora,
+# pero usamos el nombre nuevo para no depender de la redirección.
+_UPDATE_BASE = "https://raw.githubusercontent.com/maramirezr04-arch/Argos-Agente-de-Respuesta-y-Gestion-Operativa-de-Sala./main"
 _UPDATE_VERSION_URL = _UPDATE_BASE + "/version.txt"
 _UPDATE_MAIN_URL    = _UPDATE_BASE + "/main.py"
 
