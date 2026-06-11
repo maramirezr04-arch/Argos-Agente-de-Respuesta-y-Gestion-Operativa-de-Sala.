@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Argos — Panel de Control</title>
+<title>Argos &#x2014; Panel de Control</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(180deg, #faf8f6 0%, #f5f2ee 100%); min-height: 100vh; color: #1a1a1a; -webkit-font-smoothing: antialiased; }
 
-/* ── HEADER ── */
+/* -- HEADER -- */
 .header {
   background: linear-gradient(120deg, #8e1136 0%, #c9254e 35%, #E8416C 70%, #f0719a 100%);
   color: #fff;
@@ -44,20 +44,20 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Robo
 .header h1 { font-size: 26px; font-weight: 900; letter-spacing: -.6px; position: relative; text-shadow: 0 2px 8px rgba(0,0,0,.15); }
 .header .sub { font-size: 13px; opacity: .9; margin-top: 5px; font-weight: 400; position: relative; letter-spacing: .2px; }
 
-/* ── STATUS PILL ── */
+/* -- STATUS PILL -- */
 .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 6px; flex-shrink: 0; }
 .dot-live { background: #a8f0c6; animation: pulse 2s infinite; }
 .dot-off  { background: #ffb3b3; }
 @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
 .status-pill { display:flex;align-items:center;font-size:13px;background:rgba(255,255,255,.22);padding:6px 14px;border-radius:20px;font-weight:500;position:relative; }
 
-/* ── NAV TABS ── */
+/* -- NAV TABS -- */
 .nav { display:flex;align-items:center;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(0,0,0,.06);overflow-x:auto;position:sticky;top:0;z-index:10;box-shadow:0 2px 12px rgba(0,0,0,.06);padding:8px 12px; }
 .nav button { flex-shrink:0;padding:9px 16px;font-size:13px;background:none;border:none;cursor:pointer;color:#777;white-space:nowrap;transition:.2s;font-weight:500;border-radius:20px;margin:0 2px; }
 .nav button.active { color:#fff;font-weight:700;background:linear-gradient(135deg,#c9254e,#e8416c);box-shadow:0 3px 10px rgba(201,37,78,.32); }
 .nav button:hover:not(.active) { background:#f6edf0;color:#9c2042; }
 
-/* ── LAYOUT ── */
+/* -- LAYOUT -- */
 .content { padding:1.75rem;max-width:1100px;margin:0 auto; }
 .grid4 { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:1.25rem; }
 .grid2 { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:1.25rem; }
@@ -67,18 +67,18 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Robo
   .grid2 { grid-template-columns: 1fr; }
 }
 
-/* ── METRIC CARDS ── */
+/* -- METRIC CARDS -- */
 .metric { background:#fff;border-radius:18px;padding:1.5rem 1.3rem;box-shadow:0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.05);transition:.25s cubic-bezier(.2,.8,.3,1);border:1px solid rgba(0,0,0,.04); }
 .metric:hover { box-shadow:0 4px 12px rgba(0,0,0,.08), 0 16px 40px rgba(201,37,78,.1);transform:translateY(-3px); }
 .metric .lbl { font-size:11px;color:#9a948e;margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px; }
 .metric .val { font-size:34px;font-weight:800;color:#1a1a1a;line-height:1;letter-spacing:-1px;font-variant-numeric:tabular-nums; }
 .metric .sub { font-size:11px;color:#b6b0aa;margin-top:9px; }
 
-/* ── CARDS ── */
+/* -- CARDS -- */
 .card { background:#fff;border:1px solid rgba(0,0,0,.05);border-radius:18px;padding:1.5rem 1.7rem;margin-bottom:1.4rem;box-shadow:0 1px 3px rgba(0,0,0,.03), 0 6px 20px rgba(0,0,0,.04); }
 .card-title { font-size:13px;font-weight:700;color:#2b2622;margin-bottom:1rem;display:flex;align-items:center;gap:8px;padding-bottom:.8rem;border-bottom:1px solid rgba(0,0,0,.05);letter-spacing:.1px; }
 
-/* ── TABLES ── */
+/* -- TABLES -- */
 table { width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border-radius:12px;overflow:hidden; }
 th { text-align:left;font-weight:700;color:#857f78;padding:11px 13px;border-bottom:2px solid #f0ebe6;font-size:10.5px;background:#faf7f4;text-transform:uppercase;letter-spacing:.6px; }
 td { padding:11px 13px;border-bottom:1px solid rgba(0,0,0,.04);font-variant-numeric:tabular-nums; }
@@ -86,7 +86,7 @@ tr:last-child td { border-bottom:none; }
 tbody tr:nth-child(odd) td { background:#fbf9f7; }
 tbody tr:hover td { background:#fdf0f4; }
 
-/* ── BADGES ── */
+/* -- BADGES -- */
 .badge { display:inline-block;padding:3px 11px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.2px; }
 .ok { background:#eaf3de;color:#3b6d11; }
 .err { background:#fcebeb;color:#a32d2d; }
@@ -95,7 +95,7 @@ tbody tr:hover td { background:#fdf0f4; }
 .pink { background:#fbeaf0;color:#993556; }
 .teal { background:#e1f5ee;color:#0f6e56; }
 
-/* ── SECTION INTRO BOX ── */
+/* -- SECTION INTRO BOX -- */
 .section-intro {
   background: linear-gradient(135deg, #fef0f5 0%, #fff5f8 100%);
   border: 1px solid rgba(232,65,108,.2);
@@ -109,7 +109,7 @@ tbody tr:hover td { background:#fdf0f4; }
 }
 .section-intro code { background: rgba(0,0,0,.07); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
 
-/* ── MISC UI ── */
+/* -- MISC UI -- */
 .bar-wrap { background:#e0e0e0;border-radius:4px;height:6px;overflow:hidden;flex:1; }
 .bar { height:6px;border-radius:4px;background:#E8416C; }
 .controls { display:flex;gap:10px;margin-bottom:1.25rem;align-items:center;flex-wrap:wrap; }
@@ -123,7 +123,7 @@ button:hover { background:#f7f2ee;border-color:#d8d0c8; }
 .feature .title { font-size:13px;font-weight:600;margin-bottom:2px; }
 .feature .desc  { font-size:12px;color:#666; }
 
-/* ── CONFIG ── */
+/* -- CONFIG -- */
 .cfg-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:1rem; }
 @media (max-width: 700px) { .cfg-grid { grid-template-columns: 1fr; } }
 .cfg-card { background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:18px;padding:1.35rem 1.5rem;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.03); }
@@ -145,7 +145,7 @@ button:hover { background:#f7f2ee;border-color:#d8d0c8; }
 input:checked + .slider { background:#1D9E75; }
 input:checked + .slider:before { transform:translateX(22px); }
 
-/* ── GLOBAL STATUS BAR ── */
+/* -- GLOBAL STATUS BAR -- */
 .global-status {
   position: sticky; top: 53px; z-index: 9;
   background: rgba(255,255,255,.94); backdrop-filter: blur(10px);
@@ -167,7 +167,7 @@ input:checked + .slider:before { transform:translateX(22px); }
 .gsb-sep  { color: #ddd; }
 .gsb-meta { color: #999; font-size: 11px; }
 
-/* ── TOOLTIPS ── */
+/* -- TOOLTIPS -- */
 .tooltip-wrap { position: relative; display: inline-flex; align-items: center; gap: 5px; }
 .tooltip-icon { width: 15px; height: 15px; border-radius: 50%; background: #e0e0e0; color: #555;
   font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
@@ -179,7 +179,7 @@ input:checked + .slider:before { transform:translateX(22px); }
 .tooltip-box::before { content: ''; position: absolute; left: -5px; top: 10px;
   border: 5px solid transparent; border-right-color: #222; border-left: none; }
 
-/* ── MODAL CONFIRMACION ── */
+/* -- MODAL CONFIRMACION -- */
 .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 500;
   align-items: center; justify-content: center; }
 .modal-overlay.show { display: flex; }
@@ -198,21 +198,21 @@ input:checked + .slider:before { transform:translateX(22px); }
   font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 3px 10px rgba(201,37,78,.3); }
 .modal-confirm:hover { background: linear-gradient(135deg,#a81f40,#c9254e); }
 
-/* ── KPI LEGEND ── */
+/* -- KPI LEGEND -- */
 .kpi-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 1rem; font-size: 12px; }
 .kpi-legend-item { display: flex; align-items: center; gap: 5px; color: #666; }
 
-/* ── FECHA FILTER ── */
+/* -- FECHA FILTER -- */
 .date-range { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #888; }
 .date-range input[type="date"] { padding: 5px 8px; font-size: 12px; border-radius: 6px; border: 1px solid #ddd; }
 
-/* ── TOAST ── */
+/* -- TOAST -- */
 .toast { position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:13px 22px;border-radius:10px;font-size:13px;color:#fff;z-index:1000;display:none;animation:slideUp .3s;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,.2); }
 .toast.show { display:block; }
 .toast.ok { background:#1D9E75; } .toast.err { background:#E24B4A; }
 @keyframes slideUp { from { opacity:0; transform:translate(-50%, 20px); } to { opacity:1; transform:translate(-50%, 0); } }
 
-/* ── BUTTONS ── */
+/* -- BUTTONS -- */
 .btn-primary { background:linear-gradient(135deg,#c9254e,#e8416c);color:#fff;border:none;padding:11px 28px;border-radius:24px;font-size:14px;font-weight:700;cursor:pointer;transition:.2s;box-shadow:0 3px 12px rgba(201,37,78,.3);letter-spacing:.2px; }
 .btn-primary:hover { background:linear-gradient(135deg,#a81f40,#c9254e);box-shadow:0 6px 18px rgba(201,37,78,.4);transform:translateY(-1px); }
 .btn-primary:disabled { opacity:.5;cursor:not-allowed; }
@@ -221,7 +221,7 @@ input:checked + .slider:before { transform:translateX(22px); }
 .btn-action b { display:block;color:#c9254e;margin-bottom:4px;font-size:15px; }
 .btn-action span { color:#999;font-size:12px; }
 
-/* ── STATUS BARS ── */
+/* -- STATUS BARS -- */
 .estado-bar { padding:14px 18px;border-radius:12px;margin-bottom:1rem;font-size:13px;display:flex;align-items:center;gap:10px;font-weight:500; }
 .estado-bar.ok   { background:#eaf3de;color:#3b6d11; }
 .estado-bar.warn { background:#faeeda;color:#854f0b; }
@@ -234,11 +234,11 @@ input:checked + .slider:before { transform:translateX(22px); }
 .tl-text { font-size:13px;color:#444;line-height:1.5;margin-top:2px; }
 .chip { display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;background:#f0eeea;color:#555;margin:2px; }
 
-/* ── NAV AGRUPADO ── */
+/* -- NAV AGRUPADO -- */
 .nav-group-label { flex-shrink:0;display:flex;align-items:center;font-size:10px;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:.8px;padding:0 6px 0 14px;border-left:1px solid #eee;margin-left:6px;user-select:none; }
 .nav-group-label:first-of-type { border-left:none;margin-left:0;padding-left:6px; }
 
-/* ── PESTAÑA INICIO ── */
+/* -- PESTA-A INICIO -- */
 .home-hero { background:linear-gradient(130deg,#fff 0%,#fff3f7 55%,#ffeaf1 100%);border:1px solid rgba(232,65,108,.14);border-radius:22px;padding:2.5rem 2rem;margin-bottom:1.75rem;text-align:center;position:relative;overflow:hidden;box-shadow:0 2px 8px rgba(232,65,108,.05); }
 .home-hero::before { content:'';position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(232,65,108,.07) 0%,transparent 70%);top:-150px;left:-60px;pointer-events:none; }
 .home-hero::after  { content:'';position:absolute;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(232,65,108,.06) 0%,transparent 70%);bottom:-130px;right:-50px;pointer-events:none; }
@@ -256,7 +256,7 @@ input:checked + .slider:before { transform:translateX(22px); }
 .home-card .hc-title { font-size:14.5px;font-weight:700;color:#1a1a1a;margin-bottom:5px;letter-spacing:-.1px; }
 .home-card .hc-desc { font-size:12px;color:#8b857f;line-height:1.6; }
 
-/* ── TOUR DE BIENVENIDA ── */
+/* -- TOUR DE BIENVENIDA -- */
 .tour-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:600;align-items:center;justify-content:center; }
 .tour-overlay.show { display:flex; }
 .tour-box { background:#fff;border-radius:20px;padding:2rem;max-width:440px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:modalIn .25s; }
@@ -276,131 +276,131 @@ input:checked + .slider:before { transform:translateX(22px); }
 <body>
 <div class="header">
   <div>
-    <h1>🤖 Argos</h1>
-    <div class="sub">Panel de control · Tienda 456 Parque Antenas · <span style="opacity:.7">v1.4.0</span> · <span id="hdr-fecha" style="opacity:.8"></span></div>
+    <h1>&#x1f916; Argos</h1>
+    <div class="sub">Panel de control &#xb7; Tienda 456 Parque Antenas &#xb7; <span style="opacity:.7">v1.4.0</span> &#xb7; <span id="hdr-fecha" style="opacity:.8"></span></div>
   </div>
   <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <button class="btn-ayuda" onclick="iniciarTour()" title="Ver el tour de bienvenida">❓ Ayuda</button>
+    <button class="btn-ayuda" onclick="iniciarTour()" title="Ver el tour de bienvenida">&#x2753; Ayuda</button>
     <div class="status-pill"><span class="dot dot-off" id="dot"></span><span id="status-txt">Cargando...</span></div>
-    <div style="font-size:12px;opacity:.8;background:rgba(255,255,255,.15);padding:4px 12px;border-radius:12px" id="hdr-ultima">—</div>
+    <div style="font-size:12px;opacity:.8;background:rgba(255,255,255,.15);padding:4px 12px;border-radius:12px" id="hdr-ultima">&#x2014;</div>
   </div>
 </div>
 
-<!-- ── BARRA DE ESTADO GLOBAL (visible desde cualquier pestaña) ── -->
+<!-- &#x2500;&#x2500; BARRA DE ESTADO GLOBAL (visible desde cualquier pesta&#xf1;a) &#x2500;&#x2500; -->
 <div class="global-status" id="global-status-bar">
   <div class="gsb-pill gsb-info" id="gsb-estado"><span class="dot" id="gsb-dot" style="background:#aaa"></span> Cargando...</div>
   <span class="gsb-sep">|</span>
-  <span class="gsb-meta">🕐 Última ejecución: <b id="gsb-ultima">—</b></span>
+  <span class="gsb-meta">&#x1f550; &#xda;ltima ejecuci&#xf3;n: <b id="gsb-ultima">&#x2014;</b></span>
   <span class="gsb-sep">|</span>
-  <span class="gsb-meta">📦 Remisiones: <b id="gsb-total">—</b></span>
+  <span class="gsb-meta">&#x1f4e6; Remisiones: <b id="gsb-total">&#x2014;</b></span>
   <span class="gsb-sep">|</span>
-  <span class="gsb-meta">🔥 Vencidas: <b id="gsb-vencidas" style="color:#E24B4A">—</b></span>
+  <span class="gsb-meta">&#x1f525; Vencidas: <b id="gsb-vencidas" style="color:#E24B4A">&#x2014;</b></span>
   <span class="gsb-sep">|</span>
-  <span class="gsb-meta">⏱ Duración: <b id="gsb-dur">—</b></span>
+  <span class="gsb-meta">&#x23f1; Duraci&#xf3;n: <b id="gsb-dur">&#x2014;</b></span>
   <span style="margin-left:auto;font-size:11px;color:#ccc" id="gsb-refresh"></span>
 </div>
 <div class="nav">
-  <button class="active" data-tab="inicio" onclick="showTab('inicio',this)">🏠 Inicio</button>
-  <span class="nav-group-label">Día a día</span>
-  <button data-tab="monitor" onclick="showTab('monitor',this)">📊 Monitor</button>
-  <button data-tab="tiempos" onclick="showTab('tiempos',this)">⏱ KPI Tiempos</button>
-  <button data-tab="logs" onclick="showTab('logs',this)">📜 Logs</button>
+  <button class="active" data-tab="inicio" onclick="showTab('inicio',this)">&#x1f3e0; Inicio</button>
+  <span class="nav-group-label">D&#xed;a a d&#xed;a</span>
+  <button data-tab="monitor" onclick="showTab('monitor',this)">&#x1f4ca; Monitor</button>
+  <button data-tab="tiempos" onclick="showTab('tiempos',this)">&#x23f1; KPI Tiempos</button>
+  <button data-tab="logs" onclick="showTab('logs',this)">&#x1f4dc; Logs</button>
   <span class="nav-group-label">Equipo</span>
-  <button data-tab="jefes" onclick="showTab('jefes',this)">👔 Jefes</button>
-  <button data-tab="descansos" onclick="showTab('descansos',this)">🏖️ Descansos</button>
-  <button data-tab="routing" onclick="showTab('routing',this)">📨 Rutas mensajes</button>
+  <button data-tab="jefes" onclick="showTab('jefes',this)">&#x1f454; Jefes</button>
+  <button data-tab="descansos" onclick="showTab('descansos',this)">&#x1f3d6;&#xfe0f; Descansos</button>
+  <button data-tab="routing" onclick="showTab('routing',this)">&#x1f4e8; Rutas mensajes</button>
   <span class="nav-group-label">Sistema</span>
-  <button data-tab="config" onclick="showTab('config',this)">⚙️ Configuración</button>
-  <button data-tab="acciones" onclick="showTab('acciones',this)">🔧 Acciones</button>
-  <button data-tab="mensajes" onclick="showTab('mensajes',this)">📅 Mensajes</button>
-  <button data-tab="pcs" onclick="showTab('pcs',this)">💻 PCs</button>
-  <button data-tab="pruebas" onclick="showTab('pruebas',this)">🧪 Pruebas</button>
+  <button data-tab="config" onclick="showTab('config',this)">&#x2699;&#xfe0f; Configuraci&#xf3;n</button>
+  <button data-tab="acciones" onclick="showTab('acciones',this)">&#x1f527; Acciones</button>
+  <button data-tab="mensajes" onclick="showTab('mensajes',this)">&#x1f4c5; Mensajes</button>
+  <button data-tab="pcs" onclick="showTab('pcs',this)">&#x1f4bb; PCs</button>
+  <button data-tab="pruebas" onclick="showTab('pruebas',this)">&#x1f9ea; Pruebas</button>
 </div>
 <div class="content">
 
-<!-- ── INICIO ── -->
+<!-- &#x2500;&#x2500; INICIO &#x2500;&#x2500; -->
 <div id="tab-inicio" class="section active" style="margin-top:1rem">
   <div class="home-hero">
-    <h2>👋 Bienvenido al panel de Argos</h2>
-    <p>Argos es el bot que vigila las remisiones de OMS y avisa por Google Chat a jefes y vendedores cuando hay artículos pendientes de entregar. Desde este panel puedes ver cómo va el día, gestionar al equipo y configurar el bot — <b>elige abajo qué quieres hacer</b>.</p>
+    <h2>&#x1f44b; Bienvenido al panel de Argos</h2>
+    <p>Argos es el bot que vigila las remisiones de OMS y avisa por Google Chat a jefes y vendedores cuando hay art&#xed;culos pendientes de entregar. Desde este panel puedes ver c&#xf3;mo va el d&#xed;a, gestionar al equipo y configurar el bot &#x2014; <b>elige abajo qu&#xe9; quieres hacer</b>.</p>
   </div>
 
-  <div class="home-group-title">📈 Ver cómo va el día</div>
+  <div class="home-group-title">&#x1f4c8; Ver c&#xf3;mo va el d&#xed;a</div>
   <div class="home-grid">
     <div class="home-card" onclick="irATab('monitor')">
-      <div class="hc-icon">📊</div>
+      <div class="hc-icon">&#x1f4ca;</div>
       <div class="hc-title">Monitor</div>
-      <div class="hc-desc">Cuántas remisiones hay ahorita, cuántas están vencidas y si el bot está corriendo bien.</div>
+      <div class="hc-desc">Cu&#xe1;ntas remisiones hay ahorita, cu&#xe1;ntas est&#xe1;n vencidas y si el bot est&#xe1; corriendo bien.</div>
     </div>
     <div class="home-card" onclick="irATab('tiempos')">
-      <div class="hc-icon">⏱</div>
+      <div class="hc-icon">&#x23f1;</div>
       <div class="hc-title">KPI Tiempos</div>
-      <div class="hc-desc">Cuánto tardan los vendedores en surtir cada remisión, con semáforo de colores.</div>
+      <div class="hc-desc">Cu&#xe1;nto tardan los vendedores en surtir cada remisi&#xf3;n, con sem&#xe1;foro de colores.</div>
     </div>
     <div class="home-card" onclick="irATab('logs')">
-      <div class="hc-icon">📜</div>
+      <div class="hc-icon">&#x1f4dc;</div>
       <div class="hc-title">Logs</div>
-      <div class="hc-desc">El registro detallado de todo lo que el bot ha hecho, por si algo salió raro.</div>
+      <div class="hc-desc">El registro detallado de todo lo que el bot ha hecho, por si algo sali&#xf3; raro.</div>
     </div>
   </div>
 
-  <div class="home-group-title">👥 Gestionar al equipo</div>
+  <div class="home-group-title">&#x1f465; Gestionar al equipo</div>
   <div class="home-grid">
     <div class="home-card" onclick="irATab('jefes')">
-      <div class="hc-icon">👔</div>
+      <div class="hc-icon">&#x1f454;</div>
       <div class="hc-title">Jefes</div>
-      <div class="hc-desc">Ver qué jefe es responsable de cada sección y en qué piso está.</div>
+      <div class="hc-desc">Ver qu&#xe9; jefe es responsable de cada secci&#xf3;n y en qu&#xe9; piso est&#xe1;.</div>
     </div>
     <div class="home-card" onclick="irATab('descansos')">
-      <div class="hc-icon">🏖️</div>
+      <div class="hc-icon">&#x1f3d6;&#xfe0f;</div>
       <div class="hc-title">Descansos</div>
-      <div class="hc-desc">Registrar cuándo descansa un jefe y quién lo cubre, para que los avisos lleguen a la persona correcta.</div>
+      <div class="hc-desc">Registrar cu&#xe1;ndo descansa un jefe y qui&#xe9;n lo cubre, para que los avisos lleguen a la persona correcta.</div>
     </div>
     <div class="home-card" onclick="irATab('routing')">
-      <div class="hc-icon">📨</div>
+      <div class="hc-icon">&#x1f4e8;</div>
       <div class="hc-title">Rutas de mensajes</div>
-      <div class="hc-desc">A qué chat le llega el mensaje de cada jefe, y activar o desactivar sus avisos personales.</div>
+      <div class="hc-desc">A qu&#xe9; chat le llega el mensaje de cada jefe, y activar o desactivar sus avisos personales.</div>
     </div>
   </div>
 
-  <div class="home-group-title">⚙️ Configurar el sistema</div>
+  <div class="home-group-title">&#x2699;&#xfe0f; Configurar el sistema</div>
   <div class="home-grid">
     <div class="home-card" onclick="irATab('config')">
-      <div class="hc-icon">⚙️</div>
-      <div class="hc-title">Configuración</div>
-      <div class="hc-desc">Horario del bot, días activos, frecuencia de mensajes y pausa total.</div>
+      <div class="hc-icon">&#x2699;&#xfe0f;</div>
+      <div class="hc-title">Configuraci&#xf3;n</div>
+      <div class="hc-desc">Horario del bot, d&#xed;as activos, frecuencia de mensajes y pausa total.</div>
     </div>
     <div class="home-card" onclick="irATab('acciones')">
-      <div class="hc-icon">🔧</div>
-      <div class="hc-title">Acciones rápidas</div>
-      <div class="hc-desc">Pausar o reanudar el bot con un clic, limpiar la cola de mensajes y más.</div>
+      <div class="hc-icon">&#x1f527;</div>
+      <div class="hc-title">Acciones r&#xe1;pidas</div>
+      <div class="hc-desc">Pausar o reanudar el bot con un clic, limpiar la cola de mensajes y m&#xe1;s.</div>
     </div>
     <div class="home-card" onclick="irATab('mensajes')">
-      <div class="hc-icon">📅</div>
+      <div class="hc-icon">&#x1f4c5;</div>
       <div class="hc-title">Mensajes programados</div>
-      <div class="hc-desc">Crear recordatorios automáticos que el bot manda cada cierto número de ciclos.</div>
+      <div class="hc-desc">Crear recordatorios autom&#xe1;ticos que el bot manda cada cierto n&#xfa;mero de ciclos.</div>
     </div>
     <div class="home-card" onclick="irATab('pcs')">
-      <div class="hc-icon">💻</div>
+      <div class="hc-icon">&#x1f4bb;</div>
       <div class="hc-title">PCs</div>
-      <div class="hc-desc">Ver desde qué computadoras corre el bot y pausar alguna en específico.</div>
+      <div class="hc-desc">Ver desde qu&#xe9; computadoras corre el bot y pausar alguna en espec&#xed;fico.</div>
     </div>
     <div class="home-card" onclick="irATab('pruebas')">
-      <div class="hc-icon">🧪</div>
+      <div class="hc-icon">&#x1f9ea;</div>
       <div class="hc-title">Pruebas</div>
       <div class="hc-desc">Mandar un mensaje de prueba a cualquier chat para verificar que los webhooks funcionan.</div>
     </div>
     <div class="home-card" onclick="iniciarTour()" style="border-style:dashed">
-      <div class="hc-icon">❓</div>
-      <div class="hc-title">¿Primera vez aquí?</div>
+      <div class="hc-icon">&#x2753;</div>
+      <div class="hc-title">&#xbf;Primera vez aqu&#xed;?</div>
       <div class="hc-desc">Haz el tour de bienvenida de 1 minuto para conocer el panel paso a paso.</div>
     </div>
   </div>
 </div>
 
-<!-- ── MONITOR ── -->
+<!-- &#x2500;&#x2500; MONITOR &#x2500;&#x2500; -->
 <div id="tab-monitor" class="section" style="margin-top:1rem">
-  <div class="section-intro">📊 <b>Monitor en tiempo real</b> — Aquí puedes ver el historial de ejecuciones del bot, métricas de rendimiento y el estado actual de las remisiones.</div>
+  <div class="section-intro">&#x1f4ca; <b>Monitor en tiempo real</b> &#x2014; Aqu&#xed; puedes ver el historial de ejecuciones del bot, m&#xe9;tricas de rendimiento y el estado actual de las remisiones.</div>
   <div class="controls">
     <select id="filtro" onchange="renderAll()">
       <option value="5">Ultimas 5</option><option value="10">Ultimas 10</option>
@@ -409,14 +409,14 @@ input:checked + .slider:before { transform:translateX(22px); }
     <select id="filtro-estado" onchange="renderAll()">
       <option value="todos">Todos</option><option value="exitosa">Solo exitosas</option><option value="error">Solo errores</option>
     </select>
-    <button onclick="cargar()">🔄 Actualizar</button>
-    <button onclick="exportarCSV()" title="Descargar CSV">⬇️ CSV</button>
+    <button onclick="cargar()">&#x1f504; Actualizar</button>
+    <button onclick="exportarCSV()" title="Descargar CSV">&#x2b07;&#xfe0f; CSV</button>
     <div class="date-range">
       <span>Del</span>
       <input type="date" id="filtro-fecha-ini" onchange="renderAll()">
       <span>al</span>
       <input type="date" id="filtro-fecha-fin" onchange="renderAll()">
-      <button onclick="limpiarFiltroFecha()" style="font-size:11px;padding:4px 8px">✕ Limpiar</button>
+      <button onclick="limpiarFiltroFecha()" style="font-size:11px;padding:4px 8px">&#x2715; Limpiar</button>
     </div>
     <span style="font-size:12px;color:#aaa;margin-left:auto" id="ultima"></span>
     <span style="font-size:12px;color:#aaa" id="refresh-countdown"></span>
@@ -426,23 +426,23 @@ input:checked + .slider:before { transform:translateX(22px); }
   <!-- Tarjetas de estatus actual (desde hoja METRICAS) -->
   <div class="grid4" id="cards-metricas" style="margin-bottom:1rem">
     <div class="metric" style="border-left:4px solid #E24B4A;background:#fff">
-      <div class="lbl">🔴 Mercancia en Espera</div>
-      <div class="val" id="m-espera">—</div>
+      <div class="lbl">&#x1f534; Mercancia en Espera</div>
+      <div class="val" id="m-espera">&#x2014;</div>
       <div class="sub" id="m-espera-sub">Cargando...</div>
     </div>
     <div class="metric" style="border-left:4px solid #1D9E75;background:#fff">
-      <div class="lbl">🏷️ Etiquetas Generadas</div>
-      <div class="val" id="m-etiquetas">—</div>
+      <div class="lbl">&#x1f3f7;&#xfe0f; Etiquetas Generadas</div>
+      <div class="val" id="m-etiquetas">&#x2014;</div>
       <div class="sub" id="m-etiquetas-sub"></div>
     </div>
     <div class="metric" style="border-left:4px solid #F5A623;background:#fff">
-      <div class="lbl">⚠️ Sin Asignar</div>
-      <div class="val" id="m-sin-asignar">—</div>
+      <div class="lbl">&#x26a0;&#xfe0f; Sin Asignar</div>
+      <div class="val" id="m-sin-asignar">&#x2014;</div>
       <div class="sub" id="m-sin-asignar-sub"></div>
     </div>
     <div class="metric" style="border-left:4px solid #c9254e;background:#fff">
-      <div class="lbl">🔥 Vencidas (+20 min)</div>
-      <div class="val" id="m-vencidas-hoy">—</div>
+      <div class="lbl">&#x1f525; Vencidas (+20 min)</div>
+      <div class="val" id="m-vencidas-hoy">&#x2014;</div>
       <div class="sub" id="m-vencidas-sub"></div>
     </div>
   </div>
@@ -452,7 +452,7 @@ input:checked + .slider:before { transform:translateX(22px); }
     <div class="card"><div class="card-title">Duracion por ejecucion (seg)</div><div style="position:relative;height:160px"><canvas id="cT"></canvas></div></div>
     <div class="card"><div class="card-title">Intentos de descarga</div><div style="position:relative;height:160px"><canvas id="cI"></canvas></div></div>
   </div>
-  <div class="card"><div class="card-title">📈 Tendencia de vencidas (ultimas ejecuciones)</div><div style="position:relative;height:140px"><canvas id="cV"></canvas></div></div>
+  <div class="card"><div class="card-title">&#x1f4c8; Tendencia de vencidas (ultimas ejecuciones)</div><div style="position:relative;height:140px"><canvas id="cV"></canvas></div></div>
   <div class="card">
     <div class="card-title">Historial de ejecuciones</div>
     <table><thead><tr><th>#</th><th>Fecha</th><th>Hora</th><th>Duracion</th><th>Remisiones</th><th>Vencidas</th><th>Intentos</th><th>Estado</th></tr></thead>
@@ -461,18 +461,18 @@ input:checked + .slider:before { transform:translateX(22px); }
   </div>
 </div>
 
-<!-- ── CONFIGURACION ── -->
+<!-- &#x2500;&#x2500; CONFIGURACION &#x2500;&#x2500; -->
 <div id="tab-config" class="section" style="margin-top:1rem">
-  <div class="section-intro">⚙️ <b>Configuración</b> — Ajusta el horario de operación, los días activos y los umbrales del bot. Los cambios aplican en la siguiente ejecución.</div>
-  <div id="cfg-estado" class="estado-bar warn">⏳ Cargando...</div>
+  <div class="section-intro">&#x2699;&#xfe0f; <b>Configuraci&#xf3;n</b> &#x2014; Ajusta el horario de operaci&#xf3;n, los d&#xed;as activos y los umbrales del bot. Los cambios aplican en la siguiente ejecuci&#xf3;n.</div>
+  <div id="cfg-estado" class="estado-bar warn">&#x23f3; Cargando...</div>
   <div class="cfg-grid">
-    <div class="cfg-card"><h3>⏰ Horario</h3>
+    <div class="cfg-card"><h3>&#x23f0; Horario</h3>
       <div class="cfg-row">
         <label class="tooltip-wrap">Hora de inicio <span class="tooltip-icon">i</span><span class="tooltip-box">El bot empieza a correr a esta hora (formato 24h). Ej: 10 = 10:00 AM</span></label>
         <input type="number" id="cfg-hora-inicio" min="0" max="23" value="10">
       </div>
       <div class="cfg-row">
-        <label class="tooltip-wrap">Hora de fin <span class="tooltip-icon">i</span><span class="tooltip-box">El bot deja de correr a esta hora. Combínala con el minuto de fin.</span></label>
+        <label class="tooltip-wrap">Hora de fin <span class="tooltip-icon">i</span><span class="tooltip-box">El bot deja de correr a esta hora. Comb&#xed;nala con el minuto de fin.</span></label>
         <input type="number" id="cfg-hora-fin" min="0" max="23" value="21">
       </div>
       <div class="cfg-row">
@@ -480,15 +480,15 @@ input:checked + .slider:before { transform:translateX(22px); }
         <input type="number" id="cfg-minuto-fin" min="0" max="59" value="30">
       </div>
     </div>
-    <div class="cfg-card"><h3>🔄 Estado del bot</h3>
+    <div class="cfg-card"><h3>&#x1f504; Estado del bot</h3>
       <div class="cfg-row">
-        <label class="tooltip-wrap">Pausa total <span class="tooltip-icon">i</span><span class="tooltip-box">Al activar, el bot NO descarga datos ni manda mensajes. Útil para mantenimiento.</span></label>
+        <label class="tooltip-wrap">Pausa total <span class="tooltip-icon">i</span><span class="tooltip-box">Al activar, el bot NO descarga datos ni manda mensajes. &#xda;til para mantenimiento.</span></label>
         <label class="toggle"><input type="checkbox" id="cfg-pausado"><span class="slider"></span></label>
       </div>
       <div style="font-size:11px;color:#888;margin-top:8px;line-height:1.5">Activado: el bot no descarga ni manda mensajes</div>
     </div>
   </div>
-  <div class="cfg-card" style="margin-bottom:1rem"><h3>📅 Dias activos</h3>
+  <div class="cfg-card" style="margin-bottom:1rem"><h3>&#x1f4c5; Dias activos</h3>
     <div id="cfg-dias" style="margin-top:8px">
       <span class="dia-chip" data-dia="lun">Lun</span><span class="dia-chip" data-dia="mar">Mar</span>
       <span class="dia-chip" data-dia="mie">Mie</span><span class="dia-chip" data-dia="jue">Jue</span>
@@ -497,28 +497,28 @@ input:checked + .slider:before { transform:translateX(22px); }
     </div>
   </div>
   <div class="cfg-grid">
-    <div class="cfg-card"><h3>⚠️ Umbrales</h3>
+    <div class="cfg-card"><h3>&#x26a0;&#xfe0f; Umbrales</h3>
       <div class="cfg-row">
-        <label class="tooltip-wrap">Vencida (min) <span class="tooltip-icon">i</span><span class="tooltip-box">Una remisión se marca como vencida si lleva más de X minutos sin atenderse. Default: 20 min.</span></label>
+        <label class="tooltip-wrap">Vencida (min) <span class="tooltip-icon">i</span><span class="tooltip-box">Una remisi&#xf3;n se marca como vencida si lleva m&#xe1;s de X minutos sin atenderse. Default: 20 min.</span></label>
         <input type="number" id="cfg-vencida" min="5" max="120" value="20">
       </div>
       <div class="cfg-row">
-        <label class="tooltip-wrap">Anomalia (factor) <span class="tooltip-icon">i</span><span class="tooltip-box">Se manda alerta si las vencidas superan el promedio × este factor. Ej: factor 1.5 = alerta si hay 50% más que lo normal.</span></label>
+        <label class="tooltip-wrap">Anomalia (factor) <span class="tooltip-icon">i</span><span class="tooltip-box">Se manda alerta si las vencidas superan el promedio &#xd7; este factor. Ej: factor 1.5 = alerta si hay 50% m&#xe1;s que lo normal.</span></label>
         <input type="number" id="cfg-anomalia" step=".1" min="1" max="5" value="1.5">
       </div>
     </div>
-    <div class="cfg-card"><h3>🐕 Watchdog</h3>
+    <div class="cfg-card"><h3>&#x1f415; Watchdog</h3>
       <div class="cfg-row">
         <label class="tooltip-wrap">Watchdog activo <span class="tooltip-icon">i</span><span class="tooltip-box">El watchdog vigila que el bot corra. Si no detecta actividad en X minutos, manda una alerta al Chat.</span></label>
         <label class="toggle"><input type="checkbox" id="cfg-watchdog-activo" checked><span class="slider"></span></label>
       </div>
       <div class="cfg-row">
-        <label class="tooltip-wrap">Alertar después de <span class="tooltip-icon">i</span><span class="tooltip-box">Si el bot no se ejecuta en este tiempo (en minutos), el watchdog manda alerta. Recomendado: 30 min.</span></label>
+        <label class="tooltip-wrap">Alertar despu&#xe9;s de <span class="tooltip-icon">i</span><span class="tooltip-box">Si el bot no se ejecuta en este tiempo (en minutos), el watchdog manda alerta. Recomendado: 30 min.</span></label>
         <input type="number" id="cfg-watchdog" min="15" max="120" value="30" style="width:100px"> <span style="font-size:11px;color:#888">min</span>
       </div>
       <div style="font-size:11px;color:#888;margin-top:8px">Si el bot no corre en X minutos, manda alerta</div>
     </div>
-    <div class="cfg-card"><h3>📊 Resumen</h3>
+    <div class="cfg-card"><h3>&#x1f4ca; Resumen</h3>
       <div style="font-size:12px;color:#666;line-height:1.8">
         <div>Horario: <b id="rs-horario">10:00 - 21:30</b></div>
         <div>Dias: <b id="rs-dias">Lun a Dom</b></div>
@@ -527,12 +527,12 @@ input:checked + .slider:before { transform:translateX(22px); }
       </div>
     </div>
   </div>
-  <div class="cfg-card" style="margin-bottom:1rem"><h3>📬 Frecuencia de mensajes</h3>
+  <div class="cfg-card" style="margin-bottom:1rem"><h3>&#x1f4ec; Frecuencia de mensajes</h3>
     <div style="font-size:11px;color:#888;margin-bottom:14px;line-height:1.6">
-      1 ciclo ≈ 15 min. <b>No configurables:</b> buenos días, cierre y KPI tiempos.
+      1 ciclo &#x2248; 15 min. <b>No configurables:</b> buenos d&#xed;as, cierre y KPI tiempos.
     </div>
     <div class="cfg-row">
-      <label class="tooltip-wrap">Ciclos entre mensajes de jefes <span class="tooltip-icon">i</span><span class="tooltip-box">Cada cuántos ciclos se manda el resumen por piso al espacio Jefes. 2 = cada ~30 min, 3 = cada ~45 min.</span></label>
+      <label class="tooltip-wrap">Ciclos entre mensajes de jefes <span class="tooltip-icon">i</span><span class="tooltip-box">Cada cu&#xe1;ntos ciclos se manda el resumen por piso al espacio Jefes. 2 = cada ~30 min, 3 = cada ~45 min.</span></label>
       <div style="display:flex;align-items:center;gap:6px">
         <input type="number" id="cfg-ciclos-jefes" min="1" max="20" value="2" style="width:70px" oninput="actualizarLabelCiclos('cfg-ciclos-jefes','lbl-ciclos-jefes')">
         <span id="lbl-ciclos-jefes" style="font-size:11px;color:#888">ciclos (~30 min)</span>
@@ -546,73 +546,73 @@ input:checked + .slider:before { transform:translateX(22px); }
       </div>
     </div>
     <div class="cfg-row" style="margin-top:10px">
-      <label class="tooltip-wrap">Ciclos entre mensajes de reporte <span class="tooltip-icon">i</span><span class="tooltip-box">Cada cuántos ciclos se manda el resumen al espacio Reporte. 1 = cada ciclo (~15 min).</span></label>
+      <label class="tooltip-wrap">Ciclos entre mensajes de reporte <span class="tooltip-icon">i</span><span class="tooltip-box">Cada cu&#xe1;ntos ciclos se manda el resumen al espacio Reporte. 1 = cada ciclo (~15 min).</span></label>
       <div style="display:flex;align-items:center;gap:6px">
         <input type="number" id="cfg-ciclos-reporte" min="1" max="20" value="1" style="width:70px" oninput="actualizarLabelCiclos('cfg-ciclos-reporte','lbl-ciclos-reporte')">
         <span id="lbl-ciclos-reporte" style="font-size:11px;color:#888">ciclo (~15 min)</span>
       </div>
     </div>
     <div class="cfg-row" style="margin-top:10px">
-      <label class="tooltip-wrap">Hora del recordatorio de cierre <span class="tooltip-icon">i</span><span class="tooltip-box">El bot manda el aviso "falta una hora" en el ciclo más cercano a esta hora. Ej: 20:30 → manda entre 20:30 y 20:45.</span></label>
+      <label class="tooltip-wrap">Hora del recordatorio de cierre <span class="tooltip-icon">i</span><span class="tooltip-box">El bot manda el aviso "falta una hora" en el ciclo m&#xe1;s cercano a esta hora. Ej: 20:30 &#x2192; manda entre 20:30 y 20:45.</span></label>
       <div style="display:flex;align-items:center;gap:6px">
         <input type="time" id="cfg-hora-record" value="20:30" style="width:110px;font-size:13px;border-radius:8px;border:1px solid #ddd;padding:4px 8px">
-        <span style="font-size:11px;color:#888">± un ciclo (~15 min)</span>
+        <span style="font-size:11px;color:#888">&#xb1; un ciclo (~15 min)</span>
       </div>
     </div>
   </div>
 
-  <div class="cfg-card" style="margin-bottom:1rem"><h3>💬 Espacios de Chat</h3>
+  <div class="cfg-card" style="margin-bottom:1rem"><h3>&#x1f4ac; Espacios de Chat</h3>
     <div class="cfg-row" style="margin-bottom:12px">
-      <label>📢 Enviar a espacio Reporte</label>
+      <label>&#x1f4e2; Enviar a espacio Reporte</label>
       <label class="toggle"><input type="checkbox" id="cfg-env-reporte" checked><span class="slider"></span></label>
     </div>
     <div class="cfg-row full"><label style="font-size:11px;color:#888">URL Reporte</label><input type="text" id="cfg-wh-reporte"></div>
 
     <div class="cfg-row" style="margin:18px 0 12px 0">
-      <label>👔 Enviar a espacio Jefes</label>
+      <label>&#x1f454; Enviar a espacio Jefes</label>
       <label class="toggle"><input type="checkbox" id="cfg-env-jefes" checked><span class="slider"></span></label>
     </div>
     <div class="cfg-row full"><label style="font-size:11px;color:#888">URL Jefes</label><input type="text" id="cfg-wh-jefes"></div>
 
     <div class="cfg-row" style="margin:18px 0 12px 0">
-      <label>⏱️ Enviar a espacio Tiempos</label>
+      <label>&#x23f1;&#xfe0f; Enviar a espacio Tiempos</label>
       <label class="toggle"><input type="checkbox" id="cfg-env-tiempos" checked><span class="slider"></span></label>
     </div>
     <div class="cfg-row full"><label style="font-size:11px;color:#888">URL Tiempos</label><input type="text" id="cfg-wh-tiempos"></div>
 
     <div style="font-size:11px;color:#854f0b;margin-top:12px;background:#fef9f0;padding:8px 12px;border-radius:6px">
-      ℹ️ Si desactivas un espacio, el bot deja de mandarle mensajes pero sigue funcionando normal en los demas.
+      &#x2139;&#xfe0f; Si desactivas un espacio, el bot deja de mandarle mensajes pero sigue funcionando normal en los demas.
     </div>
   </div>
   <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:1rem">
-    <button onclick="cargarConfig()">🔄 Recargar</button>
-    <button class="btn-primary" id="btn-guardar" onclick="guardarConfig()">💾 Guardar</button>
+    <button onclick="cargarConfig()">&#x1f504; Recargar</button>
+    <button class="btn-primary" id="btn-guardar" onclick="guardarConfig()">&#x1f4be; Guardar</button>
   </div>
 </div>
 
-<!-- ── DESCANSOS POR JEFE ── -->
+<!-- &#x2500;&#x2500; DESCANSOS POR JEFE &#x2500;&#x2500; -->
 <div id="tab-descansos" class="section" style="margin-top:1rem">
-  <div class="section-intro">🏖️ <b>Descansos de jefes</b> — Registra cuando un jefe descansa para que el bot reasigne automáticamente sus secciones al jefe que lo cubre ese día.</div>
+  <div class="section-intro">&#x1f3d6;&#xfe0f; <b>Descansos de jefes</b> &#x2014; Registra cuando un jefe descansa para que el bot reasigne autom&#xe1;ticamente sus secciones al jefe que lo cubre ese d&#xed;a.</div>
   <div class="cfg-card" style="margin-bottom:1rem">
-    <h3>➕ Agregar descanso de jefe</h3>
+    <h3>&#x2795; Agregar descanso de jefe</h3>
     <div class="cfg-grid" style="margin-bottom:0">
-      <div class="cfg-row full"><label>📅 Fecha</label><input type="date" id="d-fecha"></div>
-      <div class="cfg-row full"><label>👤 Jefe que descansa</label>
+      <div class="cfg-row full"><label>&#x1f4c5; Fecha</label><input type="date" id="d-fecha"></div>
+      <div class="cfg-row full"><label>&#x1f464; Jefe que descansa</label>
         <select id="d-jefe-descansa" style="width:100%;text-align:left"><option value="">Cargando...</option></select>
       </div>
     </div>
-    <div class="cfg-row full" style="margin-top:8px"><label>👤 Jefe que cubre</label>
+    <div class="cfg-row full" style="margin-top:8px"><label>&#x1f464; Jefe que cubre</label>
       <select id="d-jefe-cubre" style="width:100%;text-align:left"><option value="">Cargando...</option></select>
     </div>
     <div style="margin-top:12px;text-align:right">
-      <button class="btn-primary" onclick="agregarDescanso()">➕ Agregar</button>
+      <button class="btn-primary" onclick="agregarDescanso()">&#x2795; Agregar</button>
     </div>
     <div style="font-size:11px;color:#854f0b;margin-top:10px;background:#fef9f0;padding:8px 12px;border-radius:6px">
-      ℹ️ Cuando un jefe descansa, TODAS sus secciones se reasignan al jefe que cubre. No aparecen como pendientes del jefe que descansa.
+      &#x2139;&#xfe0f; Cuando un jefe descansa, TODAS sus secciones se reasignan al jefe que cubre. No aparecen como pendientes del jefe que descansa.
     </div>
   </div>
   <div class="card">
-    <div class="card-title">📋 Descansos programados</div>
+    <div class="card-title">&#x1f4cb; Descansos programados</div>
     <table><thead><tr><th>Fecha</th><th>Jefe que descansa</th><th>Jefe que cubre</th><th></th></tr></thead>
       <tbody id="tabla-descansos"><tr><td colspan="4" style="text-align:center;color:#888;padding:1.5rem">Cargando...</td></tr></tbody>
     </table>
@@ -620,118 +620,118 @@ input:checked + .slider:before { transform:translateX(22px); }
 </div>
 
 
-<!-- ── GESTION DE JEFES ── -->
+<!-- &#x2500;&#x2500; GESTION DE JEFES &#x2500;&#x2500; -->
 <div id="tab-jefes" class="section" style="margin-top:1rem">
-  <div class="section-intro">👔 <b>Directorio de jefes</b> — El bot actualiza este directorio automáticamente. Aquí puedes consultar qué jefe está asignado a cada sección y en qué piso está.</div>
+  <div class="section-intro">&#x1f454; <b>Directorio de jefes</b> &#x2014; El bot actualiza este directorio autom&#xe1;ticamente. Aqu&#xed; puedes consultar qu&#xe9; jefe est&#xe1; asignado a cada secci&#xf3;n y en qu&#xe9; piso est&#xe1;.</div>
   <div class="estado-bar ok" style="font-size:11px">
-    💡 Solo vista. El bot actualiza el directorio automaticamente cada vez que descarga el CSV. Si un jefe cambia de seccion, el bot lo detecta y lo asigna a la nueva.
+    &#x1f4a1; Solo vista. El bot actualiza el directorio automaticamente cada vez que descarga el CSV. Si un jefe cambia de seccion, el bot lo detecta y lo asigna a la nueva.
   </div>
   <div class="card">
-    <div class="card-title">📋 Directorio de secciones</div>
-    <input type="text" id="filtro-jefes" placeholder="🔍 Buscar seccion, nombre o jefe..." style="width:100%;margin-bottom:10px;padding:8px 12px" oninput="filtrarJefes()">
+    <div class="card-title">&#x1f4cb; Directorio de secciones</div>
+    <input type="text" id="filtro-jefes" placeholder="&#x1f50d; Buscar seccion, nombre o jefe..." style="width:100%;margin-bottom:10px;padding:8px 12px" oninput="filtrarJefes()">
     <table><thead><tr><th>Seccion</th><th>Nombre</th><th>Jefe</th><th>Piso</th></tr></thead>
       <tbody id="tabla-jefes"><tr><td colspan="4" style="text-align:center;color:#888;padding:1.5rem">Cargando...</td></tr></tbody>
     </table>
   </div>
 </div>
 
-<!-- ── RUTAS DE MENSAJES ── -->
+<!-- &#x2500;&#x2500; RUTAS DE MENSAJES &#x2500;&#x2500; -->
 <div id="tab-routing" class="section" style="margin-top:1rem">
-  <div class="section-intro">📨 <b>Rutas de mensajes</b> — Decide a qué espacio de Google Chat se envía cada tipo de mensaje. Puedes activar o desactivar destinos sin afectar el resto del bot.</div>
+  <div class="section-intro">&#x1f4e8; <b>Rutas de mensajes</b> &#x2014; Decide a qu&#xe9; espacio de Google Chat se env&#xed;a cada tipo de mensaje. Puedes activar o desactivar destinos sin afectar el resto del bot.</div>
   <div class="estado-bar warn" style="font-size:11px">
-    💡 Decide a que espacio mandar cada tipo de mensaje. Puedes enviarlo a uno, varios o ninguno.
+    &#x1f4a1; Decide a que espacio mandar cada tipo de mensaje. Puedes enviarlo a uno, varios o ninguno.
   </div>
 
   <div id="routing-container">
     <div class="cfg-card" style="margin-bottom:8px" data-tipo="apertura">
-      <h3>🌅 Mensaje de apertura (10 AM)</h3>
-      <div class="cfg-row"><label>📢 Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
-      <div class="cfg-row"><label>👔 Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
-      <div class="cfg-row"><label>⏱️ Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
+      <h3>&#x1f305; Mensaje de apertura (10 AM)</h3>
+      <div class="cfg-row"><label>&#x1f4e2; Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x1f454; Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x23f1;&#xfe0f; Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
     </div>
 
     <div class="cfg-card" style="margin-bottom:8px" data-tipo="cierre">
-      <h3>🌙 Mensaje de cierre (9:30 PM)</h3>
-      <div class="cfg-row"><label>📢 Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
-      <div class="cfg-row"><label>👔 Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
-      <div class="cfg-row"><label>⏱️ Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
+      <h3>&#x1f319; Mensaje de cierre (9:30 PM)</h3>
+      <div class="cfg-row"><label>&#x1f4e2; Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x1f454; Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x23f1;&#xfe0f; Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
     </div>
 
     <div class="cfg-card" style="margin-bottom:8px" data-tipo="recordatorio">
-      <h3>⏰ Recordatorio (8:30 PM)</h3>
-      <div class="cfg-row"><label>📢 Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
-      <div class="cfg-row"><label>👔 Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
-      <div class="cfg-row"><label>⏱️ Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
+      <h3>&#x23f0; Recordatorio (8:30 PM)</h3>
+      <div class="cfg-row"><label>&#x1f4e2; Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x1f454; Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x23f1;&#xfe0f; Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
     </div>
 
     <div class="cfg-card" style="margin-bottom:8px" data-tipo="indicadores">
-      <h3>📊 Indicadores (cada 15 min)</h3>
-      <div class="cfg-row"><label>📢 Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
-      <div class="cfg-row"><label>👔 Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
-      <div class="cfg-row"><label>⏱️ Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
+      <h3>&#x1f4ca; Indicadores (cada 15 min)</h3>
+      <div class="cfg-row"><label>&#x1f4e2; Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x1f454; Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x23f1;&#xfe0f; Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
     </div>
 
     <div class="cfg-card" style="margin-bottom:8px" data-tipo="vencidas">
-      <h3>⚠️ Resumen de vencidas (cada 15 min)</h3>
-      <div class="cfg-row"><label>📢 Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
-      <div class="cfg-row"><label>👔 Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
-      <div class="cfg-row"><label>⏱️ Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
+      <h3>&#x26a0;&#xfe0f; Resumen de vencidas (cada 15 min)</h3>
+      <div class="cfg-row"><label>&#x1f4e2; Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x1f454; Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x23f1;&#xfe0f; Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
     </div>
 
     <div class="cfg-card" style="margin-bottom:8px" data-tipo="piso">
-      <h3>🏬 Mensajes por piso (cada 30 min)</h3>
-      <div class="cfg-row"><label>📢 Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
-      <div class="cfg-row"><label>👔 Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
-      <div class="cfg-row"><label>⏱️ Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
+      <h3>&#x1f3ec; Mensajes por piso (cada 30 min)</h3>
+      <div class="cfg-row"><label>&#x1f4e2; Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x1f454; Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x23f1;&#xfe0f; Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
     </div>
 
     <div class="cfg-card" style="margin-bottom:8px" data-tipo="tiempos">
-      <h3>⏱️ Resumen de tiempos (9:30 PM)</h3>
-      <div class="cfg-row"><label>📢 Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
-      <div class="cfg-row"><label>👔 Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
-      <div class="cfg-row"><label>⏱️ Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
+      <h3>&#x23f1;&#xfe0f; Resumen de tiempos (9:30 PM)</h3>
+      <div class="cfg-row"><label>&#x1f4e2; Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x1f454; Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x23f1;&#xfe0f; Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
     </div>
 
     <div class="cfg-card" style="margin-bottom:8px" data-tipo="ranking">
-      <h3>🏆 Ranking de jefes (9:30 PM)</h3>
-      <div class="cfg-row"><label>📢 Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
-      <div class="cfg-row"><label>👔 Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
-      <div class="cfg-row"><label>⏱️ Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
+      <h3>&#x1f3c6; Ranking de jefes (9:30 PM)</h3>
+      <div class="cfg-row"><label>&#x1f4e2; Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x1f454; Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x23f1;&#xfe0f; Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
     </div>
 
     <div class="cfg-card" style="margin-bottom:8px" data-tipo="alerta">
-      <h3>🚨 Alertas de anomalia</h3>
-      <div class="cfg-row"><label>📢 Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
-      <div class="cfg-row"><label>👔 Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
-      <div class="cfg-row"><label>⏱️ Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
+      <h3>&#x1f6a8; Alertas de anomalia</h3>
+      <div class="cfg-row"><label>&#x1f4e2; Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x1f454; Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x23f1;&#xfe0f; Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
     </div>
 
     <div class="cfg-card" style="margin-bottom:8px" data-tipo="comparativa">
-      <h3>📈 Comparativa semanal (viernes)</h3>
-      <div class="cfg-row"><label>📢 Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
-      <div class="cfg-row"><label>👔 Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
-      <div class="cfg-row"><label>⏱️ Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
+      <h3>&#x1f4c8; Comparativa semanal (viernes)</h3>
+      <div class="cfg-row"><label>&#x1f4e2; Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x1f454; Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x23f1;&#xfe0f; Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
     </div>
 
     <div class="cfg-card" style="margin-bottom:8px" data-tipo="watchdog">
-      <h3>🐕 Alertas Watchdog</h3>
-      <div class="cfg-row"><label>📢 Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
-      <div class="cfg-row"><label>👔 Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
-      <div class="cfg-row"><label>⏱️ Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
+      <h3>&#x1f415; Alertas Watchdog</h3>
+      <div class="cfg-row"><label>&#x1f4e2; Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x1f454; Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x23f1;&#xfe0f; Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
     </div>
   </div>
 
   <div style="text-align:right;margin-bottom:1rem">
-    <button class="btn-primary" onclick="guardarRouting()">💾 Guardar rutas</button>
+    <button class="btn-primary" onclick="guardarRouting()">&#x1f4be; Guardar rutas</button>
   </div>
 
   <!-- Webhooks personales por jefe -->
   <div class="card" style="margin-top:1.5rem">
-    <div class="card-title">📱 Webhooks personales de jefes
-      <button onclick="cargarWebhooksJefes()" style="margin-left:auto;font-size:11px;padding:4px 10px;border-radius:8px">🔄 Actualizar</button>
+    <div class="card-title">&#x1f4f1; Webhooks personales de jefes
+      <button onclick="cargarWebhooksJefes()" style="margin-left:auto;font-size:11px;padding:4px 10px;border-radius:8px">&#x1f504; Actualizar</button>
     </div>
     <div style="font-size:12px;color:#888;margin-bottom:1rem">
-      Los jefes marcados con ✅ reciben su mensaje detallado personal cada 30 min. Los que tienen ❌ no tienen webhook configurado en la hoja <b>WEBHOOKS_JEFES</b>.
+      Los jefes marcados con &#x2705; reciben su mensaje detallado personal cada 30 min. Los que tienen &#x274c; no tienen webhook configurado en la hoja <b>WEBHOOKS_JEFES</b>.
     </div>
     <div id="grid-webhooks-jefes" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px">
       <div style="color:#aaa;font-size:13px;grid-column:1/-1;text-align:center;padding:1.5rem">Cargando...</div>
@@ -739,13 +739,13 @@ input:checked + .slider:before { transform:translateX(22px); }
   </div>
 </div>
 
-<!-- ── PCS ── -->
+<!-- &#x2500;&#x2500; PCS &#x2500;&#x2500; -->
 <div id="tab-pcs" class="section" style="margin-top:1rem">
-  <div class="section-intro">💻 <b>PCs</b> — Monitorea y pausa/reanuda cada PC de forma individual. Los cambios aplican en la próxima ejecución del bot (máx 15 min).</div>
+  <div class="section-intro">&#x1f4bb; <b>PCs</b> &#x2014; Monitorea y pausa/reanuda cada PC de forma individual. Los cambios aplican en la pr&#xf3;xima ejecuci&#xf3;n del bot (m&#xe1;x 15 min).</div>
   <div class="card">
     <div class="card-title" style="justify-content:space-between">
-      <span>🖥️ PCs registradas</span>
-      <button onclick="cargarPcs()" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #ddd;background:#faf9f7;cursor:pointer">🔄 Actualizar</button>
+      <span>&#x1f5a5;&#xfe0f; PCs registradas</span>
+      <button onclick="cargarPcs()" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #ddd;background:#faf9f7;cursor:pointer">&#x1f504; Actualizar</button>
     </div>
     <div id="pcs-lista" style="margin-top:8px">
       <div style="text-align:center;padding:2rem;color:#aaa">Cargando...</div>
@@ -753,69 +753,69 @@ input:checked + .slider:before { transform:translateX(22px); }
   </div>
 </div>
 
-<!-- ── ACCIONES RAPIDAS ── -->
+<!-- &#x2500;&#x2500; ACCIONES RAPIDAS &#x2500;&#x2500; -->
 <div id="tab-acciones" class="section" style="margin-top:1rem">
-  <div class="section-intro">🔧 <b>Acciones rápidas</b> — Controles inmediatos del bot: pausar, reanudar o limpiar la cola de mensajes pendientes.</div>
+  <div class="section-intro">&#x1f527; <b>Acciones r&#xe1;pidas</b> &#x2014; Controles inmediatos del bot: pausar, reanudar o limpiar la cola de mensajes pendientes.</div>
   <div class="estado-bar ok" style="font-size:11px">
-    💡 Acciones que se aplican inmediatamente o en la proxima ejecucion del bot.
+    &#x1f4a1; Acciones que se aplican inmediatamente o en la proxima ejecucion del bot.
   </div>
   <div class="grid2">
-    <button class="btn-action" onclick="confirmarAccion('pausar','⏸️ Pausar bot','¿Detener el envío de mensajes? El bot seguirá descargando datos pero no mandará nada al Chat.')">
-      <b>⏸️ Pausar bot</b><span>Detiene el envio de mensajes pero el bot sigue corriendo</span>
+    <button class="btn-action" onclick="confirmarAccion('pausar','&#x23f8;&#xfe0f; Pausar bot','&#xbf;Detener el env&#xed;o de mensajes? El bot seguir&#xe1; descargando datos pero no mandar&#xe1; nada al Chat.')">
+      <b>&#x23f8;&#xfe0f; Pausar bot</b><span>Detiene el envio de mensajes pero el bot sigue corriendo</span>
     </button>
-    <button class="btn-action" onclick="confirmarAccion('reanudar','▶️ Reanudar bot','¿Reanudar el envío de mensajes? El bot volverá a mandar normalmente en la próxima ejecución.')">
-      <b>▶️ Reanudar bot</b><span>Si esta pausado, vuelve a mandar mensajes normalmente</span>
+    <button class="btn-action" onclick="confirmarAccion('reanudar','&#x25b6;&#xfe0f; Reanudar bot','&#xbf;Reanudar el env&#xed;o de mensajes? El bot volver&#xe1; a mandar normalmente en la pr&#xf3;xima ejecuci&#xf3;n.')">
+      <b>&#x25b6;&#xfe0f; Reanudar bot</b><span>Si esta pausado, vuelve a mandar mensajes normalmente</span>
     </button>
-    <button class="btn-action" onclick="mostrarModal('🚀','Correr bot ahora','Para forzar una ejecución inmediata, abre la PC del bot y ejecuta el archivo <b>correr_ahora.bat</b>',null,null,'Entendido')">
-      <b>🚀 Correr bot ahora</b><span>Forzar ejecucion sin esperar 15 min — debes hacerlo en la PC</span>
+    <button class="btn-action" onclick="mostrarModal('&#x1f680;','Correr bot ahora','Para forzar una ejecuci&#xf3;n inmediata, abre la PC del bot y ejecuta el archivo <b>correr_ahora.bat</b>',null,null,'Entendido')">
+      <b>&#x1f680; Correr bot ahora</b><span>Forzar ejecucion sin esperar 15 min &#x2014; debes hacerlo en la PC</span>
     </button>
-    <button class="btn-action" onclick="confirmarAccion('limpiar_cola','🧹 Limpiar cola','¿Borrar todos los mensajes pendientes de la cola? Los mensajes que no se pudieron mandar se perderán.')">
-      <b>🧹 Limpiar cola de mensajes</b><span>Borra mensajes pendientes que no se pudieron mandar</span>
+    <button class="btn-action" onclick="confirmarAccion('limpiar_cola','&#x1f9f9; Limpiar cola','&#xbf;Borrar todos los mensajes pendientes de la cola? Los mensajes que no se pudieron mandar se perder&#xe1;n.')">
+      <b>&#x1f9f9; Limpiar cola de mensajes</b><span>Borra mensajes pendientes que no se pudieron mandar</span>
     </button>
     <button class="btn-action" onclick="confirmarKpiVendedores()">
-      <b>🏷️ Enviar reporte vendedores</b><span>Crea la señal para que el bot mande al espacio Tiempos cuanto tarda cada vendedor en generar etiqueta (T2→T3)</span>
+      <b>&#x1f3f7;&#xfe0f; Enviar reporte vendedores</b><span>Crea la se&#xf1;al para que el bot mande al espacio Tiempos cuanto tarda cada vendedor en generar etiqueta (T2&#x2192;T3)</span>
     </button>
   </div>
 </div>
 
-<!-- ── MENSAJES PROGRAMADOS ── -->
+<!-- &#x2500;&#x2500; MENSAJES PROGRAMADOS &#x2500;&#x2500; -->
 <div id="tab-mensajes" class="section" style="margin-top:1rem">
-  <div class="section-intro">📅 <b>Mensajes programados</b> — Escribe un mensaje personalizado, elige cada cuántos ciclos quieres que se mande y a qué espacio. Cada ciclo dura ~15 min. El bot lo enviará automáticamente. Para detenerlo, solo bórralo.</div>
+  <div class="section-intro">&#x1f4c5; <b>Mensajes programados</b> &#x2014; Escribe un mensaje personalizado, elige cada cu&#xe1;ntos ciclos quieres que se mande y a qu&#xe9; espacio. Cada ciclo dura ~15 min. El bot lo enviar&#xe1; autom&#xe1;ticamente. Para detenerlo, solo b&#xf3;rralo.</div>
 
   <div class="cfg-card" style="margin-bottom:1rem">
-    <h3>➕ Nuevo mensaje programado</h3>
+    <h3>&#x2795; Nuevo mensaje programado</h3>
     <div class="cfg-row full" style="margin-bottom:14px">
-      <label>💬 Mensaje</label>
-      <textarea id="msg-texto" style="min-height:110px;font-family:monospace;font-size:12px;line-height:1.6" placeholder="Escribe aquí el mensaje que quieres que el bot mande automáticamente..."></textarea>
+      <label>&#x1f4ac; Mensaje</label>
+      <textarea id="msg-texto" style="min-height:110px;font-family:monospace;font-size:12px;line-height:1.6" placeholder="Escribe aqu&#xed; el mensaje que quieres que el bot mande autom&#xe1;ticamente..."></textarea>
     </div>
     <div class="cfg-grid" style="margin-bottom:4px">
       <div class="cfg-row">
-        <label class="tooltip-wrap">Cada cuántos ciclos <span class="tooltip-icon">i</span><span class="tooltip-box">El bot lo enviará cada X ciclos. 1 ciclo ≈ 15 min. Ej: 2 = cada ~30 min, 4 = cada ~1 hora.</span></label>
+        <label class="tooltip-wrap">Cada cu&#xe1;ntos ciclos <span class="tooltip-icon">i</span><span class="tooltip-box">El bot lo enviar&#xe1; cada X ciclos. 1 ciclo &#x2248; 15 min. Ej: 2 = cada ~30 min, 4 = cada ~1 hora.</span></label>
         <div style="display:flex;align-items:center;gap:6px">
           <input type="number" id="msg-intervalo" min="1" max="96" value="1" style="width:80px" oninput="actualizarEtiquetaCiclos(this.value)">
           <span style="font-size:12px;color:#888" id="ciclos-label">ciclo (~15 min)</span>
         </div>
       </div>
       <div class="cfg-row">
-        <label>📲 Destino</label>
+        <label>&#x1f4f2; Destino</label>
         <select id="msg-destino" style="width:auto;text-align:left">
-          <option value="reporte">📢 Reporte</option>
-          <option value="jefes">👔 Jefes</option>
-          <option value="tiempos">⏱️ Tiempos</option>
-          <option value="reporte,jefes">📢 Reporte + 👔 Jefes</option>
+          <option value="reporte">&#x1f4e2; Reporte</option>
+          <option value="jefes">&#x1f454; Jefes</option>
+          <option value="tiempos">&#x23f1;&#xfe0f; Tiempos</option>
+          <option value="reporte,jefes">&#x1f4e2; Reporte + &#x1f454; Jefes</option>
         </select>
       </div>
     </div>
     <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-      <span style="font-size:11px;color:#888">El bot lo enviará en la próxima ejecución (máx ~15 min)</span>
-      <button class="btn-primary" onclick="agregarMensajeProgramado()">➕ Agregar mensaje</button>
+      <span style="font-size:11px;color:#888">El bot lo enviar&#xe1; en la pr&#xf3;xima ejecuci&#xf3;n (m&#xe1;x ~15 min)</span>
+      <button class="btn-primary" onclick="agregarMensajeProgramado()">&#x2795; Agregar mensaje</button>
     </div>
   </div>
 
   <div class="card">
     <div class="card-title" style="justify-content:space-between">
-      <span>📋 Mensajes programados activos</span>
-      <button onclick="cargarMensajesProgramados()" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #ddd;background:#faf9f7;cursor:pointer">🔄 Actualizar</button>
+      <span>&#x1f4cb; Mensajes programados activos</span>
+      <button onclick="cargarMensajesProgramados()" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #ddd;background:#faf9f7;cursor:pointer">&#x1f504; Actualizar</button>
     </div>
     <div id="msgs-prog-lista">
       <div style="text-align:center;padding:2rem;color:#aaa">Cargando...</div>
@@ -823,108 +823,108 @@ input:checked + .slider:before { transform:translateX(22px); }
   </div>
 </div>
 
-<!-- ── PRUEBAS DE MENSAJES ── -->
+<!-- &#x2500;&#x2500; PRUEBAS DE MENSAJES &#x2500;&#x2500; -->
 <div id="tab-pruebas" class="section" style="margin-top:1rem">
-  <div class="section-intro">🧪 <b>Pruebas</b> — Envía mensajes de prueba a cualquier espacio para verificar que todo funcione. Los mensajes llevan la etiqueta PRUEBA para que el equipo sepa que no son reales.</div>
+  <div class="section-intro">&#x1f9ea; <b>Pruebas</b> &#x2014; Env&#xed;a mensajes de prueba a cualquier espacio para verificar que todo funcione. Los mensajes llevan la etiqueta PRUEBA para que el equipo sepa que no son reales.</div>
   <div class="estado-bar warn" style="font-size:11px">
-    💡 Manda mensajes de prueba a cualquier espacio de Chat para verificar que los webhooks funcionan. El mensaje se envia de verdad — asegurate de que diga PRUEBA.
+    &#x1f4a1; Manda mensajes de prueba a cualquier espacio de Chat para verificar que los webhooks funcionan. El mensaje se envia de verdad &#x2014; asegurate de que diga PRUEBA.
   </div>
   <div class="cfg-card" style="margin-bottom:1rem">
-    <h3>🧪 Enviar mensaje de prueba</h3>
+    <h3>&#x1f9ea; Enviar mensaje de prueba</h3>
     <div class="cfg-row" style="margin-bottom:14px">
-      <label>📝 Tipo de mensaje</label>
+      <label>&#x1f4dd; Tipo de mensaje</label>
       <select onchange="cargarPrueba(this.value)">
         <option value="">Selecciona para pre-llenar...</option>
-        <option value="apertura">🌅 Apertura (10 AM)</option>
-        <option value="cierre">🌙 Cierre (9:30 PM)</option>
-        <option value="vencidas">⚠️ Resumen vencidas</option>
-        <option value="alerta">🚨 Alerta de anomalia</option>
-        <option value="ranking">🏆 Ranking del dia</option>
-        <option value="tiempos">⏱️ Resumen de tiempos</option>
+        <option value="apertura">&#x1f305; Apertura (10 AM)</option>
+        <option value="cierre">&#x1f319; Cierre (9:30 PM)</option>
+        <option value="vencidas">&#x26a0;&#xfe0f; Resumen vencidas</option>
+        <option value="alerta">&#x1f6a8; Alerta de anomalia</option>
+        <option value="ranking">&#x1f3c6; Ranking del dia</option>
+        <option value="tiempos">&#x23f1;&#xfe0f; Resumen de tiempos</option>
       </select>
     </div>
     <div class="cfg-row" style="margin-bottom:14px">
-      <label>📲 Espacio destino</label>
+      <label>&#x1f4f2; Espacio destino</label>
       <select id="prueba-espacio">
-        <option value="reporte">📢 Reporte</option>
-        <option value="jefes">👔 Jefes</option>
-        <option value="tiempos">⏱️ Tiempos</option>
+        <option value="reporte">&#x1f4e2; Reporte</option>
+        <option value="jefes">&#x1f454; Jefes</option>
+        <option value="tiempos">&#x23f1;&#xfe0f; Tiempos</option>
       </select>
     </div>
     <div class="cfg-row full" style="margin-bottom:14px">
-      <label>💬 Mensaje (editable)</label>
+      <label>&#x1f4ac; Mensaje (editable)</label>
       <textarea id="prueba-mensaje" style="min-height:200px;font-family:monospace;font-size:12px;line-height:1.6" placeholder="Selecciona un tipo de mensaje o escribe uno personalizado..."></textarea>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:11px;color:#854f0b">⚠️ Se envia al Chat de verdad</span>
-      <button class="btn-primary" onclick="mandarPrueba()">📤 Enviar prueba</button>
+      <span style="font-size:11px;color:#854f0b">&#x26a0;&#xfe0f; Se envia al Chat de verdad</span>
+      <button class="btn-primary" onclick="mandarPrueba()">&#x1f4e4; Enviar prueba</button>
     </div>
   </div>
   <div class="cfg-card">
-    <h3>🔌 Estado de webhooks</h3>
+    <h3>&#x1f50c; Estado de webhooks</h3>
     <div id="webhooks-status" style="font-size:12px;color:#666;line-height:2">
-      <div>📢 Reporte: <span id="wh-reporte-status" class="badge info">No verificado</span></div>
-      <div>👔 Jefes: <span id="wh-jefes-status" class="badge info">No verificado</span></div>
-      <div>⏱️ Tiempos: <span id="wh-tiempos-status" class="badge info">No verificado</span></div>
+      <div>&#x1f4e2; Reporte: <span id="wh-reporte-status" class="badge info">No verificado</span></div>
+      <div>&#x1f454; Jefes: <span id="wh-jefes-status" class="badge info">No verificado</span></div>
+      <div>&#x23f1;&#xfe0f; Tiempos: <span id="wh-tiempos-status" class="badge info">No verificado</span></div>
     </div>
-    <button onclick="verificarWebhooks()" style="margin-top:10px">🔍 Verificar webhooks</button>
+    <button onclick="verificarWebhooks()" style="margin-top:10px">&#x1f50d; Verificar webhooks</button>
   </div>
 
   <!-- Modo Demo -->
   <div class="cfg-card" style="margin-top:1rem;border:2px solid #c9254e20;background:#fff5f7">
-    <h3>🎯 Modo Demo</h3>
-    <p style="font-size:12px;color:#666;margin-bottom:14px">Ejecuta el bot completo con el navegador visible y redirige todos los mensajes a los webhooks de demo configurados aquí. Ideal para mostrar el sistema en funcionamiento sin afectar los espacios reales.</p>
+    <h3>&#x1f3af; Modo Demo</h3>
+    <p style="font-size:12px;color:#666;margin-bottom:14px">Ejecuta el bot completo con el navegador visible y redirige todos los mensajes a los webhooks de demo configurados aqu&#xed;. Ideal para mostrar el sistema en funcionamiento sin afectar los espacios reales.</p>
     <div class="cfg-row" style="margin-bottom:10px">
-      <label>📲 Webhook Demo 1 (Reporte)</label>
+      <label>&#x1f4f2; Webhook Demo 1 (Reporte)</label>
       <input type="url" id="cfg-wh-demo1" placeholder="https://chat.googleapis.com/..." style="font-size:12px">
     </div>
     <div class="cfg-row" style="margin-bottom:10px">
-      <label>📲 Webhook Demo 2 (Jefes)</label>
+      <label>&#x1f4f2; Webhook Demo 2 (Jefes)</label>
       <input type="url" id="cfg-wh-demo2" placeholder="https://chat.googleapis.com/..." style="font-size:12px">
     </div>
     <div class="cfg-row" style="margin-bottom:10px">
-      <label>📲 Webhook Demo 3 (Tiempos)</label>
+      <label>&#x1f4f2; Webhook Demo 3 (Tiempos)</label>
       <input type="url" id="cfg-wh-demo3" placeholder="https://chat.googleapis.com/..." style="font-size:12px">
     </div>
     <div class="cfg-row" style="margin-bottom:14px">
-      <label>⏱ Intervalo entre ejecuciones demo (minutos)</label>
+      <label>&#x23f1; Intervalo entre ejecuciones demo (minutos)</label>
       <input type="number" id="cfg-intervalo-demo" value="15" min="1" max="60" style="width:80px">
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-      <span style="font-size:11px;color:#854f0b">⚠️ Los mensajes demo llegan a los webhooks configurados arriba</span>
+      <span style="font-size:11px;color:#854f0b">&#x26a0;&#xfe0f; Los mensajes demo llegan a los webhooks configurados arriba</span>
       <div style="display:flex;gap:8px">
-        <button onclick="guardarDemo()" style="background:#c9254e;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600">💾 Guardar config demo</button>
+        <button onclick="guardarDemo()" style="background:#c9254e;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600">&#x1f4be; Guardar config demo</button>
       </div>
     </div>
     <div id="demo-estado" style="margin-top:10px;font-size:12px"></div>
   </div>
 </div>
 
-<!-- ── LOGS ── -->
+<!-- &#x2500;&#x2500; LOGS &#x2500;&#x2500; -->
 <div id="tab-logs" class="section" style="margin-top:1rem">
-  <div class="section-intro">📜 <b>Logs</b> — Registro de las últimas ejecuciones con detalles de errores. Útil para diagnosticar problemas.</div>
+  <div class="section-intro">&#x1f4dc; <b>Logs</b> &#x2014; Registro de las &#xfa;ltimas ejecuciones con detalles de errores. &#xda;til para diagnosticar problemas.</div>
   <div class="estado-bar warn" style="font-size:11px">
-    💡 Ultimas 30 ejecuciones del bot con detalles de errores.
+    &#x1f4a1; Ultimas 30 ejecuciones del bot con detalles de errores.
   </div>
   <div class="card">
-    <div class="card-title">📜 Logs recientes</div>
-    <button onclick="cargarLogs()" style="margin-bottom:10px">🔄 Actualizar</button>
+    <div class="card-title">&#x1f4dc; Logs recientes</div>
+    <button onclick="cargarLogs()" style="margin-bottom:10px">&#x1f504; Actualizar</button>
     <div id="logs-container"><div style="text-align:center;color:#888;padding:1.5rem">Cargando...</div></div>
   </div>
 </div>
 
-<!-- ── KPI TIEMPOS ── -->
+<!-- &#x2500;&#x2500; KPI TIEMPOS &#x2500;&#x2500; -->
 <div id="tab-tiempos" class="section" style="margin-top:1rem">
-  <div class="section-intro">⏱ <b>KPI Tiempos de asignación</b> — Se actualiza automáticamente al cierre del turno. Mide cuánto tarda cada jefe en asignar remisiones a vendedores desde que llegan a tienda.</div>
+  <div class="section-intro">&#x23f1; <b>KPI Tiempos de asignaci&#xf3;n</b> &#x2014; Se actualiza autom&#xe1;ticamente al cierre del turno. Mide cu&#xe1;nto tarda cada jefe en asignar remisiones a vendedores desde que llegan a tienda.</div>
 
   <div class="card">
     <div class="card-title" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <span>📊 Tiempos por jefe</span>
+      <span>&#x1f4ca; Tiempos por jefe</span>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <select id="kpi-dia-sel" onchange="filtrarKpiPorDia()" style="font-size:12px;border-radius:8px;border:1px solid #ddd;padding:5px 10px;background:#faf9f7;cursor:pointer">
           <option value="">Cargando...</option>
         </select>
-        <button onclick="cargarKpiTiempos()" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #ddd;background:#faf9f7;cursor:pointer">🔄 Actualizar</button>
+        <button onclick="cargarKpiTiempos()" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #ddd;background:#faf9f7;cursor:pointer">&#x1f504; Actualizar</button>
       </div>
     </div>
     <div id="kpi-meta" style="font-size:12px;color:#888;margin-bottom:12px">Cargando...</div>
@@ -932,16 +932,16 @@ input:checked + .slider:before { transform:translateX(22px); }
       <div class="kpi-legend-item"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2ecc71;margin-right:4px"></span>0-5 min: Excelente</div>
       <div class="kpi-legend-item"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f39c12;margin-right:4px"></span>5-20 min: Regular</div>
       <div class="kpi-legend-item"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#e74c3c;margin-right:4px"></span>+20 min: Lento</div>
-      <span style="color:#bbb;font-size:11px;margin-left:auto">Tiempo desde que llega la remisión hasta que el jefe la asigna</span>
+      <span style="color:#bbb;font-size:11px;margin-left:auto">Tiempo desde que llega la remisi&#xf3;n hasta que el jefe la asigna</span>
     </div>
     <table>
       <thead>
         <tr>
           <th>#</th>
           <th>Jefe</th>
-          <th style="color:#2ecc71">🟢 Más rápido <span style="font-weight:400;font-size:10px;opacity:.7">(mejor tiempo)</span></th>
-          <th>⏱ Promedio <span style="font-weight:400;font-size:10px;opacity:.7">(tiempo típico)</span></th>
-          <th style="color:#e74c3c">🔴 Más lento <span style="font-weight:400;font-size:10px;opacity:.7">(peor caso)</span></th>
+          <th style="color:#2ecc71">&#x1f7e2; M&#xe1;s r&#xe1;pido <span style="font-weight:400;font-size:10px;opacity:.7">(mejor tiempo)</span></th>
+          <th>&#x23f1; Promedio <span style="font-weight:400;font-size:10px;opacity:.7">(tiempo t&#xed;pico)</span></th>
+          <th style="color:#e74c3c">&#x1f534; M&#xe1;s lento <span style="font-weight:400;font-size:10px;opacity:.7">(peor caso)</span></th>
           <th>Remisiones</th>
         </tr>
       </thead>
@@ -952,20 +952,20 @@ input:checked + .slider:before { transform:translateX(22px); }
     <div id="kpi-footer" style="margin-top:12px;font-size:12px;color:#aaa;text-align:right"></div>
   </div>
 
-  <!-- Mini gráfica de barras -->
+  <!-- Mini gr&#xe1;fica de barras -->
   <div class="card" style="margin-top:1rem">
-    <div class="card-title">📈 Promedio por jefe (min)</div>
+    <div class="card-title">&#x1f4c8; Promedio por jefe (min)</div>
     <canvas id="chart-kpi" height="120"></canvas>
   </div>
 </div>
 
 </div>
 
-<!-- ── MODAL DE CONFIRMACION ── -->
+<!-- &#x2500;&#x2500; MODAL DE CONFIRMACION &#x2500;&#x2500; -->
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal-box">
-    <div class="modal-icon" id="modal-icon">⚠️</div>
-    <div class="modal-title" id="modal-title">¿Confirmar acción?</div>
+    <div class="modal-icon" id="modal-icon">&#x26a0;&#xfe0f;</div>
+    <div class="modal-title" id="modal-title">&#xbf;Confirmar acci&#xf3;n?</div>
     <div class="modal-desc" id="modal-desc"></div>
     <div class="modal-btns">
       <button class="modal-cancel" onclick="cerrarModal()">Cancelar</button>
@@ -974,16 +974,16 @@ input:checked + .slider:before { transform:translateX(22px); }
   </div>
 </div>
 
-<!-- ── TOUR DE BIENVENIDA ── -->
+<!-- &#x2500;&#x2500; TOUR DE BIENVENIDA &#x2500;&#x2500; -->
 <div class="tour-overlay" id="tour-overlay">
   <div class="tour-box">
-    <div class="tour-icon" id="tour-icon">👋</div>
+    <div class="tour-icon" id="tour-icon">&#x1f44b;</div>
     <div class="tour-title" id="tour-title"></div>
     <div class="tour-desc" id="tour-desc"></div>
     <div class="tour-dots" id="tour-dots"></div>
     <div class="tour-btns">
       <button class="tour-skip" onclick="cerrarTour()">Saltar</button>
-      <button class="tour-next" id="tour-next-btn" onclick="tourSiguiente()">Siguiente →</button>
+      <button class="tour-next" id="tour-next-btn" onclick="tourSiguiente()">Siguiente &#x2192;</button>
     </div>
   </div>
 </div>
