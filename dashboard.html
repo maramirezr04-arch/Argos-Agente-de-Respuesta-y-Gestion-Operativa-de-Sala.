@@ -1001,18 +1001,18 @@ let todos=[],chartT,chartI,chartV;
 let DIRECTORIO_SECCIONES = [], DIRECTORIO_JEFES = [];
 let countdownSeg = 30, countdownTimer;
 
-// ── FECHA HEADER ──────────────────────────────────────────────────────
+// \u2500\u2500 FECHA HEADER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 (function(){
   const d=new Date();
-  const dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const dias=['Domingo','Lunes','Martes','Mi\u00e9rcoles','Jueves','Viernes','S\u00e1bado'];
   const meses=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   document.getElementById('hdr-fecha').textContent=dias[d.getDay()]+' '+d.getDate()+' de '+meses[d.getMonth()]+' '+d.getFullYear();
 })();
 
-// ── MODAL ────────────────────────────────────────────────────────────
+// \u2500\u2500 MODAL \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 let _modalCallback = null;
 function mostrarModal(icon, titulo, desc, callback, labelConfirm, labelCancel){
-  document.getElementById('modal-icon').textContent = icon || '⚠️';
+  document.getElementById('modal-icon').textContent = icon || '\u26a0\ufe0f';
   document.getElementById('modal-title').textContent = titulo;
   document.getElementById('modal-desc').innerHTML = desc;
   const btn = document.getElementById('modal-confirm-btn');
@@ -1036,14 +1036,14 @@ document.getElementById('modal-confirm-btn').addEventListener('click', function(
 });
 
 function confirmarAccion(tipo, titulo, desc){
-  const iconos={pausar:'⏸️',reanudar:'▶️',limpiar_cola:'🧹'};
-  mostrarModal(iconos[tipo]||'⚙️', titulo, desc, ()=>accion(tipo), 'Sí, continuar');
+  const iconos={pausar:'\u23f8\ufe0f',reanudar:'\u25b6\ufe0f',limpiar_cola:'\ud83e\uddf9'};
+  mostrarModal(iconos[tipo]||'\u2699\ufe0f', titulo, desc, ()=>accion(tipo), 'S\u00ed, continuar');
 }
 function confirmarKpiVendedores(){
-  mostrarModal('🏷️','Enviar reporte vendedores','¿Enviar reporte de tiempos por vendedor al espacio Tiempos?<br><br>El bot lo procesará en la próxima ejecución (máximo 15 min).', enviarKpiVendedores, 'Sí, enviar');
+  mostrarModal('\ud83c\udff7\ufe0f','Enviar reporte vendedores','\u00bfEnviar reporte de tiempos por vendedor al espacio Tiempos?<br><br>El bot lo procesar\u00e1 en la pr\u00f3xima ejecuci\u00f3n (m\u00e1ximo 15 min).', enviarKpiVendedores, 'S\u00ed, enviar');
 }
 
-// ── GLOBAL STATUS BAR ────────────────────────────────────────────────
+// \u2500\u2500 GLOBAL STATUS BAR \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function actualizarGlobalStatus(ul){
   if(!ul) return;
   const estadoEl = document.getElementById('gsb-estado');
@@ -1053,7 +1053,7 @@ function actualizarGlobalStatus(ul){
     estadoEl.innerHTML='<span class="dot dot-live" style="width:8px;height:8px;background:#3b6d11;margin-right:6px"></span>Bot activo';
   } else {
     estadoEl.className='gsb-pill gsb-err';
-    estadoEl.innerHTML='<span style="margin-right:6px">❌</span>Última ejecución con error';
+    estadoEl.innerHTML='<span style="margin-right:6px">\u274c</span>\u00daltima ejecuci\u00f3n con error';
   }
   document.getElementById('gsb-ultima').textContent = ul.fecha+' '+ul.hora;
   document.getElementById('gsb-total').textContent  = ul.total;
@@ -1061,10 +1061,10 @@ function actualizarGlobalStatus(ul){
   vEl.textContent = ul.vencidas;
   vEl.style.color = ul.vencidas>20?'#E24B4A':ul.vencidas>5?'#f39c12':'#3b6d11';
   document.getElementById('gsb-dur').textContent = formatDur(ul.duracion);
-  document.getElementById('hdr-ultima').textContent = 'Última ejec: '+ul.hora;
+  document.getElementById('hdr-ultima').textContent = '\u00daltima ejec: '+ul.hora;
 }
 
-// ── FILTRO DE FECHAS ─────────────────────────────────────────────────
+// \u2500\u2500 FILTRO DE FECHAS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function limpiarFiltroFecha(){
   document.getElementById('filtro-fecha-ini').value='';
   document.getElementById('filtro-fecha-fin').value='';
@@ -1073,24 +1073,24 @@ function limpiarFiltroFecha(){
 
 function showTab(id,btn){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');btn.classList.add('active');if(id==='routing')cargarWebhooksJefes();if(id==='tiempos')cargarKpiTiempos();if(id==='pcs')cargarPcs();if(id==='mensajes')cargarMensajesProgramados();}
 
-// Navegar a una pestaña desde las tarjetas de Inicio
+// Navegar a una pesta\u00f1a desde las tarjetas de Inicio
 function irATab(id){
   const btn = document.querySelector('.nav button[data-tab="'+id+'"]');
   if(btn) showTab(id, btn);
 }
 
-// ── TOUR DE BIENVENIDA ──────────────────────────────────────
+// \u2500\u2500 TOUR DE BIENVENIDA \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 const TOUR_PASOS = [
-  { icon:'👋', titulo:'¡Bienvenido a Argos!',
-    desc:'Argos vigila las remisiones de OMS todo el día y avisa por Google Chat cuando hay artículos pendientes. Este panel es tu centro de control. Te enseñamos lo básico en 5 pasos.' },
-  { icon:'🟢', titulo:'La barra de estado',
-    desc:'La barra gris debajo del encabezado siempre te dice si el bot está corriendo, cuándo fue su última ejecución y cuántas remisiones y vencidas hay. <b>Es visible desde cualquier pestaña.</b>' },
-  { icon:'📊', titulo:'Pestaña Monitor',
-    desc:'Es la pestaña que más vas a usar: muestra cuántas remisiones hay en espera, cuántas están vencidas (+20 min) y el historial de cada ejecución del bot.' },
-  { icon:'🏖️', titulo:'Descansos de jefes',
-    desc:'Cuando un jefe descansa, regístralo en la pestaña Descansos e indica quién lo cubre. Así los avisos de sus secciones le llegan al jefe correcto ese día.' },
-  { icon:'🔧', titulo:'¿Necesitas pausar el bot?',
-    desc:'En la pestaña Acciones puedes pausar y reanudar el bot con un clic. Y si algo no funciona, en Pruebas puedes mandar un mensaje de prueba para verificar los chats.<br><br><b>¡Listo! Ya conoces el panel.</b> Puedes repetir este tour con el botón ❓ Ayuda de arriba.' }
+  { icon:'\ud83d\udc4b', titulo:'\u00a1Bienvenido a Argos!',
+    desc:'Argos vigila las remisiones de OMS todo el d\u00eda y avisa por Google Chat cuando hay art\u00edculos pendientes. Este panel es tu centro de control. Te ense\u00f1amos lo b\u00e1sico en 5 pasos.' },
+  { icon:'\ud83d\udfe2', titulo:'La barra de estado',
+    desc:'La barra gris debajo del encabezado siempre te dice si el bot est\u00e1 corriendo, cu\u00e1ndo fue su \u00faltima ejecuci\u00f3n y cu\u00e1ntas remisiones y vencidas hay. <b>Es visible desde cualquier pesta\u00f1a.</b>' },
+  { icon:'\ud83d\udcca', titulo:'Pesta\u00f1a Monitor',
+    desc:'Es la pesta\u00f1a que m\u00e1s vas a usar: muestra cu\u00e1ntas remisiones hay en espera, cu\u00e1ntas est\u00e1n vencidas (+20 min) y el historial de cada ejecuci\u00f3n del bot.' },
+  { icon:'\ud83c\udfd6\ufe0f', titulo:'Descansos de jefes',
+    desc:'Cuando un jefe descansa, reg\u00edstralo en la pesta\u00f1a Descansos e indica qui\u00e9n lo cubre. As\u00ed los avisos de sus secciones le llegan al jefe correcto ese d\u00eda.' },
+  { icon:'\ud83d\udd27', titulo:'\u00bfNecesitas pausar el bot?',
+    desc:'En la pesta\u00f1a Acciones puedes pausar y reanudar el bot con un clic. Y si algo no funciona, en Pruebas puedes mandar un mensaje de prueba para verificar los chats.<br><br><b>\u00a1Listo! Ya conoces el panel.</b> Puedes repetir este tour con el bot\u00f3n \u2753 Ayuda de arriba.' }
 ];
 let tourPaso = 0;
 
@@ -1107,7 +1107,7 @@ function renderTourPaso(){
   document.getElementById('tour-dots').innerHTML    = TOUR_PASOS.map((_,i)=>
     '<span class="tour-dot'+(i===tourPaso?' active':'')+'"></span>').join('');
   document.getElementById('tour-next-btn').textContent =
-    tourPaso === TOUR_PASOS.length-1 ? '✓ Terminar' : 'Siguiente →';
+    tourPaso === TOUR_PASOS.length-1 ? '\u2713 Terminar' : 'Siguiente \u2192';
 }
 function tourSiguiente(){
   if(tourPaso < TOUR_PASOS.length-1){ tourPaso++; renderTourPaso(); }
@@ -1119,12 +1119,12 @@ function cerrarTour(){
 }
 document.getElementById('tour-overlay').addEventListener('click', function(e){ if(e.target===this) cerrarTour(); });
 
-// Mostrar el tour automáticamente la primera vez que alguien abre el panel
+// Mostrar el tour autom\u00e1ticamente la primera vez que alguien abre el panel
 try{
   if(!localStorage.getItem('argos_tour_visto')) setTimeout(iniciarTour, 800);
 }catch(e){}
 
-// ── PCS ──────────────────────────────────────────────────────────────
+// \u2500\u2500 PCS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 async function cargarPcs(){
   const div = document.getElementById('pcs-lista');
   div.innerHTML = '<div style="text-align:center;padding:2rem;color:#aaa">Cargando...</div>';
@@ -1132,19 +1132,19 @@ async function cargarPcs(){
     const r    = await fetch(APPS_SCRIPT_URL + '?action=getPcs&t=' + Date.now());
     const data = await r.json();
     if(!data.pcs || data.pcs.length === 0){
-      div.innerHTML = '<div style="text-align:center;padding:2rem;color:#aaa">No hay PCs registradas aún. Se registran automáticamente la primera vez que corre el bot.</div>';
+      div.innerHTML = '<div style="text-align:center;padding:2rem;color:#aaa">No hay PCs registradas a\u00fan. Se registran autom\u00e1ticamente la primera vez que corre el bot.</div>';
       return;
     }
-    let html = '<table><thead><tr><th>PC</th><th>Estado</th><th>Última conexión</th><th>Versión</th><th>Acción</th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>PC</th><th>Estado</th><th>\u00daltima conexi\u00f3n</th><th>Versi\u00f3n</th><th>Acci\u00f3n</th></tr></thead><tbody>';
     data.pcs.forEach(pc => {
       const activo  = pc.estado.toLowerCase() !== 'pausado';
       const badge   = activo
-        ? '<span style="background:#e8f5e9;color:#2e7d32;padding:3px 10px;border-radius:12px;font-size:12px">✅ Activo</span>'
-        : '<span style="background:#fdecea;color:#c62828;padding:3px 10px;border-radius:12px;font-size:12px">⏸️ Pausado</span>';
+        ? '<span style="background:#e8f5e9;color:#2e7d32;padding:3px 10px;border-radius:12px;font-size:12px">\u2705 Activo</span>'
+        : '<span style="background:#fdecea;color:#c62828;padding:3px 10px;border-radius:12px;font-size:12px">\u23f8\ufe0f Pausado</span>';
       const btn     = activo
-        ? `<button onclick="togglePc('${pc.nombre}','pausado')" style="background:#fdecea;color:#c62828;border:1px solid #f5c6cb;padding:5px 12px;border-radius:8px;cursor:pointer;font-size:12px">⏸️ Pausar</button>`
-        : `<button onclick="togglePc('${pc.nombre}','activo')" style="background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;padding:5px 12px;border-radius:8px;cursor:pointer;font-size:12px">▶️ Reanudar</button>`;
-      html += `<tr><td><b>${pc.nombre}</b></td><td>${badge}</td><td style="color:#888;font-size:12px">${pc.ultima_conexion||'—'}</td><td style="color:#888;font-size:12px">${pc.version||'—'}</td><td>${btn}</td></tr>`;
+        ? `<button onclick="togglePc('${pc.nombre}','pausado')" style="background:#fdecea;color:#c62828;border:1px solid #f5c6cb;padding:5px 12px;border-radius:8px;cursor:pointer;font-size:12px">\u23f8\ufe0f Pausar</button>`
+        : `<button onclick="togglePc('${pc.nombre}','activo')" style="background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;padding:5px 12px;border-radius:8px;cursor:pointer;font-size:12px">\u25b6\ufe0f Reanudar</button>`;
+      html += `<tr><td><b>${pc.nombre}</b></td><td>${badge}</td><td style="color:#888;font-size:12px">${pc.ultima_conexion||'\u2014'}</td><td style="color:#888;font-size:12px">${pc.version||'\u2014'}</td><td>${btn}</td></tr>`;
     });
     html += '</tbody></table>';
     div.innerHTML = html;
@@ -1155,7 +1155,7 @@ async function cargarPcs(){
 
 async function togglePc(nombre, nuevoEstado){
   const accion = nuevoEstado === 'pausado' ? 'Pausar' : 'Reanudar';
-  if(!confirm(`¿${accion} la PC "${nombre}"?\n\nEl cambio aplica en máximo 15 minutos.`)) return;
+  if(!confirm(`\u00bf${accion} la PC "${nombre}"?\n\nEl cambio aplica en m\u00e1ximo 15 minutos.`)) return;
   try {
     const r    = await fetch(APPS_SCRIPT_URL + '?action=setPcEstado&nombre=' + encodeURIComponent(nombre) + '&estado=' + encodeURIComponent(nuevoEstado) + '&t=' + Date.now());
     const data = await r.json();
@@ -1164,11 +1164,11 @@ async function togglePc(nombre, nuevoEstado){
   } catch(e){ alert('Error: ' + e); }
 }
 
-// ── KPI TIEMPOS ──────────────────────────────────────────────────────
+// \u2500\u2500 KPI TIEMPOS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function fmtMin(m){m=Math.round(Number(m)||0);const h=Math.floor(m/60),min=m%60;return h>0?h+'h '+min+'min':min+'min';}
 function semaforoColor(p){if(p<=5)return '#2ecc71';if(p<=20)return '#f39c12';return '#e74c3c';}
 
-let _kpiTodos = []; // todos los registros históricos
+let _kpiTodos = []; // todos los registros hist\u00f3ricos
 
 async function cargarKpiTiempos(){
   const tbody = document.getElementById('tabla-kpi-tiempos');
@@ -1181,12 +1181,12 @@ async function cargarKpiTiempos(){
     const json = JSON.parse(txt.replace(/^[^\(]+\(|\);?$/g,''));
     const rows = json.table?.rows || [];
     if(!rows.length){
-      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#aaa;padding:2rem">Sin datos aún — el bot no ha registrado tiempos todavía.</td></tr>';
-      meta.textContent='Sin datos aún';
+      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#aaa;padding:2rem">Sin datos a\u00fan \u2014 el bot no ha registrado tiempos todav\u00eda.</td></tr>';
+      meta.textContent='Sin datos a\u00fan';
       return;
     }
     // Schema TIEMPOS: Fecha(0) Hora(1) Jefe(2) Seccion(3) Segundos(4) Fecha_H(5) FechaStatus(6)
-    // Aggregate by dia+jefe: compute min/prom/max/rem from seconds→minutes
+    // Aggregate by dia+jefe: compute min/prom/max/rem from seconds\u2192minutes
     const agg = {}; // { "DD/MM/YYYY|Jefe": { mins:[], hora:"HH:MM" } }
     for(const row of rows){
       const dia  = row.c[0]?.v || row.c[0]?.f || '';
@@ -1200,7 +1200,7 @@ async function cargarKpiTiempos(){
       if(hora) agg[key].hora = hora; // keep last recorded hora
     }
     if(!Object.keys(agg).length){
-      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#aaa;padding:2rem">Sin datos válidos en la hoja TIEMPOS.</td></tr>';
+      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#aaa;padding:2rem">Sin datos v\u00e1lidos en la hoja TIEMPOS.</td></tr>';
       meta.textContent='Sin datos';
       return;
     }
@@ -1218,14 +1218,14 @@ async function cargarKpiTiempos(){
       };
     }).filter(d=>d.jefe && d.dia);
 
-    // Días únicos, más reciente primero
+    // D\u00edas \u00fanicos, m\u00e1s reciente primero
     const dias = [...new Set(_kpiTodos.map(d=>d.dia))].sort((a,b)=>{
       const p = s=>s.split('/').reverse().join('');
       return p(b).localeCompare(p(a));
     });
 
     sel.innerHTML = dias.map((d,i)=>
-      `<option value="${d}">${d}${i===0?' (más reciente)':''}</option>`
+      `<option value="${d}">${d}${i===0?' (m\u00e1s reciente)':''}</option>`
     ).join('');
 
     filtrarKpiPorDia();
@@ -1244,13 +1244,13 @@ function filtrarKpiPorDia(){
 
   const datos = _kpiTodos.filter(d=>d.dia===dia).sort((a,b)=>a.prom-b.prom);
   if(!datos.length){
-    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#aaa;padding:2rem">Sin datos para este día.</td></tr>';
+    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#aaa;padding:2rem">Sin datos para este d\u00eda.</td></tr>';
     meta.textContent=dia;
     return;
   }
 
   const hora = datos[0]?.hora || '';
-  meta.textContent = `📅 ${dia}  ·  últ. registro: ${hora}  ·  ${datos.length} jefes`;
+  meta.textContent = `\ud83d\udcc5 ${dia}  \u00b7  \u00falt. registro: ${hora}  \u00b7  ${datos.length} jefes`;
 
   tbody.innerHTML = datos.map((d,i)=>{
     const color = semaforoColor(d.prom);
@@ -1266,7 +1266,7 @@ function filtrarKpiPorDia(){
   }).join('');
 
   const promGral = Math.round(datos.reduce((s,d)=>s+d.prom,0)/datos.length);
-  footer.textContent = `Promedio general del día: ${fmtMin(promGral)}`;
+  footer.textContent = `Promedio general del d\u00eda: ${fmtMin(promGral)}`;
 
   const labels = datos.map(d=>d.jefe.split(' ').slice(0,2).join(' '));
   const proms  = datos.map(d=>d.prom);
@@ -1347,8 +1347,8 @@ function prom(arr,key){const v=arr.filter(e=>e.exito).map(e=>e[key]);return v.le
 function renderCards(data){
   const ex=data.filter(e=>e.exito).length,ul=data[data.length-1];
   document.getElementById('cards').innerHTML=`
-    <div class="metric"><div class="lbl">Duracion promedio</div><div class="val">${formatDur(prom(data,'duracion'))}</div><div class="sub">Ultima: ${ul?formatDur(ul.duracion):'—'}</div></div>
-    <div class="metric"><div class="lbl">Intentos promedio</div><div class="val">${prom(data,'intentos')}</div><div class="sub">Ultima: ${ul?ul.intentos:'—'}</div></div>
+    <div class="metric"><div class="lbl">Duracion promedio</div><div class="val">${formatDur(prom(data,'duracion'))}</div><div class="sub">Ultima: ${ul?formatDur(ul.duracion):'\u2014'}</div></div>
+    <div class="metric"><div class="lbl">Intentos promedio</div><div class="val">${prom(data,'intentos')}</div><div class="sub">Ultima: ${ul?ul.intentos:'\u2014'}</div></div>
     <div class="metric"><div class="lbl">Tasa de exito</div><div class="val">${data.length?Math.round(ex/data.length*100):0}%</div><div class="sub">${ex} ok / ${data.length-ex} errores</div></div>
     <div class="metric"><div class="lbl">Ejecuciones</div><div class="val">${data.length}</div><div class="sub">de ${todos.length} totales</div></div>`;
 }
@@ -1395,7 +1395,7 @@ function actualizarBotStatus(data){
   bar.style.marginBottom='1rem';
   if(ul.exito){bar.style.background='#eaf3de';bar.style.color='#3b6d11';}
   else{bar.style.background='#fcebeb';bar.style.color='#a32d2d';}
-  bar.innerHTML=(ul.exito?'✅':'❌')+' Ultima ejecucion: <b>'+ul.fecha+' '+ul.hora+'</b> — '+ul.total+' remisiones, '+ul.vencidas+' vencidas, '+formatDur(ul.duracion)+(ul.exito?'':' ⚠️ Con error');
+  bar.innerHTML=(ul.exito?'\u2705':'\u274c')+' Ultima ejecucion: <b>'+ul.fecha+' '+ul.hora+'</b> \u2014 '+ul.total+' remisiones, '+ul.vencidas+' vencidas, '+formatDur(ul.duracion)+(ul.exito?'':' \u26a0\ufe0f Con error');
   actualizarGlobalStatus(ul);
   const gsb=document.getElementById('gsb-refresh');
   if(gsb)gsb.textContent='Actualiza en '+countdownSeg+'s';
@@ -1460,13 +1460,13 @@ function actualizarResumen(){
   document.getElementById('rs-horario').textContent=hi+':00 - '+hf+':'+mf;
   const dias=[...document.querySelectorAll('.dia-chip.active')].map(c=>c.textContent);
   document.getElementById('rs-dias').textContent=dias.length===7?'Todos los dias':dias.join(', ');
-  document.getElementById('rs-estado').textContent=document.getElementById('cfg-pausado').checked?'⏸️ Pausado':'✅ Activo';
+  document.getElementById('rs-estado').textContent=document.getElementById('cfg-pausado').checked?'\u23f8\ufe0f Pausado':'\u2705 Activo';
   document.getElementById('rs-vencida').textContent=document.getElementById('cfg-vencida').value+' min';
 }
 
 async function cargarConfig(){
   const estado=document.getElementById('cfg-estado');
-  estado.className='estado-bar warn';estado.textContent='⏳ Cargando...';
+  estado.className='estado-bar warn';estado.textContent='\u23f3 Cargando...';
   try{
     const r=await fetch(APPS_SCRIPT_URL+'?accion=config');
     const data=await r.json();
@@ -1501,22 +1501,22 @@ async function cargarConfig(){
     if(document.getElementById('cfg-intervalo-demo'))document.getElementById('cfg-intervalo-demo').value=num(c.intervalo_demo,15);
     const dias=(c.dias_activos||'lun,mar,mie,jue,vie,sab,dom').split(',').map(d=>d.trim());
     document.querySelectorAll('.dia-chip').forEach(chip=>{if(dias.includes(chip.dataset.dia))chip.classList.add('active');else chip.classList.remove('active');});
-    estado.className='estado-bar ok';estado.textContent='✅ Cargada';
+    estado.className='estado-bar ok';estado.textContent='\u2705 Cargada';
     actualizarResumen();
-  }catch(e){estado.className='estado-bar err';estado.textContent='❌ '+e.message;}
+  }catch(e){estado.className='estado-bar err';estado.textContent='\u274c '+e.message;}
 }
 
 async function guardarConfig(){
-  const btn=document.getElementById('btn-guardar');btn.disabled=true;btn.textContent='⏳ Guardando...';
+  const btn=document.getElementById('btn-guardar');btn.disabled=true;btn.textContent='\u23f3 Guardando...';
   const dias=[...document.querySelectorAll('.dia-chip.active')].map(c=>c.dataset.dia).join(',');
   const cfg={hora_inicio:document.getElementById('cfg-hora-inicio').value,hora_fin:document.getElementById('cfg-hora-fin').value,minuto_fin:document.getElementById('cfg-minuto-fin').value,pausado:document.getElementById('cfg-pausado').checked?'si':'no',dias_activos:dias,minutos_vencida:document.getElementById('cfg-vencida').value,umbral_anomalia:document.getElementById('cfg-anomalia').value,watchdog_minutos:document.getElementById('cfg-watchdog').value,watchdog_activo:document.getElementById('cfg-watchdog-activo').checked?'si':'no',webhook_reporte:document.getElementById('cfg-wh-reporte').value,webhook_jefes:document.getElementById('cfg-wh-jefes').value,webhook_tiempos:document.getElementById('cfg-wh-tiempos').value,enviar_reporte:document.getElementById('cfg-env-reporte').checked?'si':'no',enviar_jefes:document.getElementById('cfg-env-jefes').checked?'si':'no',enviar_tiempos:document.getElementById('cfg-env-tiempos').checked?'si':'no',ciclos_jefes:document.getElementById('cfg-ciclos-jefes').value,ciclos_vendedores:document.getElementById('cfg-ciclos-vendedores').value,ciclos_reporte:document.getElementById('cfg-ciclos-reporte').value,hora_recordatorio:document.getElementById('cfg-hora-record').value};
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'config',config:cfg})});
     const data=await r.json();
-    if(data.ok)showToast('✅ Configuracion guardada','ok');
+    if(data.ok)showToast('\u2705 Configuracion guardada','ok');
     else throw new Error(data.error||'Error al guardar');
-  }catch(e){showToast('❌ '+e.message,'err');}
-  finally{btn.disabled=false;btn.textContent='💾 Guardar';}
+  }catch(e){showToast('\u274c '+e.message,'err');}
+  finally{btn.disabled=false;btn.textContent='\ud83d\udcbe Guardar';}
 }
 
 document.querySelectorAll('.dia-chip').forEach(chip=>{chip.addEventListener('click',()=>{chip.classList.toggle('active');actualizarResumen();});});
@@ -1524,7 +1524,7 @@ document.querySelectorAll('#cfg-hora-inicio,#cfg-hora-fin,#cfg-minuto-fin,#cfg-p
 
 async function guardarDemo(){
   const el=document.getElementById('demo-estado');
-  el.textContent='⏳ Guardando...';
+  el.textContent='\u23f3 Guardando...';
   const cfg={
     webhook_demo_1:document.getElementById('cfg-wh-demo1').value,
     webhook_demo_2:document.getElementById('cfg-wh-demo2').value,
@@ -1534,9 +1534,9 @@ async function guardarDemo(){
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'config',config:cfg})});
     const data=await r.json();
-    if(data.ok){el.textContent='✅ Configuración demo guardada';showToast('✅ Config demo guardada','ok');}
+    if(data.ok){el.textContent='\u2705 Configuraci\u00f3n demo guardada';showToast('\u2705 Config demo guardada','ok');}
     else throw new Error(data.error||'Error al guardar');
-  }catch(e){el.textContent='❌ '+e.message;showToast('❌ '+e.message,'err');}
+  }catch(e){el.textContent='\u274c '+e.message;showToast('\u274c '+e.message,'err');}
 }
 
 // DESCANSOS
@@ -1563,7 +1563,7 @@ async function cargarDescansos(){
     const tbody=document.getElementById('tabla-descansos');
     if(!data.descansos||data.descansos.length===0){tbody.innerHTML='<tr><td colspan="4" style="text-align:center;color:#888;padding:1.5rem">Sin descansos programados</td></tr>';return;}
     data.descansos.sort((a,b)=>{const pa=a.fecha.split('/');const pb=b.fecha.split('/');return new Date(pa[2],pa[1]-1,pa[0])-new Date(pb[2],pb[1]-1,pb[0]);});
-    tbody.innerHTML=data.descansos.map(d=>`<tr><td>${d.fecha}</td><td>${d.jefe_descansa}</td><td>${d.jefe_cubre}</td><td><button onclick="borrarDescanso('${d.fecha}','${d.jefe_descansa}')" style="background:#fcebeb;color:#a32d2d;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px">🗑️</button></td></tr>`).join('');
+    tbody.innerHTML=data.descansos.map(d=>`<tr><td>${d.fecha}</td><td>${d.jefe_descansa}</td><td>${d.jefe_cubre}</td><td><button onclick="borrarDescanso('${d.fecha}','${d.jefe_descansa}')" style="background:#fcebeb;color:#a32d2d;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px">\ud83d\uddd1\ufe0f</button></td></tr>`).join('');
   }catch(e){document.getElementById('tabla-descansos').innerHTML='<tr><td colspan="4" style="text-align:center;color:#a32d2d;padding:1.5rem">Error: '+e.message+'</td></tr>';}
 }
 
@@ -1571,25 +1571,25 @@ async function agregarDescanso(){
   const fechaIso=document.getElementById('d-fecha').value;
   const jefeDescansa=document.getElementById('d-jefe-descansa').value;
   const jefeCubre=document.getElementById('d-jefe-cubre').value;
-  if(!fechaIso||!jefeDescansa||!jefeCubre){showToast('⚠️ Completa todos los campos','err');return;}
-  if(jefeDescansa===jefeCubre){showToast('⚠️ El jefe que cubre debe ser diferente','err');return;}
+  if(!fechaIso||!jefeDescansa||!jefeCubre){showToast('\u26a0\ufe0f Completa todos los campos','err');return;}
+  if(jefeDescansa===jefeCubre){showToast('\u26a0\ufe0f El jefe que cubre debe ser diferente','err');return;}
   const [y,m,d]=fechaIso.split('-');const fecha=`${d}/${m}/${y}`;
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'agregar_descanso',fecha,jefe_descansa:jefeDescansa,jefe_cubre:jefeCubre})});
     const data=await r.json();
-    if(data.ok){const n=data.secciones_agregadas||0;showToast(`✅ Descanso agregado — ${n} sección${n===1?'':'es'} de ${jefeDescansa.split(' ')[0]} asignadas a ${jefeCubre.split(' ')[0]}`,'ok');document.getElementById('d-fecha').value='';document.getElementById('d-jefe-descansa').value='';document.getElementById('d-jefe-cubre').value='';cargarDescansos();}
+    if(data.ok){const n=data.secciones_agregadas||0;showToast(`\u2705 Descanso agregado \u2014 ${n} secci\u00f3n${n===1?'':'es'} de ${jefeDescansa.split(' ')[0]} asignadas a ${jefeCubre.split(' ')[0]}`,'ok');document.getElementById('d-fecha').value='';document.getElementById('d-jefe-descansa').value='';document.getElementById('d-jefe-cubre').value='';cargarDescansos();}
     else throw new Error(data.error);
-  }catch(e){showToast('❌ '+e.message,'err');}
+  }catch(e){showToast('\u274c '+e.message,'err');}
 }
 
 async function borrarDescanso(fecha,jefe){
-  if(!confirm('¿Borrar descanso del '+fecha+' de '+jefe+'?'))return;
+  if(!confirm('\u00bfBorrar descanso del '+fecha+' de '+jefe+'?'))return;
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'borrar_descanso',fecha,jefe_descansa:jefe})});
     const data=await r.json();
-    if(data.ok){showToast('✅ Borrado','ok');cargarDescansos();}
+    if(data.ok){showToast('\u2705 Borrado','ok');cargarDescansos();}
     else throw new Error(data.error);
-  }catch(e){showToast('❌ '+e.message,'err');}
+  }catch(e){showToast('\u274c '+e.message,'err');}
 }
 
 
@@ -1617,7 +1617,7 @@ async function cargarWebhooksJefes(){
     const r=await fetch(APPS_SCRIPT_URL+'?accion=webhooks_jefes');
     const data=await r.json();
     if(!data.ok||!data.jefes||!data.jefes.length){
-      grid.innerHTML='<div style="color:#aaa;font-size:13px;grid-column:1/-1;text-align:center;padding:1rem">Sin datos — agrega webhooks en la hoja WEBHOOKS_JEFES</div>';
+      grid.innerHTML='<div style="color:#aaa;font-size:13px;grid-column:1/-1;text-align:center;padding:1rem">Sin datos \u2014 agrega webhooks en la hoja WEBHOOKS_JEFES</div>';
       return;
     }
     const conWebhook=data.jefes.filter(j=>j.tiene_webhook&&j.activo!==false).length;
@@ -1625,9 +1625,9 @@ async function cargarWebhooksJefes(){
     const desactivados=data.jefes.filter(j=>j.tiene_webhook&&j.activo===false).length;
     grid.innerHTML=`
       <div style="grid-column:1/-1;display:flex;gap:10px;margin-bottom:6px;flex-wrap:wrap">
-        <span style="font-size:12px;background:#eaf3de;color:#3b6d11;padding:4px 12px;border-radius:20px;font-weight:600">✅ Activos: ${conWebhook}</span>
-        ${desactivados>0?`<span style="font-size:12px;background:#faeeda;color:#854f0b;padding:4px 12px;border-radius:20px;font-weight:600">⏸️ Desactivados: ${desactivados}</span>`:''}
-        <span style="font-size:12px;background:#fcebeb;color:#a32d2d;padding:4px 12px;border-radius:20px;font-weight:600">❌ Sin webhook: ${sinWebhook}</span>
+        <span style="font-size:12px;background:#eaf3de;color:#3b6d11;padding:4px 12px;border-radius:20px;font-weight:600">\u2705 Activos: ${conWebhook}</span>
+        ${desactivados>0?`<span style="font-size:12px;background:#faeeda;color:#854f0b;padding:4px 12px;border-radius:20px;font-weight:600">\u23f8\ufe0f Desactivados: ${desactivados}</span>`:''}
+        <span style="font-size:12px;background:#fcebeb;color:#a32d2d;padding:4px 12px;border-radius:20px;font-weight:600">\u274c Sin webhook: ${sinWebhook}</span>
       </div>
       ${data.jefes.map(j=>{
         const activo=j.tiene_webhook&&j.activo!==false;
@@ -1640,11 +1640,11 @@ async function cargarWebhooksJefes(){
           ${j.tiene_webhook?`<label class="toggle" title="${activo?'Desactivar':'Activar'}">
             <input type="checkbox" ${activo?'checked':''} onchange="toggleWebhookJefe('${j.nombre}',this.checked,this)">
             <span class="slider"></span>
-          </label>`:`<span style="font-size:18px;opacity:.4">❌</span>`}
+          </label>`:`<span style="font-size:18px;opacity:.4">\u274c</span>`}
         </div>`;
       }).join('')}`;
   }catch(e){
-    grid.innerHTML='<div style="color:#a32d2d;font-size:13px;grid-column:1/-1;text-align:center;padding:1rem">Error al cargar — verifica que el Apps Script tenga el endpoint webhooks_jefes</div>';
+    grid.innerHTML='<div style="color:#a32d2d;font-size:13px;grid-column:1/-1;text-align:center;padding:1rem">Error al cargar \u2014 verifica que el Apps Script tenga el endpoint webhooks_jefes</div>';
   }
 }
 
@@ -1654,7 +1654,7 @@ async function toggleWebhookJefe(nombre,activo,checkbox){
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'toggle_webhook_jefe',nombre,activo})});
     const data=await r.json();
     if(data.ok){
-      showToast(activo?`✅ ${nombre} activado`:`⏸️ ${nombre} desactivado`,'ok');
+      showToast(activo?`\u2705 ${nombre} activado`:`\u23f8\ufe0f ${nombre} desactivado`,'ok');
       cargarWebhooksJefes();
     }else{
       showToast('Error al guardar','err');
@@ -1662,7 +1662,7 @@ async function toggleWebhookJefe(nombre,activo,checkbox){
       checkbox.disabled=false;
     }
   }catch(e){
-    showToast('Error de conexión','err');
+    showToast('Error de conexi\u00f3n','err');
     checkbox.checked=!activo;
     checkbox.disabled=false;
   }
@@ -1674,9 +1674,9 @@ async function actualizarJefe(el){
     const payload={accion:'actualizar_jefe',seccion:sec};payload[tipo]=valor;
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)});
     const data=await r.json();
-    if(data.ok){showToast('✅ Actualizado','ok');const s=DIRECTORIO_SECCIONES.find(x=>x.seccion===sec);if(s)s[tipo]=valor;}
+    if(data.ok){showToast('\u2705 Actualizado','ok');const s=DIRECTORIO_SECCIONES.find(x=>x.seccion===sec);if(s)s[tipo]=valor;}
     else throw new Error(data.error);
-  }catch(e){showToast('❌ '+e.message,'err');}
+  }catch(e){showToast('\u274c '+e.message,'err');}
 }
 
 // FESTIVOS
@@ -1687,54 +1687,54 @@ async function cargarFestivos(){
     const tbody=document.getElementById('tabla-festivos');
     if(!tbody)return;
     if(!data.festivos||!data.festivos.length){tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:#888;padding:1.5rem">Sin festivos</td></tr>';return;}
-    tbody.innerHTML=data.festivos.map(f=>`<tr><td>${f.fecha}</td><td>${f.descripcion}</td><td><button onclick="borrarFestivo('${f.fecha}')" style="background:#fcebeb;color:#a32d2d;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px">🗑️</button></td></tr>`).join('');
+    tbody.innerHTML=data.festivos.map(f=>`<tr><td>${f.fecha}</td><td>${f.descripcion}</td><td><button onclick="borrarFestivo('${f.fecha}')" style="background:#fcebeb;color:#a32d2d;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px">\ud83d\uddd1\ufe0f</button></td></tr>`).join('');
   }catch(e){const el=document.getElementById('tabla-festivos');if(el)el.innerHTML='<tr><td colspan="3" style="text-align:center;color:#a32d2d;padding:1.5rem">Error</td></tr>';}
 }
 
 async function agregarFestivo(){
   const fechaIso=document.getElementById('f-fecha').value;
   const desc=document.getElementById('f-desc').value;
-  if(!fechaIso){showToast('⚠️ Selecciona fecha','err');return;}
+  if(!fechaIso){showToast('\u26a0\ufe0f Selecciona fecha','err');return;}
   const [y,m,d]=fechaIso.split('-');const fecha=`${d}/${m}/${y}`;
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'agregar_festivo',fecha,descripcion:desc})});
     const data=await r.json();
-    if(data.ok){showToast('✅ Festivo agregado','ok');document.getElementById('f-fecha').value='';document.getElementById('f-desc').value='';cargarFestivos();}
+    if(data.ok){showToast('\u2705 Festivo agregado','ok');document.getElementById('f-fecha').value='';document.getElementById('f-desc').value='';cargarFestivos();}
     else throw new Error(data.error);
-  }catch(e){showToast('❌ '+e.message,'err');}
+  }catch(e){showToast('\u274c '+e.message,'err');}
 }
 
 async function borrarFestivo(fecha){
-  if(!confirm('¿Borrar festivo '+fecha+'?'))return;
+  if(!confirm('\u00bfBorrar festivo '+fecha+'?'))return;
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'borrar_festivo',fecha})});
     const data=await r.json();
-    if(data.ok){showToast('✅ Borrado','ok');cargarFestivos();}
+    if(data.ok){showToast('\u2705 Borrado','ok');cargarFestivos();}
     else throw new Error(data.error);
-  }catch(e){showToast('❌ '+e.message,'err');}
+  }catch(e){showToast('\u274c '+e.message,'err');}
 }
 
 // ACCIONES
 async function accion(tipo){
-  if(!confirm('¿Ejecutar accion: '+tipo+'?'))return;
+  if(!confirm('\u00bfEjecutar accion: '+tipo+'?'))return;
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'accion_rapida',tipo})});
     const data=await r.json();
-    if(data.ok)showToast('✅ '+(data.mensaje||'Hecho'),'ok');
+    if(data.ok)showToast('\u2705 '+(data.mensaje||'Hecho'),'ok');
     else throw new Error(data.error);
-  }catch(e){showToast('❌ '+e.message,'err');}
+  }catch(e){showToast('\u274c '+e.message,'err');}
 }
 
 // KPI VENDEDORES (manual)
 async function enviarKpiVendedores(){
-  if(!confirm('¿Enviar reporte de tiempos por vendedor al espacio Tiempos?\n\nEl bot lo procesara en la proxima ejecucion (maximo 15 min).'))return;
+  if(!confirm('\u00bfEnviar reporte de tiempos por vendedor al espacio Tiempos?\n\nEl bot lo procesara en la proxima ejecucion (maximo 15 min).'))return;
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'kpi_vendedores'})});
     const data=await r.json();
-    if(data.ok)showToast('✅ Señal enviada — el bot mandara el reporte en la proxima ejecucion','ok');
+    if(data.ok)showToast('\u2705 Se\u00f1al enviada \u2014 el bot mandara el reporte en la proxima ejecucion','ok');
     else throw new Error(data.error||'Error desconocido');
   }catch(e){
-    showToast('⚠️ Usa el archivo enviar_kpi_vendedores.bat en la PC del bot','warn');
+    showToast('\u26a0\ufe0f Usa el archivo enviar_kpi_vendedores.bat en la PC del bot','warn');
   }
 }
 
@@ -1746,8 +1746,8 @@ async function cargarLogs(){
     const cont=document.getElementById('logs-container');
     if(!data.logs||!data.logs.length){cont.innerHTML='<div style="text-align:center;color:#888;padding:1.5rem">Sin logs</div>';return;}
     cont.innerHTML=data.logs.map(l=>`<div class="feature" style="border-left-color:${l.estado==='exitosa'?'#1D9E75':'#E24B4A'}">
-      <div class="title">${l.estado==='exitosa'?'✅':'❌'} ${l.fecha} ${l.hora}</div>
-      <div class="desc">Duracion: ${formatDur(l.duracion)} · Total: ${l.total} · Vencidas: ${l.vencidas} · Intentos: ${l.intentos}${l.error?' · '+l.error:''}</div>
+      <div class="title">${l.estado==='exitosa'?'\u2705':'\u274c'} ${l.fecha} ${l.hora}</div>
+      <div class="desc">Duracion: ${formatDur(l.duracion)} \u00b7 Total: ${l.total} \u00b7 Vencidas: ${l.vencidas} \u00b7 Intentos: ${l.intentos}${l.error?' \u00b7 '+l.error:''}</div>
     </div>`).join('');
   }catch(e){document.getElementById('logs-container').innerHTML='<div style="color:#a32d2d;padding:1rem">Error: '+e.message+'</div>';}
 }
@@ -1781,9 +1781,9 @@ async function guardarRouting(){
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'config',config:cfg})});
     const data=await r.json();
-    if(data.ok)showToast('✅ Rutas guardadas — '+data.cambios+' cambios','ok');
+    if(data.ok)showToast('\u2705 Rutas guardadas \u2014 '+data.cambios+' cambios','ok');
     else throw new Error(data.error);
-  }catch(e){showToast('❌ '+e.message,'err');}
+  }catch(e){showToast('\u274c '+e.message,'err');}
 }
 
 // Actualizar cargar/guardar config para incluir watchdog_activo
@@ -1801,16 +1801,16 @@ cargarConfig = async function(){
 
 const _guardarConfigOriginal = guardarConfig;
 guardarConfig = async function(){
-  const btn=document.getElementById('btn-guardar');btn.disabled=true;btn.textContent='⏳ Guardando...';
+  const btn=document.getElementById('btn-guardar');btn.disabled=true;btn.textContent='\u23f3 Guardando...';
   const dias=[...document.querySelectorAll('.dia-chip.active')].map(c=>c.dataset.dia).join(',');
   const cfg={hora_inicio:document.getElementById('cfg-hora-inicio').value,hora_fin:document.getElementById('cfg-hora-fin').value,minuto_fin:document.getElementById('cfg-minuto-fin').value,pausado:document.getElementById('cfg-pausado').checked?'si':'no',dias_activos:dias,minutos_vencida:document.getElementById('cfg-vencida').value,umbral_anomalia:document.getElementById('cfg-anomalia').value,watchdog_minutos:document.getElementById('cfg-watchdog').value,watchdog_activo:document.getElementById('cfg-watchdog-activo').checked?'si':'no',webhook_reporte:document.getElementById('cfg-wh-reporte').value,webhook_jefes:document.getElementById('cfg-wh-jefes').value,webhook_tiempos:document.getElementById('cfg-wh-tiempos').value,enviar_reporte:document.getElementById('cfg-env-reporte').checked?'si':'no',enviar_jefes:document.getElementById('cfg-env-jefes').checked?'si':'no',enviar_tiempos:document.getElementById('cfg-env-tiempos').checked?'si':'no'};
   try{
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'config',config:cfg})});
     const data=await r.json();
-    if(data.ok)showToast('✅ Configuracion guardada','ok');
+    if(data.ok)showToast('\u2705 Configuracion guardada','ok');
     else throw new Error(data.error||'Error al guardar');
-  }catch(e){showToast('❌ '+e.message,'err');}
-  finally{btn.disabled=false;btn.textContent='💾 Guardar';}
+  }catch(e){showToast('\u274c '+e.message,'err');}
+  finally{btn.disabled=false;btn.textContent='\ud83d\udcbe Guardar';}
 };
 
 // MENSAJES PROGRAMADOS
@@ -1828,8 +1828,8 @@ async function cargarMensajesProgramados(){
       div.innerHTML = '<div style="text-align:center;padding:2rem;color:#aaa">Sin mensajes programados. Agrega el primero arriba.</div>';
       return;
     }
-    const DEST_LABEL = {reporte:'📢 Reporte', jefes:'👔 Jefes', tiempos:'⏱️ Tiempos', 'reporte,jefes':'📢 Reporte + 👔 Jefes'};
-    let html = '<table><thead><tr><th>Mensaje</th><th>Intervalo</th><th>Destino</th><th>Estado</th><th>Último envío</th><th></th></tr></thead><tbody>';
+    const DEST_LABEL = {reporte:'\ud83d\udce2 Reporte', jefes:'\ud83d\udc54 Jefes', tiempos:'\u23f1\ufe0f Tiempos', 'reporte,jefes':'\ud83d\udce2 Reporte + \ud83d\udc54 Jefes'};
+    let html = '<table><thead><tr><th>Mensaje</th><th>Intervalo</th><th>Destino</th><th>Estado</th><th>\u00daltimo env\u00edo</th><th></th></tr></thead><tbody>';
     rows.forEach(row => {
       const c        = row.c || [];
       const id       = c[0]?.v?.toString() || '';
@@ -1842,18 +1842,18 @@ async function cargarMensajesProgramados(){
       const dLabel   = DEST_LABEL[destino] || destino;
       html += `<tr>
         <td style="max-width:300px;word-break:break-word;font-size:12px">${preview.replace(/\n/g,'<br>')}</td>
-        <td style="white-space:nowrap">cada <b>${intervalo} ciclo${intervalo==1?'':'s'}</b><br><span style="color:#888;font-size:10px">≈${intervalo*15} min</span></td>
+        <td style="white-space:nowrap">cada <b>${intervalo} ciclo${intervalo==1?'':'s'}</b><br><span style="color:#888;font-size:10px">\u2248${intervalo*15} min</span></td>
         <td><span class="badge info">${dLabel}</span></td>
-        <td><span class="badge ${activo?'ok':'warn'}">${activo?'✅ Activo':'⏸️ Pausado'}</span></td>
-        <td style="color:#888;font-size:11px;white-space:nowrap">${ultimo||'—'}</td>
+        <td><span class="badge ${activo?'ok':'warn'}">${activo?'\u2705 Activo':'\u23f8\ufe0f Pausado'}</span></td>
+        <td style="color:#888;font-size:11px;white-space:nowrap">${ultimo||'\u2014'}</td>
         <td style="white-space:nowrap">
           <button onclick="toggleMensajeProgramado('${id}',${!activo})"
             style="font-size:11px;padding:3px 9px;border-radius:6px;background:${activo?'#faeeda':'#eaf3de'};border:none;color:${activo?'#854f0b':'#3b6d11'};cursor:pointer">
-            ${activo?'⏸ Pausar':'▶ Activar'}
+            ${activo?'\u23f8 Pausar':'\u25b6 Activar'}
           </button>
           <button onclick="borrarMensajeProgramado('${id}')"
             style="font-size:11px;padding:3px 9px;border-radius:6px;background:#fcebeb;border:none;color:#a32d2d;cursor:pointer;margin-left:4px">
-            🗑️ Borrar
+            \ud83d\uddd1\ufe0f Borrar
           </button>
         </td>
       </tr>`;
@@ -1861,7 +1861,7 @@ async function cargarMensajesProgramados(){
     html += '</tbody></table>';
     div.innerHTML = html;
   } catch(e) {
-    div.innerHTML = '<div style="text-align:center;padding:2rem;color:#aaa">La hoja MENSAJES_PROGRAMADOS aún no existe — el bot la crea en la primera ejecución, o agrega el primer mensaje.</div>';
+    div.innerHTML = '<div style="text-align:center;padding:2rem;color:#aaa">La hoja MENSAJES_PROGRAMADOS a\u00fan no existe \u2014 el bot la crea en la primera ejecuci\u00f3n, o agrega el primer mensaje.</div>';
   }
 }
 
@@ -1875,8 +1875,8 @@ async function agregarMensajeProgramado(){
   const texto     = document.getElementById('msg-texto').value.trim();
   const intervalo = parseInt(document.getElementById('msg-intervalo').value) || 0;
   const destino   = document.getElementById('msg-destino').value;
-  if (!texto)          { showToast('⚠️ Escribe un mensaje','err'); return; }
-  if (intervalo < 1)   { showToast('⚠️ Mínimo 1 ciclo (~15 min)','err'); return; }
+  if (!texto)          { showToast('\u26a0\ufe0f Escribe un mensaje','err'); return; }
+  if (intervalo < 1)   { showToast('\u26a0\ufe0f M\u00ednimo 1 ciclo (~15 min)','err'); return; }
   try {
     const id     = Date.now().toString();
     const creado = new Date().toISOString().replace('T',' ').substring(0,19);
@@ -1886,7 +1886,7 @@ async function agregarMensajeProgramado(){
     });
     const data = await r.json();
     if (data.ok) {
-      showToast('✅ Mensaje programado agregado','ok');
+      showToast('\u2705 Mensaje programado agregado','ok');
       document.getElementById('msg-texto').value    = '';
       document.getElementById('msg-intervalo').value = '1';
       actualizarEtiquetaCiclos(1);
@@ -1895,22 +1895,22 @@ async function agregarMensajeProgramado(){
       throw new Error(data.error || 'Error al guardar');
     }
   } catch(e) {
-    showToast('❌ ' + e.message,'err');
+    showToast('\u274c ' + e.message,'err');
   }
 }
 
 async function borrarMensajeProgramado(id){
-  if (!confirm('¿Eliminar este mensaje? Ya no se volverá a enviar.')) return;
+  if (!confirm('\u00bfEliminar este mensaje? Ya no se volver\u00e1 a enviar.')) return;
   try {
     const r    = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
       body: JSON.stringify({accion:'borrar_mensaje_programado', id})
     });
     const data = await r.json();
-    if (data.ok) { showToast('✅ Mensaje eliminado','ok'); cargarMensajesProgramados(); }
+    if (data.ok) { showToast('\u2705 Mensaje eliminado','ok'); cargarMensajesProgramados(); }
     else throw new Error(data.error || 'Error al borrar');
   } catch(e) {
-    showToast('❌ ' + e.message,'err');
+    showToast('\u274c ' + e.message,'err');
   }
 }
 
@@ -1922,54 +1922,54 @@ async function toggleMensajeProgramado(id, nuevoActivo){
     });
     const data = await r.json();
     if (data.ok) {
-      showToast(nuevoActivo ? '✅ Mensaje activado' : '⏸️ Mensaje pausado','ok');
+      showToast(nuevoActivo ? '\u2705 Mensaje activado' : '\u23f8\ufe0f Mensaje pausado','ok');
       cargarMensajesProgramados();
     } else {
       throw new Error(data.error || 'Error');
     }
   } catch(e) {
-    showToast('❌ ' + e.message,'err');
+    showToast('\u274c ' + e.message,'err');
   }
 }
 
 // MENSAJES DE PRUEBA
 const PLANTILLAS_PRUEBA = {
-  apertura: `🌅 *Buenos dias* — PRUEBA
+  apertura: `\ud83c\udf05 *Buenos dias* \u2014 PRUEBA
 
 Iniciamos el dia de hoy con *189* clientes en espera de sus articulos.
 Jefes, contamos con su apoyo para trabajar las remisiones de ayer.
 
-📊 Desglose:
-🔴 Mercancia en Espera: *173*
-  📅 De ayer: *45* | De hoy: *128*
-🏷️ Etiquetas Generadas: *16*
+\ud83d\udcca Desglose:
+\ud83d\udd34 Mercancia en Espera: *173*
+  \ud83d\udcc5 De ayer: *45* | De hoy: *128*
+\ud83c\udff7\ufe0f Etiquetas Generadas: *16*
 
 _Mensaje de PRUEBA enviado desde el dashboard_`,
 
-  cierre: `🌙 *Buenas noches* — PRUEBA
+  cierre: `\ud83c\udf19 *Buenas noches* \u2014 PRUEBA
 
 Terminamos el dia de hoy con *45* clientes aun en espera.
 
-📊 Resumen de cierre:
-🔴 Mercancia en Espera: *32*
-🏷️ Etiquetas Generadas: *13*
+\ud83d\udcca Resumen de cierre:
+\ud83d\udd34 Mercancia en Espera: *32*
+\ud83c\udff7\ufe0f Etiquetas Generadas: *13*
 
-⚠️ Al cierre contamos con:
-  👨 JEFE PRUEBA — *5* pendientes
-    📍 Seccion 201 Deportes — 2h 15min
-
-_Mensaje de PRUEBA enviado desde el dashboard_`,
-
-  vencidas: `📊 *Resumen remisiones vencidas — PRUEBA*
-
-🔴 Total vencidas: *22*
-👔 Jefes afectados: *8*
-👤 Vendedores afectados: *15*
-⚠️ Sin vendedor: *3*
+\u26a0\ufe0f Al cierre contamos con:
+  \ud83d\udc68 JEFE PRUEBA \u2014 *5* pendientes
+    \ud83d\udccd Seccion 201 Deportes \u2014 2h 15min
 
 _Mensaje de PRUEBA enviado desde el dashboard_`,
 
-  alerta: `🚨 *ALERTA — Vencidas por encima del promedio* (PRUEBA)
+  vencidas: `\ud83d\udcca *Resumen remisiones vencidas \u2014 PRUEBA*
+
+\ud83d\udd34 Total vencidas: *22*
+\ud83d\udc54 Jefes afectados: *8*
+\ud83d\udc64 Vendedores afectados: *15*
+\u26a0\ufe0f Sin vendedor: *3*
+
+_Mensaje de PRUEBA enviado desde el dashboard_`,
+
+  alerta: `\ud83d\udea8 *ALERTA \u2014 Vencidas por encima del promedio* (PRUEBA)
 
 Actualmente: *75* remisiones vencidas
 Promedio del dia: *35*
@@ -1977,29 +1977,29 @@ Incremento: *+40*
 
 _Mensaje de PRUEBA enviado desde el dashboard_`,
 
-  ranking: `🏆 *Ranking del dia — PRUEBA*
+  ranking: `\ud83c\udfc6 *Ranking del dia \u2014 PRUEBA*
 
-🥇 *JEFE EJEMPLO 1*
+\ud83e\udd47 *JEFE EJEMPLO 1*
    Promedio: *2 min 08 seg* | 31 remisiones
 
-🥈 *JEFE EJEMPLO 2*
+\ud83e\udd48 *JEFE EJEMPLO 2*
    Promedio: *3 min 15 seg* | 24 remisiones
 
-🥉 *JEFA EJEMPLO 3*
+\ud83e\udd49 *JEFA EJEMPLO 3*
    Promedio: *5 min 02 seg* | 18 remisiones
 
 _Mensaje de PRUEBA enviado desde el dashboard_`,
 
-  tiempos: `📊 *Resumen del dia — tiempos sin asignar (PRUEBA)*
+  tiempos: `\ud83d\udcca *Resumen del dia \u2014 tiempos sin asignar (PRUEBA)*
 
-⏱️ Promedio general: *4 min 32 seg*
-📦 Total remisiones: *189*
+\u23f1\ufe0f Promedio general: *4 min 32 seg*
+\ud83d\udce6 Total remisiones: *189*
 
-👨 JEFE EJEMPLO
-  ⏱️ Promedio: *3 min 15 seg*
-  ✅ Mas rapido: *21 seg*
-  🔴 Mas lento: *12 min 40 seg*
-  📋 Remisiones: *24*
+\ud83d\udc68 JEFE EJEMPLO
+  \u23f1\ufe0f Promedio: *3 min 15 seg*
+  \u2705 Mas rapido: *21 seg*
+  \ud83d\udd34 Mas lento: *12 min 40 seg*
+  \ud83d\udccb Remisiones: *24*
 
 _Mensaje de PRUEBA enviado desde el dashboard_`,
 };
@@ -2011,11 +2011,11 @@ function cargarPrueba(tipo){
   if (sugerido[tipo]) document.getElementById('prueba-espacio').value = sugerido[tipo];
 }
 
-// Los webhooks viven en la hoja CONFIG — el Apps Script los lee y envía.
+// Los webhooks viven en la hoja CONFIG \u2014 el Apps Script los lee y env\u00eda.
 async function mandarPrueba(){
   const espacio = document.getElementById('prueba-espacio').value;
   const mensaje = document.getElementById('prueba-mensaje').value.trim();
-  if (!mensaje) {showToast('⚠️ El mensaje no puede estar vacio', 'err'); return;}
+  if (!mensaje) {showToast('\u26a0\ufe0f El mensaje no puede estar vacio', 'err'); return;}
 
   try {
     const r = await fetch(APPS_SCRIPT_URL, {
@@ -2023,10 +2023,10 @@ async function mandarPrueba(){
       body: JSON.stringify({accion: 'prueba_mensaje', espacio, mensaje})
     });
     const data = await r.json();
-    if (data.ok) showToast('✅ Mensaje enviado al espacio ' + espacio, 'ok');
+    if (data.ok) showToast('\u2705 Mensaje enviado al espacio ' + espacio, 'ok');
     else throw new Error(data.error || 'Error al enviar');
   } catch(e) {
-    showToast('❌ ' + e.message, 'err');
+    showToast('\u274c ' + e.message, 'err');
   }
 }
 
@@ -2039,12 +2039,12 @@ async function cargarHistorico(){
     const data=await r.json();
     if(!data.ok)return;
     document.getElementById('hist-meta').innerHTML=data.ultima_actualizacion?
-      `📅 Ultima actualizacion: <b>${data.ultima_actualizacion}</b> · ${data.filas} filas en archivo · ${data.total_procesados||0} remisiones procesadas`:
+      `\ud83d\udcc5 Ultima actualizacion: <b>${data.ultima_actualizacion}</b> \u00b7 ${data.filas} filas en archivo \u00b7 ${data.total_procesados||0} remisiones procesadas`:
       'Sin datos. Sube un archivo primero.';
     const tbody=document.getElementById('tabla-historico');
     if(!data.jefes||!data.jefes.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#888;padding:1.5rem">Sin datos</td></tr>';return;}
     tbody.innerHTML=data.jefes.map((j,i)=>{
-      const medalla=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+      const medalla=i===0?'\ud83e\udd47':i===1?'\ud83e\udd48':i===2?'\ud83e\udd49':(i+1);
       return `<tr>
         <td style="color:#aaa">${medalla}</td>
         <td><b>${j.jefe}</b></td>
@@ -2059,9 +2059,9 @@ async function cargarHistorico(){
 
 async function subirHistorico(){
   const file=document.getElementById('hist-file').files[0];
-  if(!file){showToast('⚠️ Selecciona un archivo','err');return;}
+  if(!file){showToast('\u26a0\ufe0f Selecciona un archivo','err');return;}
   const btn=document.getElementById('btn-subir-hist');
-  btn.disabled=true;btn.textContent='⏳ Procesando...';
+  btn.disabled=true;btn.textContent='\u23f3 Procesando...';
   try{
     const text=await file.text();
     // Parsear CSV simple
@@ -2087,15 +2087,15 @@ async function subirHistorico(){
     const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'subir_historico',filas:filas})});
     const data=await r.json();
     if(data.ok){
-      showToast('✅ Subido: '+data.filas+' filas','ok');
+      showToast('\u2705 Subido: '+data.filas+' filas','ok');
       document.getElementById('hist-file').value='';
       document.getElementById('hist-info').textContent='';
       setTimeout(cargarHistorico,1000);
     }else{
       throw new Error(data.error||'Error');
     }
-  }catch(e){showToast('❌ '+e.message,'err');document.getElementById('hist-info').textContent='';}
-  finally{btn.disabled=false;btn.textContent='📤 Procesar y subir';}
+  }catch(e){showToast('\u274c '+e.message,'err');document.getElementById('hist-info').textContent='';}
+  finally{btn.disabled=false;btn.textContent='\ud83d\udce4 Procesar y subir';}
 }
 
 cargar();
