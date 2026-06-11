@@ -32,6 +32,7 @@ function doGet(e) {
   if (!accion) {
     return HtmlService.createHtmlOutputFromFile('dashboard')
       .setTitle('Argos — Panel de Control')
+      .setSandboxMode(HtmlService.SandboxMode.NATIVE)
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
 
