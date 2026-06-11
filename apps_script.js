@@ -30,12 +30,9 @@ function doGet(e) {
 
   // Sin parámetros → servir el dashboard como página web
   if (!accion) {
-    var scriptUrl = ScriptApp.getService().getUrl();
-    return HtmlService.createTemplateFromFile('dashboard').evaluate()
+    return HtmlService.createHtmlOutputFromFile('dashboard')
       .setTitle('Argos — Panel de Control')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1.0')
-      .addMetaTag('apps-script-url', scriptUrl);
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
 
   var ss = SpreadsheetApp.openById(SHEET_ID);
