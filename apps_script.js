@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════════════════════
 //  Argos — Google Apps Script
-//  Versión: 1.4.0
-//  Última actualización: 2026-06-10
+//  Versión: 1.4.1
+//  Última actualización: 2026-06-12
 //
 //  CÓMO USAR:
 //  1. Abre tu proyecto en script.google.com
@@ -10,7 +10,7 @@
 //  4. Guarda (Ctrl+S) y vuelve a implementar como aplicación web
 //     → Ejecutar como: Yo
 //     → Quién puede acceder: Cualquier persona
-//  5. Copia la URL nueva y actualízala en dashboard.html (APPS_SCRIPT_URL)
+//  5. El dashboard vive en GitHub Pages — no necesitas dashboard.html aquí
 // ══════════════════════════════════════════════════════════════
 
 var SHEET_ID = "135lsymm5A67_ieYZLaKIfvPpkyqRWbUf9UV-mv3b7js";
@@ -28,14 +28,13 @@ function json(obj) {
 function doGet(e) {
   var accion = e.parameter.accion || e.parameter.action || "";
 
-  // Sin parámetros → servir el dashboard como página web
+  // Sin parametros → el dashboard vive en GitHub Pages
   if (!accion) {
-    var scriptUrl = ScriptApp.getService().getUrl();
-    return HtmlService.createTemplateFromFile('dashboard').evaluate()
-      .setTitle('Argos — Panel de Control')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1.0')
-      .addMetaTag('apps-script-url', scriptUrl);
+    return HtmlService.createHtmlOutput(
+      '<p style="font-family:sans-serif;padding:2rem">El panel de Argos se abrio en una pestana nueva.<br>' +
+      '<a href="https://maramirezr04-arch.github.io/Argos-Agente-de-Respuesta-y-Gestion-Operativa-de-Sala./dashboard.html" target="_blank">Haz clic aqui si no abrio automaticamente</a></p>' +
+      '<script>window.open("https://maramirezr04-arch.github.io/Argos-Agente-de-Respuesta-y-Gestion-Operativa-de-Sala./dashboard.html","_blank");<\/script>'
+    ).setTitle('Argos — Panel de Control');
   }
 
   var ss = SpreadsheetApp.openById(SHEET_ID);
@@ -114,9 +113,7 @@ function doGet(e) {
     return json({ ok: true, festivos: datos });
   }
 
-  // ── LOGS (últimas 30 ejecuciones del bot) ─────────────────
-  // Columnas MONITOR: Fecha(0) Hora(1) Duracion(2) Total(3)
-  //                   Vencidas(4) Estado(5) Intentos(6) Error(7)
+  // ── LOGS (ultimas 30 ejecuciones del bot) ─────────────────
   if (accion === "logs") {
     var hoja = ss.getSheetByName("MONITOR");
     if (!hoja) return json({ ok: true, logs: [] });
@@ -167,7 +164,7 @@ function doGet(e) {
     return json({ pcs: pcs });
   }
 
-  // ── PCS — cambiar estado (GET con parámetros) ─────────────
+  // ── PCS — cambiar estado ─────────────────────────────────
   if (accion === "setPcEstado") {
     var nombre2 = e.parameter.nombre;
     var estado2 = e.parameter.estado;
@@ -184,8 +181,6 @@ function doGet(e) {
   }
 
   // ── MENSAJES PROGRAMADOS — listar ────────────────────────
-  // Columnas: ID(0) Texto(1) Intervalo_ciclos(2) Destino(3)
-  //           Activo(4) Ultimo_envio(5) Creado(6)
   if (accion === "mensajes_programados") {
     var hoja = ss.getSheetByName("MENSAJES_PROGRAMADOS");
     if (!hoja) return json({ ok: true, mensajes: [] });
@@ -193,13 +188,13 @@ function doGet(e) {
     var datos = [];
     for (var i = 1; i < rows.length; i++) {
       if (rows[i][0]) datos.push({
-        id:           rows[i][0],
-        texto:        rows[i][1],
-        intervalo_ciclos:rows[i][2],
-        destino:      rows[i][3],
-        activo:       rows[i][4],
-        ultimo_envio: rows[i][5],
-        creado:       rows[i][6]
+        id:               rows[i][0],
+        texto:            rows[i][1],
+        intervalo_ciclos: rows[i][2],
+        destino:          rows[i][3],
+        activo:           rows[i][4],
+        ultimo_envio:     rows[i][5],
+        creado:           rows[i][6]
       });
     }
     return json({ ok: true, mensajes: datos });
@@ -239,7 +234,7 @@ function doPost(e) {
     return json({ ok: true, cambios: cambios });
   }
 
-  // ── MENSAJE DE PRUEBA (lee el webhook desde CONFIG) ───────
+  // ── MENSAJE DE PRUEBA ─────────────────────────────────────
   if (accion === "prueba_mensaje") {
     var hojaC = ss.getSheetByName("CONFIG");
     if (!hojaC) return json({ error: "Hoja CONFIG no existe" });
@@ -268,7 +263,6 @@ function doPost(e) {
     var hoja = ss.getSheetByName("DESCANSOS");
     if (!hoja) hoja = ss.insertSheet("DESCANSOS");
     hoja.appendRow([body.fecha, body.jefe_descansa, body.jefe_cubre]);
-    // Contar secciones del jefe en DIRECTORIO para el toast del dashboard
     var secciones_agregadas = 0;
     var hojaDir = ss.getSheetByName("DIRECTORIO");
     if (hojaDir && body.jefe_descansa) {
@@ -348,7 +342,7 @@ function doPost(e) {
     return json({ ok: true });
   }
 
-  // ── ACCIONES RÁPIDAS (pausar / reanudar / limpiar cola) ───
+  // ── ACCIONES RAPIDAS ──────────────────────────────────────
   if (accion === "accion_rapida") {
     var hoja = ss.getSheetByName("CONFIG");
     if (!hoja) return json({ ok: false, error: "Hoja CONFIG no existe" });
@@ -385,7 +379,7 @@ function doPost(e) {
     return json({ ok: true, filas: filas.length });
   }
 
-  // ── KPI VENDEDORES — señal para el bot ───────────────────
+  // ── KPI VENDEDORES ────────────────────────────────────────
   if (accion === "kpi_vendedores") {
     var hoja = ss.getSheetByName("CONFIG");
     if (!hoja) hoja = ss.insertSheet("CONFIG");
@@ -399,7 +393,7 @@ function doPost(e) {
     } else {
       hoja.appendRow(["kpi_vendedores_flag", "si"]);
     }
-    return json({ ok: true, mensaje: "Señal enviada" });
+    return json({ ok: true, mensaje: "Signal sent" });
   }
 
   // ── MENSAJES PROGRAMADOS — agregar ───────────────────────
@@ -427,7 +421,7 @@ function doPost(e) {
     return json({ ok: true });
   }
 
-  // ── MENSAJES PROGRAMADOS — pausar / activar ───────────────
+  // ── MENSAJES PROGRAMADOS — toggle ────────────────────────
   if (accion === "toggle_mensaje_programado") {
     var hoja = ss.getSheetByName("MENSAJES_PROGRAMADOS");
     if (!hoja) return json({ ok: false, error: "Hoja no existe" });
@@ -447,21 +441,16 @@ function doPost(e) {
 // ══════════════════════════════════════════════════════════════
 //  WATCHDOG — alerta si el bot lleva mucho tiempo sin correr
 //
-//  CÓMO ACTIVAR (solo una vez):
-//  1. En script.google.com → Triggers (ícono reloj) → + Agregar trigger
-//  2. Función a ejecutar : watchdogArgos
-//  3. Tipo de evento      : Basado en tiempo
-//  4. Temporizador        : Por minutos → Cada 20 minutos
+//  COMO ACTIVAR (solo una vez):
+//  1. En script.google.com -> Triggers (icono reloj) -> + Agregar trigger
+//  2. Funcion a ejecutar : watchdogArgos
+//  3. Tipo de evento     : Basado en tiempo
+//  4. Temporizador       : Por minutos -> Cada 20 minutos
 //  5. Guardar
-//
-//  El watchdog revisa la hoja MONITOR. Si la última ejecución
-//  exitosa tiene más de `watchdog_minutos` minutos Y el bot está
-//  en horario laboral, manda alerta al chat de reporte.
 // ══════════════════════════════════════════════════════════════
 function watchdogArgos() {
   var ss = SpreadsheetApp.openById(SHEET_ID);
 
-  // Leer CONFIG
   var hojaConfig = ss.getSheetByName("CONFIG");
   if (!hojaConfig) return;
   var cfgRows = hojaConfig.getDataRange().getValues();
@@ -481,7 +470,6 @@ function watchdogArgos() {
 
   if (pausado === "si" || pausado === "yes" || pausado === "true" || pausado === "1") return;
 
-  // Verificar horario laboral (zona México)
   var ahora   = new Date();
   var ahoraMx = new Date(ahora.toLocaleString("en-US", { timeZone: "America/Mexico_City" }));
   var hora    = ahoraMx.getHours();
@@ -490,7 +478,6 @@ function watchdogArgos() {
                   (hora < horaFin    || (hora === horaFin && minuto <= minutoFin));
   if (!enHorario) return;
 
-  // Leer MONITOR — buscar última ejecución exitosa de hoy
   var hojaMonitor = ss.getSheetByName("MONITOR");
   if (!hojaMonitor) return;
   var rows = hojaMonitor.getDataRange().getValues();
@@ -504,7 +491,7 @@ function watchdogArgos() {
   if (!exitosasHoy.length) return;
 
   var ultima  = exitosasHoy[exitosasHoy.length - 1];
-  var horaStr = String(ultima[1]);  // "HH:MM:SS"
+  var horaStr = String(ultima[1]);
   var partes  = horaStr.split(":");
   var ultimaDt = new Date(ahoraMx);
   ultimaDt.setHours(parseInt(partes[0], 10), parseInt(partes[1] || "0", 10), parseInt(partes[2] || "0", 10), 0);
@@ -513,9 +500,9 @@ function watchdogArgos() {
   if (diffMin <= watchdogMin) return;
 
   var fechaNow = Utilities.formatDate(ahoraMx, "America/Mexico_City", "dd/MM/yyyy HH:mm");
-  var msg = "🚨 *Argos — Bot inactivo*\n\n" +
-            "Última ejecución exitosa: *" + horaStr + "* (hace " + Math.round(diffMin) + " min)\n\n" +
-            "_Favor de verificar la PC_\n_" + fechaNow + "_";
+  var msg = "Argos — Bot inactivo\n\n" +
+            "Ultima ejecucion exitosa: " + horaStr + " (hace " + Math.round(diffMin) + " min)\n\n" +
+            "Favor de verificar la PC\n" + fechaNow;
   try {
     UrlFetchApp.fetch(webhookReporte, {
       method: "post",
@@ -524,6 +511,6 @@ function watchdogArgos() {
     });
     Logger.log("Watchdog: alerta enviada — inactivo " + Math.round(diffMin) + " min");
   } catch (ex) {
-    Logger.log("Watchdog error al enviar alerta: " + ex);
+    Logger.log("Watchdog error: " + ex);
   }
 }
