@@ -1641,26 +1641,45 @@ def construir_card_piso(ubicacion, info_piso, fecha_now):
     }
 
 
-def _url_chart_pisos(totales_piso):
-    """Genera URL de quickchart.io con barra horizontal: piso → total remisiones."""
+def _url_chart_pisos(datos_piso):
+    """Genera URL de quickchart.io con barras apiladas horizontales.
+    datos_piso: lista de (nombre, verde, rojo) por piso ordenados por indice.
+    """
     import json as _json, urllib.parse as _up
-    labels = []
-    data   = []
-    colores = []
-    palette = ["#4285F4", "#EA4335", "#FBBC05", "#34A853"]
-    for i, (nombre, total) in enumerate(totales_piso):
-        labels.append(nombre)
-        data.append(total)
-        colores.append(palette[i % len(palette)])
+    labels      = [d[0] for d in datos_piso]
+    data_verde  = [d[1] for d in datos_piso]
+    data_rojo   = [d[2] for d in datos_piso]
     cfg = {
         "type": "horizontalBar",
         "data": {
             "labels": labels,
-            "datasets": [{"label": "Remisiones", "data": data, "backgroundColor": colores}]
+            "datasets": [
+                {
+                    "label": "En tiempo",
+                    "data": data_verde,
+                    "backgroundColor": "#34A853"
+                },
+                {
+                    "label": "Vencidas",
+                    "data": data_rojo,
+                    "backgroundColor": "#EA4335"
+                }
+            ]
         },
         "options": {
-            "plugins": {"legend": {"display": False}},
-            "scales": {"xAxes": [{"ticks": {"beginAtZero": True, "precision": 0}}]}
+            "legend": {"display": True, "position": "top"},
+            "scales": {
+                "xAxes": [{"stacked": True, "ticks": {"beginAtZero": True, "precision": 0}}],
+                "yAxes": [{"stacked": True}]
+            },
+            "plugins": {
+                "datalabels": {
+                    "display": True,
+                    "color": "white",
+                    "font": {"weight": "bold", "size": 14},
+                    "formatter": "function(v){return v>0?v:''}"
+                }
+            }
         }
     }
     return "https://quickchart.io/chart?c=" + _up.quote(_json.dumps(cfg, separators=(",", ":")))
@@ -1671,18 +1690,15 @@ def construir_card_resumen_general(por_piso, dir_dict, fecha_now):
     sections = []
 
     # ── Imagen de gráfica ──────────────────────────────────────
-    totales_piso = []
+    datos_chart = []
     for p_idx in sorted(por_piso.keys()):
         info_piso = por_piso[p_idx]
-        total = sum(
-            ds["count"]
-            for info_j in info_piso["jefes"].values()
-            for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]]
-            for ds in grp.values()
-        )
-        totales_piso.append((info_piso["ubicacion"], total))
+        verde = sum(ds["count"] for info_j in info_piso["jefes"].values() for ds in info_j["en_tiempo"].values())
+        rojo  = sum(ds["count"] for info_j in info_piso["jefes"].values()
+                    for grp in [info_j["vencidas"], info_j["de_ayer"]] for ds in grp.values())
+        datos_chart.append((info_piso["ubicacion"], verde, rojo))
 
-    chart_url = _url_chart_pisos(totales_piso)
+    chart_url = _url_chart_pisos(datos_chart)
     sections.append({"widgets": [{"image": {"imageUrl": chart_url, "altText": "Remisiones por piso"}}]})
 
     # ── Secciones por piso → gerencia → jefe → vendedores ─────
