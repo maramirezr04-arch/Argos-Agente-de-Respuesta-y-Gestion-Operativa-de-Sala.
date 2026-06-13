@@ -8,15 +8,2105 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(180deg, #faf8f6 0%, #f5f2ee 100%); min-height: 100vh; color: #1a1a1a; -webkit-font-smoothing: antialiased; }
+
+/* -- HEADER -- */
+.header {
+  background: linear-gradient(120deg, #8e1136 0%, #c9254e 35%, #E8416C 70%, #f0719a 100%);
+  color: #fff;
+  padding: 2rem 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.header::after {
+  content: '';
+  position: absolute;
+  width: 420px; height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.14) 0%, transparent 70%);
+  top: -220px; right: -80px;
+  pointer-events: none;
+}
+.header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='52' height='26' viewBox='0 0 52 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Cpath d='M10 10c0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6h2c0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4v2c-3.314 0-6-2.686-6-6 0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6zm25.464-1.95l8.486 8.486-1.414 1.414-8.486-8.486 1.414-1.414z' /%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+}
+.header h1 { font-size: 26px; font-weight: 900; letter-spacing: -.6px; position: relative; text-shadow: 0 2px 8px rgba(0,0,0,.15); }
+.header .sub { font-size: 13px; opacity: .9; margin-top: 5px; font-weight: 400; position: relative; letter-spacing: .2px; }
+
+/* -- STATUS PILL -- */
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 6px; flex-shrink: 0; }
+.dot-live { background: #a8f0c6; animation: pulse 2s infinite; }
+.dot-off  { background: #ffb3b3; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+.status-pill { display:flex;align-items:center;font-size:13px;background:rgba(255,255,255,.22);padding:6px 14px;border-radius:20px;font-weight:500;position:relative; }
+
+/* -- NAV TABS -- */
+.nav { display:flex;align-items:center;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(0,0,0,.06);overflow-x:auto;position:sticky;top:0;z-index:10;box-shadow:0 2px 12px rgba(0,0,0,.06);padding:8px 12px; }
+.nav button { flex-shrink:0;padding:9px 16px;font-size:13px;background:none;border:none;cursor:pointer;color:#777;white-space:nowrap;transition:.2s;font-weight:500;border-radius:20px;margin:0 2px; }
+.nav button.active { color:#fff;font-weight:700;background:linear-gradient(135deg,#c9254e,#e8416c);box-shadow:0 3px 10px rgba(201,37,78,.32); }
+.nav button:hover:not(.active) { background:#f6edf0;color:#9c2042; }
+
+/* -- LAYOUT -- */
+.content { padding:1.75rem;max-width:1100px;margin:0 auto; }
+.grid4 { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:1.25rem; }
+.grid2 { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:1.25rem; }
+.grid3 { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:1.25rem; }
+@media (max-width: 700px) {
+  .grid4, .grid3 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .grid2 { grid-template-columns: 1fr; }
+}
+
+/* -- METRIC CARDS -- */
+.metric { background:#fff;border-radius:18px;padding:1.5rem 1.3rem;box-shadow:0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.05);transition:.25s cubic-bezier(.2,.8,.3,1);border:1px solid rgba(0,0,0,.04); }
+.metric:hover { box-shadow:0 4px 12px rgba(0,0,0,.08), 0 16px 40px rgba(201,37,78,.1);transform:translateY(-3px); }
+.metric .lbl { font-size:11px;color:#9a948e;margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px; }
+.metric .val { font-size:34px;font-weight:800;color:#1a1a1a;line-height:1;letter-spacing:-1px;font-variant-numeric:tabular-nums; }
+.metric .sub { font-size:11px;color:#b6b0aa;margin-top:9px; }
+
+/* -- CARDS -- */
+.card { background:#fff;border:1px solid rgba(0,0,0,.05);border-radius:18px;padding:1.5rem 1.7rem;margin-bottom:1.4rem;box-shadow:0 1px 3px rgba(0,0,0,.03), 0 6px 20px rgba(0,0,0,.04); }
+.card-title { font-size:13px;font-weight:700;color:#2b2622;margin-bottom:1rem;display:flex;align-items:center;gap:8px;padding-bottom:.8rem;border-bottom:1px solid rgba(0,0,0,.05);letter-spacing:.1px; }
+
+/* -- TABLES -- */
+table { width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border-radius:12px;overflow:hidden; }
+th { text-align:left;font-weight:700;color:#857f78;padding:11px 13px;border-bottom:2px solid #f0ebe6;font-size:10.5px;background:#faf7f4;text-transform:uppercase;letter-spacing:.6px; }
+td { padding:11px 13px;border-bottom:1px solid rgba(0,0,0,.04);font-variant-numeric:tabular-nums; }
+tr:last-child td { border-bottom:none; }
+tbody tr:nth-child(odd) td { background:#fbf9f7; }
+tbody tr:hover td { background:#fdf0f4; }
+
+/* -- BADGES -- */
+.badge { display:inline-block;padding:3px 11px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.2px; }
+.ok { background:#eaf3de;color:#3b6d11; }
+.err { background:#fcebeb;color:#a32d2d; }
+.warn { background:#faeeda;color:#854f0b; }
+.info { background:#e6f1fb;color:#185fa5; }
+.pink { background:#fbeaf0;color:#993556; }
+.teal { background:#e1f5ee;color:#0f6e56; }
+
+/* -- SECTION INTRO BOX -- */
+.section-intro {
+  background: linear-gradient(135deg, #fef0f5 0%, #fff5f8 100%);
+  border: 1px solid rgba(232,65,108,.2);
+  border-left: 4px solid #E8416C;
+  border-radius: 12px;
+  padding: 14px 18px;
+  font-size: 13px;
+  color: #6b1a30;
+  margin-bottom: 1.4rem;
+  line-height: 1.6;
+}
+.section-intro code { background: rgba(0,0,0,.07); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+
+/* -- MISC UI -- */
+.bar-wrap { background:#e0e0e0;border-radius:4px;height:6px;overflow:hidden;flex:1; }
+.bar { height:6px;border-radius:4px;background:#E8416C; }
+.controls { display:flex;gap:10px;margin-bottom:1.25rem;align-items:center;flex-wrap:wrap; }
+select, button, input, textarea { font-size:13px;padding:7px 13px;border:1.5px solid #e5dfd9;border-radius:10px;background:#fff;cursor:pointer;font-family:inherit;transition:.15s; }
+input[type="text"], input[type="number"], input[type="date"], textarea { cursor:text; }
+input:focus, select:focus, textarea:focus { outline:none;border-color:#E8416C;box-shadow:0 0 0 3px rgba(232,65,108,.12); }
+button:hover { background:#f7f2ee;border-color:#d8d0c8; }
+.section { display:none; }
+.section.active { display:block; }
+.feature { border-left:3px solid #E8416C;padding:9px 13px;background:#faf9f7;margin-bottom:8px;border-radius:0 8px 8px 0; }
+.feature .title { font-size:13px;font-weight:600;margin-bottom:2px; }
+.feature .desc  { font-size:12px;color:#666; }
+
+/* -- CONFIG -- */
+.cfg-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:1rem; }
+@media (max-width: 700px) { .cfg-grid { grid-template-columns: 1fr; } }
+.cfg-card { background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:18px;padding:1.35rem 1.5rem;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.03); }
+.cfg-card:hover { border-color:rgba(232,65,108,.3);box-shadow:0 6px 20px rgba(232,65,108,.09); }
+.cfg-card h3 { font-size:13px;font-weight:700;color:#222;margin-bottom:1rem;display:flex;align-items:center;gap:8px; }
+.cfg-row { display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;gap:10px; }
+.cfg-row label { color:#555; }
+.cfg-row input, .cfg-row select { width:140px;text-align:right; }
+.cfg-row input[type="text"], .cfg-row input[type="date"] { width:100%;text-align:left;font-family:monospace;font-size:11px; }
+.cfg-row.full { flex-direction:column;align-items:stretch;gap:6px; }
+.cfg-row.full label { font-weight:500; }
+.cfg-row textarea { width:100%;min-height:80px;text-align:left;font-family:monospace;font-size:12px;resize:vertical; }
+.dia-chip { display:inline-block;padding:7px 14px;border-radius:20px;font-size:12px;cursor:pointer;border:1.5px solid #ddd;background:#fff;margin:2px;user-select:none;transition:.15s;font-weight:500; }
+.dia-chip.active { background:#E8416C;color:#fff;border-color:#E8416C;box-shadow:0 2px 6px rgba(232,65,108,.3); }
+.toggle { position:relative;display:inline-block;width:48px;height:26px; }
+.toggle input { opacity:0;width:0;height:0; }
+.slider { position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;transition:.3s;border-radius:26px; }
+.slider:before { position:absolute;content:"";height:20px;width:20px;left:3px;bottom:3px;background:#fff;transition:.3s;border-radius:50%; }
+input:checked + .slider { background:#1D9E75; }
+input:checked + .slider:before { transform:translateX(22px); }
+
+/* -- GLOBAL STATUS BAR -- */
+.global-status {
+  position: sticky; top: 53px; z-index: 9;
+  background: rgba(255,255,255,.94); backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0,0,0,.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  padding: 9px 1.75rem;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  font-size: 12px;
+}
+.global-status .gsb-pill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 20px;
+  font-weight: 600; font-size: 12px;
+}
+.gsb-ok   { background: #eaf3de; color: #3b6d11; }
+.gsb-err  { background: #fcebeb; color: #a32d2d; }
+.gsb-warn { background: #faeeda; color: #854f0b; }
+.gsb-info { background: #e6f1fb; color: #185fa5; }
+.gsb-sep  { color: #ddd; }
+.gsb-meta { color: #999; font-size: 11px; }
+
+/* -- TOOLTIPS -- */
+.tooltip-wrap { position: relative; display: inline-flex; align-items: center; gap: 5px; }
+.tooltip-icon { width: 15px; height: 15px; border-radius: 50%; background: #e0e0e0; color: #555;
+  font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
+  cursor: help; flex-shrink: 0; }
+.tooltip-icon:hover + .tooltip-box, .tooltip-box:hover { display: block; }
+.tooltip-box { display: none; position: absolute; left: 24px; top: -4px; z-index: 100;
+  background: #222; color: #fff; font-size: 11px; padding: 7px 11px; border-radius: 8px;
+  width: 220px; line-height: 1.5; box-shadow: 0 4px 12px rgba(0,0,0,.25); pointer-events: none; }
+.tooltip-box::before { content: ''; position: absolute; left: -5px; top: 10px;
+  border: 5px solid transparent; border-right-color: #222; border-left: none; }
+
+/* -- MODAL CONFIRMACION -- */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 500;
+  align-items: center; justify-content: center; }
+.modal-overlay.show { display: flex; }
+.modal-box { background: #fff; border-radius: 20px; padding: 2rem; max-width: 400px; width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25); animation: modalIn .2s; }
+@keyframes modalIn { from { opacity:0; transform: scale(.92); } to { opacity:1; transform: scale(1); } }
+.modal-icon { font-size: 40px; text-align: center; margin-bottom: 1rem; }
+.modal-title { font-size: 16px; font-weight: 800; color: #1a1a1a; text-align: center; margin-bottom: 8px; }
+.modal-desc { font-size: 13px; color: #666; text-align: center; line-height: 1.6; margin-bottom: 1.5rem; }
+.modal-btns { display: flex; gap: 10px; justify-content: center; }
+.modal-cancel { padding: 10px 24px; border-radius: 20px; border: 1.5px solid #ddd; background: #fff;
+  font-size: 13px; font-weight: 600; cursor: pointer; color: #666; }
+.modal-cancel:hover { background: #f5f5f5; }
+.modal-confirm { padding: 10px 24px; border-radius: 20px; border: none;
+  background: linear-gradient(135deg,#c9254e,#e8416c); color: #fff;
+  font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 3px 10px rgba(201,37,78,.3); }
+.modal-confirm:hover { background: linear-gradient(135deg,#a81f40,#c9254e); }
+
+/* -- KPI LEGEND -- */
+.kpi-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 1rem; font-size: 12px; }
+.kpi-legend-item { display: flex; align-items: center; gap: 5px; color: #666; }
+
+/* -- FECHA FILTER -- */
+.date-range { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #888; }
+.date-range input[type="date"] { padding: 5px 8px; font-size: 12px; border-radius: 6px; border: 1px solid #ddd; }
+
+/* -- TOAST -- */
+.toast { position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:13px 22px;border-radius:10px;font-size:13px;color:#fff;z-index:1000;display:none;animation:slideUp .3s;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,.2); }
+.toast.show { display:block; }
+.toast.ok { background:#1D9E75; } .toast.err { background:#E24B4A; }
+@keyframes slideUp { from { opacity:0; transform:translate(-50%, 20px); } to { opacity:1; transform:translate(-50%, 0); } }
+
+/* -- BUTTONS -- */
+.btn-primary { background:linear-gradient(135deg,#c9254e,#e8416c);color:#fff;border:none;padding:11px 28px;border-radius:24px;font-size:14px;font-weight:700;cursor:pointer;transition:.2s;box-shadow:0 3px 12px rgba(201,37,78,.3);letter-spacing:.2px; }
+.btn-primary:hover { background:linear-gradient(135deg,#a81f40,#c9254e);box-shadow:0 6px 18px rgba(201,37,78,.4);transform:translateY(-1px); }
+.btn-primary:disabled { opacity:.5;cursor:not-allowed; }
+.btn-action { width:100%;padding:18px;border-radius:14px;border:1.5px solid #eee;background:#fff;cursor:pointer;font-size:13px;text-align:left;transition:.2s;box-shadow:0 1px 4px rgba(0,0,0,.04); }
+.btn-action:hover { background:#fff5f8;border-color:#E8416C;box-shadow:0 4px 14px rgba(232,65,108,.12);transform:translateY(-1px); }
+.btn-action b { display:block;color:#c9254e;margin-bottom:4px;font-size:15px; }
+.btn-action span { color:#999;font-size:12px; }
+
+/* -- STATUS BARS -- */
+.estado-bar { padding:14px 18px;border-radius:12px;margin-bottom:1rem;font-size:13px;display:flex;align-items:center;gap:10px;font-weight:500; }
+.estado-bar.ok   { background:#eaf3de;color:#3b6d11; }
+.estado-bar.warn { background:#faeeda;color:#854f0b; }
+.estado-bar.err  { background:#fcebeb;color:#a32d2d; }
+.msg-box { background:#f0eeea;border-radius:8px;padding:.75rem 1rem;font-size:12px;line-height:1.7;color:#333;font-family:monospace;white-space:pre-wrap;word-break:break-word;margin-top:8px; }
+.timeline { border-left:2px solid #E8416C;padding-left:1.25rem;margin:.5rem 0 .5rem .5rem; }
+.tl-item { position:relative;margin-bottom:1rem; }
+.tl-dot { position:absolute;left:-1.6rem;top:3px;width:10px;height:10px;border-radius:50%;background:#E8416C;border:2px solid #f7f6f3;box-shadow:0 0 0 2px rgba(232,65,108,.2); }
+.tl-time { font-size:12px;font-weight:600;color:#E8416C; }
+.tl-text { font-size:13px;color:#444;line-height:1.5;margin-top:2px; }
+.chip { display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;background:#f0eeea;color:#555;margin:2px; }
+
+/* -- NAV AGRUPADO -- */
+.nav-group-label { flex-shrink:0;display:flex;align-items:center;font-size:10px;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:.8px;padding:0 6px 0 14px;border-left:1px solid #eee;margin-left:6px;user-select:none; }
+.nav-group-label:first-of-type { border-left:none;margin-left:0;padding-left:6px; }
+
+/* -- PESTA-A INICIO -- */
+.home-hero { background:linear-gradient(130deg,#fff 0%,#fff3f7 55%,#ffeaf1 100%);border:1px solid rgba(232,65,108,.14);border-radius:22px;padding:2.5rem 2rem;margin-bottom:1.75rem;text-align:center;position:relative;overflow:hidden;box-shadow:0 2px 8px rgba(232,65,108,.05); }
+.home-hero::before { content:'';position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(232,65,108,.07) 0%,transparent 70%);top:-150px;left:-60px;pointer-events:none; }
+.home-hero::after  { content:'';position:absolute;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(232,65,108,.06) 0%,transparent 70%);bottom:-130px;right:-50px;pointer-events:none; }
+.home-hero h2 { font-size:24px;font-weight:800;color:#1a1a1a;margin-bottom:10px;letter-spacing:-.4px;position:relative; }
+.home-hero p { font-size:14px;color:#6b6560;line-height:1.75;max-width:580px;margin:0 auto;position:relative; }
+.home-group-title { font-size:11.5px;font-weight:800;color:#a39d96;text-transform:uppercase;letter-spacing:1px;margin:1.75rem 0 .8rem;display:flex;align-items:center;gap:10px; }
+.home-group-title::after { content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(0,0,0,.08),transparent); }
+.home-grid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px; }
+@media (max-width:700px){ .home-grid { grid-template-columns:1fr; } }
+.home-card { background:#fff;border:1.5px solid rgba(0,0,0,.06);border-radius:18px;padding:1.4rem 1.4rem;cursor:pointer;transition:.25s cubic-bezier(.2,.8,.3,1);text-align:left;position:relative;overflow:hidden; }
+.home-card::before { content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#c9254e,#f0719a);opacity:0;transition:.25s; }
+.home-card:hover { border-color:rgba(232,65,108,.45);box-shadow:0 10px 28px rgba(232,65,108,.16);transform:translateY(-3px); }
+.home-card:hover::before { opacity:1; }
+.home-card .hc-icon { font-size:28px;margin-bottom:10px; }
+.home-card .hc-title { font-size:14.5px;font-weight:700;color:#1a1a1a;margin-bottom:5px;letter-spacing:-.1px; }
+.home-card .hc-desc { font-size:12px;color:#8b857f;line-height:1.6; }
+
+/* -- TOUR DE BIENVENIDA -- */
+.tour-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:600;align-items:center;justify-content:center; }
+.tour-overlay.show { display:flex; }
+.tour-box { background:#fff;border-radius:20px;padding:2rem;max-width:440px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:modalIn .25s; }
+.tour-icon { font-size:44px;text-align:center;margin-bottom:1rem; }
+.tour-title { font-size:17px;font-weight:800;color:#1a1a1a;text-align:center;margin-bottom:10px; }
+.tour-desc { font-size:13px;color:#555;text-align:center;line-height:1.7;margin-bottom:1.5rem; }
+.tour-dots { display:flex;gap:6px;justify-content:center;margin-bottom:1.25rem; }
+.tour-dot { width:8px;height:8px;border-radius:50%;background:#e5e0dc;transition:.2s; }
+.tour-dot.active { background:#E8416C;width:22px;border-radius:5px; }
+.tour-btns { display:flex;gap:10px;justify-content:center; }
+.tour-skip { padding:10px 20px;border-radius:20px;border:1.5px solid #ddd;background:#fff;font-size:13px;cursor:pointer;color:#888; }
+.tour-next { padding:10px 26px;border-radius:20px;border:none;background:linear-gradient(135deg,#c9254e,#e8416c);color:#fff;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 12px rgba(201,37,78,.3); }
+.btn-ayuda { display:flex;align-items:center;gap:5px;font-size:13px;background:rgba(255,255,255,.22);padding:6px 14px;border-radius:20px;font-weight:500;border:none;color:#fff;cursor:pointer;position:relative;transition:.2s; }
+.btn-ayuda:hover { background:rgba(255,255,255,.35); }
+</style>
 </head>
 <body>
-<p style="font-family:sans-serif;padding:4rem;text-align:center">
-  Cargando Argos&#x2026;<br><br>
-  <a href="https://maramirezr04-arch.github.io/Argos-Agente-de-Respuesta-y-Gestion-Operativa-de-Sala./dashboard.html">Si no carga autom&#xe1;ticamente, haz clic aqu&#xed;</a>
-</p>
+<div class="header">
+  <div>
+    <h1>&#x1f916; Argos</h1>
+    <div class="sub">Panel de control &#xb7; Tienda 456 Parque Antenas &#xb7; <span style="opacity:.7">v1.4.0</span> &#xb7; <span id="hdr-fecha" style="opacity:.8"></span></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <button class="btn-ayuda" onclick="iniciarTour()" title="Ver el tour de bienvenida">&#x2753; Ayuda</button>
+    <div class="status-pill"><span class="dot dot-off" id="dot"></span><span id="status-txt">Cargando...</span></div>
+    <div style="font-size:12px;opacity:.8;background:rgba(255,255,255,.15);padding:4px 12px;border-radius:12px" id="hdr-ultima">&#x2014;</div>
+  </div>
+</div>
+
+<!-- &#x2500;&#x2500; BARRA DE ESTADO GLOBAL (visible desde cualquier pesta&#xf1;a) &#x2500;&#x2500; -->
+<div class="global-status" id="global-status-bar">
+  <div class="gsb-pill gsb-info" id="gsb-estado"><span class="dot" id="gsb-dot" style="background:#aaa"></span> Cargando...</div>
+  <span class="gsb-sep">|</span>
+  <span class="gsb-meta">&#x1f550; &#xda;ltima ejecuci&#xf3;n: <b id="gsb-ultima">&#x2014;</b></span>
+  <span class="gsb-sep">|</span>
+  <span class="gsb-meta">&#x1f4e6; Remisiones: <b id="gsb-total">&#x2014;</b></span>
+  <span class="gsb-sep">|</span>
+  <span class="gsb-meta">&#x1f525; Vencidas: <b id="gsb-vencidas" style="color:#E24B4A">&#x2014;</b></span>
+  <span class="gsb-sep">|</span>
+  <span class="gsb-meta">&#x23f1; Duraci&#xf3;n: <b id="gsb-dur">&#x2014;</b></span>
+  <span style="margin-left:auto;font-size:11px;color:#ccc" id="gsb-refresh"></span>
+</div>
+<div class="nav">
+  <button class="active" data-tab="inicio" onclick="showTab('inicio',this)">&#x1f3e0; Inicio</button>
+  <span class="nav-group-label">D&#xed;a a d&#xed;a</span>
+  <button data-tab="monitor" onclick="showTab('monitor',this)">&#x1f4ca; Monitor</button>
+  <button data-tab="tiempos" onclick="showTab('tiempos',this)">&#x23f1; KPI Tiempos</button>
+  <button data-tab="logs" onclick="showTab('logs',this)">&#x1f4dc; Logs</button>
+  <span class="nav-group-label">Equipo</span>
+  <button data-tab="jefes" onclick="showTab('jefes',this)">&#x1f454; Jefes</button>
+  <button data-tab="descansos" onclick="showTab('descansos',this)">&#x1f3d6;&#xfe0f; Descansos</button>
+  <button data-tab="routing" onclick="showTab('routing',this)">&#x1f4e8; Rutas mensajes</button>
+  <span class="nav-group-label">Sistema</span>
+  <button data-tab="config" onclick="showTab('config',this)">&#x2699;&#xfe0f; Configuraci&#xf3;n</button>
+  <button data-tab="acciones" onclick="showTab('acciones',this)">&#x1f527; Acciones</button>
+  <button data-tab="mensajes" onclick="showTab('mensajes',this)">&#x1f4c5; Mensajes</button>
+  <button data-tab="pcs" onclick="showTab('pcs',this)">&#x1f4bb; PCs</button>
+  <button data-tab="pruebas" onclick="showTab('pruebas',this)">&#x1f9ea; Pruebas</button>
+</div>
+<div class="content">
+
+<!-- &#x2500;&#x2500; INICIO &#x2500;&#x2500; -->
+<div id="tab-inicio" class="section active" style="margin-top:1rem">
+  <div class="home-hero">
+    <h2>&#x1f44b; Bienvenido al panel de Argos</h2>
+    <p>Argos es el bot que vigila las remisiones de OMS y avisa por Google Chat a jefes y vendedores cuando hay art&#xed;culos pendientes de entregar. Desde este panel puedes ver c&#xf3;mo va el d&#xed;a, gestionar al equipo y configurar el bot &#x2014; <b>elige abajo qu&#xe9; quieres hacer</b>.</p>
+  </div>
+
+  <div class="home-group-title">&#x1f4c8; Ver c&#xf3;mo va el d&#xed;a</div>
+  <div class="home-grid">
+    <div class="home-card" onclick="irATab('monitor')">
+      <div class="hc-icon">&#x1f4ca;</div>
+      <div class="hc-title">Monitor</div>
+      <div class="hc-desc">Cu&#xe1;ntas remisiones hay ahorita, cu&#xe1;ntas est&#xe1;n vencidas y si el bot est&#xe1; corriendo bien.</div>
+    </div>
+    <div class="home-card" onclick="irATab('tiempos')">
+      <div class="hc-icon">&#x23f1;</div>
+      <div class="hc-title">KPI Tiempos</div>
+      <div class="hc-desc">Cu&#xe1;nto tardan los vendedores en surtir cada remisi&#xf3;n, con sem&#xe1;foro de colores.</div>
+    </div>
+    <div class="home-card" onclick="irATab('logs')">
+      <div class="hc-icon">&#x1f4dc;</div>
+      <div class="hc-title">Logs</div>
+      <div class="hc-desc">El registro detallado de todo lo que el bot ha hecho, por si algo sali&#xf3; raro.</div>
+    </div>
+  </div>
+
+  <div class="home-group-title">&#x1f465; Gestionar al equipo</div>
+  <div class="home-grid">
+    <div class="home-card" onclick="irATab('jefes')">
+      <div class="hc-icon">&#x1f454;</div>
+      <div class="hc-title">Jefes</div>
+      <div class="hc-desc">Ver qu&#xe9; jefe es responsable de cada secci&#xf3;n y en qu&#xe9; piso est&#xe1;.</div>
+    </div>
+    <div class="home-card" onclick="irATab('descansos')">
+      <div class="hc-icon">&#x1f3d6;&#xfe0f;</div>
+      <div class="hc-title">Descansos</div>
+      <div class="hc-desc">Registrar cu&#xe1;ndo descansa un jefe y qui&#xe9;n lo cubre, para que los avisos lleguen a la persona correcta.</div>
+    </div>
+    <div class="home-card" onclick="irATab('routing')">
+      <div class="hc-icon">&#x1f4e8;</div>
+      <div class="hc-title">Rutas de mensajes</div>
+      <div class="hc-desc">A qu&#xe9; chat le llega el mensaje de cada jefe, y activar o desactivar sus avisos personales.</div>
+    </div>
+  </div>
+
+  <div class="home-group-title">&#x2699;&#xfe0f; Configurar el sistema</div>
+  <div class="home-grid">
+    <div class="home-card" onclick="irATab('config')">
+      <div class="hc-icon">&#x2699;&#xfe0f;</div>
+      <div class="hc-title">Configuraci&#xf3;n</div>
+      <div class="hc-desc">Horario del bot, d&#xed;as activos, frecuencia de mensajes y pausa total.</div>
+    </div>
+    <div class="home-card" onclick="irATab('acciones')">
+      <div class="hc-icon">&#x1f527;</div>
+      <div class="hc-title">Acciones r&#xe1;pidas</div>
+      <div class="hc-desc">Pausar o reanudar el bot con un clic, limpiar la cola de mensajes y m&#xe1;s.</div>
+    </div>
+    <div class="home-card" onclick="irATab('mensajes')">
+      <div class="hc-icon">&#x1f4c5;</div>
+      <div class="hc-title">Mensajes programados</div>
+      <div class="hc-desc">Crear recordatorios autom&#xe1;ticos que el bot manda cada cierto n&#xfa;mero de ciclos.</div>
+    </div>
+    <div class="home-card" onclick="irATab('pcs')">
+      <div class="hc-icon">&#x1f4bb;</div>
+      <div class="hc-title">PCs</div>
+      <div class="hc-desc">Ver desde qu&#xe9; computadoras corre el bot y pausar alguna en espec&#xed;fico.</div>
+    </div>
+    <div class="home-card" onclick="irATab('pruebas')">
+      <div class="hc-icon">&#x1f9ea;</div>
+      <div class="hc-title">Pruebas</div>
+      <div class="hc-desc">Mandar un mensaje de prueba a cualquier chat para verificar que los webhooks funcionan.</div>
+    </div>
+    <div class="home-card" onclick="iniciarTour()" style="border-style:dashed">
+      <div class="hc-icon">&#x2753;</div>
+      <div class="hc-title">&#xbf;Primera vez aqu&#xed;?</div>
+      <div class="hc-desc">Haz el tour de bienvenida de 1 minuto para conocer el panel paso a paso.</div>
+    </div>
+  </div>
+</div>
+
+<!-- &#x2500;&#x2500; MONITOR &#x2500;&#x2500; -->
+<div id="tab-monitor" class="section" style="margin-top:1rem">
+  <div class="section-intro">&#x1f4ca; <b>Monitor en tiempo real</b> &#x2014; Aqu&#xed; puedes ver el historial de ejecuciones del bot, m&#xe9;tricas de rendimiento y el estado actual de las remisiones.</div>
+  <div class="controls">
+    <select id="filtro" onchange="renderAll()">
+      <option value="5">Ultimas 5</option><option value="10">Ultimas 10</option>
+      <option value="20" selected>Ultimas 20</option><option value="9999">Todas</option>
+    </select>
+    <select id="filtro-estado" onchange="renderAll()">
+      <option value="todos">Todos</option><option value="exitosa">Solo exitosas</option><option value="error">Solo errores</option>
+    </select>
+    <button onclick="cargar()">&#x1f504; Actualizar</button>
+    <button onclick="exportarCSV()" title="Descargar CSV">&#x2b07;&#xfe0f; CSV</button>
+    <div class="date-range">
+      <span>Del</span>
+      <input type="date" id="filtro-fecha-ini" onchange="renderAll()">
+      <span>al</span>
+      <input type="date" id="filtro-fecha-fin" onchange="renderAll()">
+      <button onclick="limpiarFiltroFecha()" style="font-size:11px;padding:4px 8px">&#x2715; Limpiar</button>
+    </div>
+    <span style="font-size:12px;color:#aaa;margin-left:auto" id="ultima"></span>
+    <span style="font-size:12px;color:#aaa" id="refresh-countdown"></span>
+  </div>
+  <div id="bot-status-bar" style="display:none;margin-bottom:1rem"></div>
+
+  <!-- Tarjetas de estatus actual (desde hoja METRICAS) -->
+  <div class="grid4" id="cards-metricas" style="margin-bottom:1rem">
+    <div class="metric" style="border-left:4px solid #E24B4A;background:#fff">
+      <div class="lbl">&#x1f534; Mercancia en Espera</div>
+      <div class="val" id="m-espera">&#x2014;</div>
+      <div class="sub" id="m-espera-sub">Cargando...</div>
+    </div>
+    <div class="metric" style="border-left:4px solid #1D9E75;background:#fff">
+      <div class="lbl">&#x1f3f7;&#xfe0f; Etiquetas Generadas</div>
+      <div class="val" id="m-etiquetas">&#x2014;</div>
+      <div class="sub" id="m-etiquetas-sub"></div>
+    </div>
+    <div class="metric" style="border-left:4px solid #F5A623;background:#fff">
+      <div class="lbl">&#x26a0;&#xfe0f; Sin Asignar</div>
+      <div class="val" id="m-sin-asignar">&#x2014;</div>
+      <div class="sub" id="m-sin-asignar-sub"></div>
+    </div>
+    <div class="metric" style="border-left:4px solid #c9254e;background:#fff">
+      <div class="lbl">&#x1f525; Vencidas (+20 min)</div>
+      <div class="val" id="m-vencidas-hoy">&#x2014;</div>
+      <div class="sub" id="m-vencidas-sub"></div>
+    </div>
+  </div>
+
+  <div class="grid4" id="cards"></div>
+  <div class="grid2">
+    <div class="card"><div class="card-title">Duracion por ejecucion (seg)</div><div style="position:relative;height:160px"><canvas id="cT"></canvas></div></div>
+    <div class="card"><div class="card-title">Intentos de descarga</div><div style="position:relative;height:160px"><canvas id="cI"></canvas></div></div>
+  </div>
+  <div class="card"><div class="card-title">&#x1f4c8; Tendencia de vencidas (ultimas ejecuciones)</div><div style="position:relative;height:140px"><canvas id="cV"></canvas></div></div>
+  <div class="card">
+    <div class="card-title">Historial de ejecuciones</div>
+    <table><thead><tr><th>#</th><th>Fecha</th><th>Hora</th><th>Duracion</th><th>Remisiones</th><th>Vencidas</th><th>Intentos</th><th>Estado</th></tr></thead>
+      <tbody id="tabla"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- &#x2500;&#x2500; CONFIGURACION &#x2500;&#x2500; -->
+<div id="tab-config" class="section" style="margin-top:1rem">
+  <div class="section-intro">&#x2699;&#xfe0f; <b>Configuraci&#xf3;n</b> &#x2014; Ajusta el horario de operaci&#xf3;n, los d&#xed;as activos y los umbrales del bot. Los cambios aplican en la siguiente ejecuci&#xf3;n.</div>
+  <div id="cfg-estado" class="estado-bar warn">&#x23f3; Cargando...</div>
+  <div class="cfg-grid">
+    <div class="cfg-card"><h3>&#x23f0; Horario</h3>
+      <div class="cfg-row">
+        <label class="tooltip-wrap">Hora de inicio <span class="tooltip-icon">i</span><span class="tooltip-box">El bot empieza a correr a esta hora (formato 24h). Ej: 10 = 10:00 AM</span></label>
+        <input type="number" id="cfg-hora-inicio" min="0" max="23" value="10">
+      </div>
+      <div class="cfg-row">
+        <label class="tooltip-wrap">Hora de fin <span class="tooltip-icon">i</span><span class="tooltip-box">El bot deja de correr a esta hora. Comb&#xed;nala con el minuto de fin.</span></label>
+        <input type="number" id="cfg-hora-fin" min="0" max="23" value="21">
+      </div>
+      <div class="cfg-row">
+        <label class="tooltip-wrap">Minuto de fin <span class="tooltip-icon">i</span><span class="tooltip-box">El bot para exactamente a Hora:Minuto. Ej: hora 21, minuto 30 = 9:30 PM</span></label>
+        <input type="number" id="cfg-minuto-fin" min="0" max="59" value="30">
+      </div>
+    </div>
+    <div class="cfg-card"><h3>&#x1f504; Estado del bot</h3>
+      <div class="cfg-row">
+        <label class="tooltip-wrap">Pausa total <span class="tooltip-icon">i</span><span class="tooltip-box">Al activar, el bot NO descarga datos ni manda mensajes. &#xda;til para mantenimiento.</span></label>
+        <label class="toggle"><input type="checkbox" id="cfg-pausado"><span class="slider"></span></label>
+      </div>
+      <div style="font-size:11px;color:#888;margin-top:8px;line-height:1.5">Activado: el bot no descarga ni manda mensajes</div>
+    </div>
+  </div>
+  <div class="cfg-card" style="margin-bottom:1rem"><h3>&#x1f4c5; Dias activos</h3>
+    <div id="cfg-dias" style="margin-top:8px">
+      <span class="dia-chip" data-dia="lun">Lun</span><span class="dia-chip" data-dia="mar">Mar</span>
+      <span class="dia-chip" data-dia="mie">Mie</span><span class="dia-chip" data-dia="jue">Jue</span>
+      <span class="dia-chip" data-dia="vie">Vie</span><span class="dia-chip" data-dia="sab">Sab</span>
+      <span class="dia-chip" data-dia="dom">Dom</span>
+    </div>
+  </div>
+  <div class="cfg-grid">
+    <div class="cfg-card"><h3>&#x26a0;&#xfe0f; Umbrales</h3>
+      <div class="cfg-row">
+        <label class="tooltip-wrap">Vencida (min) <span class="tooltip-icon">i</span><span class="tooltip-box">Una remisi&#xf3;n se marca como vencida si lleva m&#xe1;s de X minutos sin atenderse. Default: 20 min.</span></label>
+        <input type="number" id="cfg-vencida" min="5" max="120" value="20">
+      </div>
+      <div class="cfg-row">
+        <label class="tooltip-wrap">Anomalia (factor) <span class="tooltip-icon">i</span><span class="tooltip-box">Se manda alerta si las vencidas superan el promedio &#xd7; este factor. Ej: factor 1.5 = alerta si hay 50% m&#xe1;s que lo normal.</span></label>
+        <input type="number" id="cfg-anomalia" step=".1" min="1" max="5" value="1.5">
+      </div>
+    </div>
+    <div class="cfg-card"><h3>&#x1f415; Watchdog</h3>
+      <div class="cfg-row">
+        <label class="tooltip-wrap">Watchdog activo <span class="tooltip-icon">i</span><span class="tooltip-box">El watchdog vigila que el bot corra. Si no detecta actividad en X minutos, manda una alerta al Chat.</span></label>
+        <label class="toggle"><input type="checkbox" id="cfg-watchdog-activo" checked><span class="slider"></span></label>
+      </div>
+      <div class="cfg-row">
+        <label class="tooltip-wrap">Alertar despu&#xe9;s de <span class="tooltip-icon">i</span><span class="tooltip-box">Si el bot no se ejecuta en este tiempo (en minutos), el watchdog manda alerta. Recomendado: 30 min.</span></label>
+        <input type="number" id="cfg-watchdog" min="15" max="120" value="30" style="width:100px"> <span style="font-size:11px;color:#888">min</span>
+      </div>
+      <div style="font-size:11px;color:#888;margin-top:8px">Si el bot no corre en X minutos, manda alerta</div>
+    </div>
+    <div class="cfg-card"><h3>&#x1f4ca; Resumen</h3>
+      <div style="font-size:12px;color:#666;line-height:1.8">
+        <div>Horario: <b id="rs-horario">10:00 - 21:30</b></div>
+        <div>Dias: <b id="rs-dias">Lun a Dom</b></div>
+        <div>Estado: <b id="rs-estado">Activo</b></div>
+        <div>Vencida: <b id="rs-vencida">20 min</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="cfg-card" style="margin-bottom:1rem"><h3>&#x1f4ec; Frecuencia de mensajes</h3>
+    <div style="font-size:11px;color:#888;margin-bottom:14px;line-height:1.6">
+      1 ciclo &#x2248; 15 min. <b>No configurables:</b> buenos d&#xed;as, cierre y KPI tiempos.
+    </div>
+    <div class="cfg-row">
+      <label class="tooltip-wrap">Ciclos entre mensajes de jefes <span class="tooltip-icon">i</span><span class="tooltip-box">Cada cu&#xe1;ntos ciclos se manda el resumen por piso al espacio Jefes. 2 = cada ~30 min, 3 = cada ~45 min.</span></label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="number" id="cfg-ciclos-jefes" min="1" max="20" value="2" style="width:70px" oninput="actualizarLabelCiclos('cfg-ciclos-jefes','lbl-ciclos-jefes')">
+        <span id="lbl-ciclos-jefes" style="font-size:11px;color:#888">ciclos (~30 min)</span>
+      </div>
+    </div>
+    <div class="cfg-row" style="margin-top:10px">
+      <label class="tooltip-wrap">Ciclos entre mensajes de vendedores <span class="tooltip-icon">i</span><span class="tooltip-box">Frecuencia predeterminada para todos los vendedores. 2 = cada ~30 min, 4 = cada ~1 hora. Para una frecuencia distinta por vendedor, usa la columna "Ciclos" de la hoja WEBHOOKS_VENDEDORES.</span></label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="number" id="cfg-ciclos-vendedores" min="1" max="20" value="2" style="width:70px" oninput="actualizarLabelCiclos('cfg-ciclos-vendedores','lbl-ciclos-vendedores')">
+        <span id="lbl-ciclos-vendedores" style="font-size:11px;color:#888">ciclos (~30 min)</span>
+      </div>
+    </div>
+    <div class="cfg-row" style="margin-top:10px">
+      <label class="tooltip-wrap">Ciclos entre mensajes de reporte <span class="tooltip-icon">i</span><span class="tooltip-box">Cada cu&#xe1;ntos ciclos se manda el resumen al espacio Reporte. 1 = cada ciclo (~15 min).</span></label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="number" id="cfg-ciclos-reporte" min="1" max="20" value="1" style="width:70px" oninput="actualizarLabelCiclos('cfg-ciclos-reporte','lbl-ciclos-reporte')">
+        <span id="lbl-ciclos-reporte" style="font-size:11px;color:#888">ciclo (~15 min)</span>
+      </div>
+    </div>
+    <div class="cfg-row" style="margin-top:10px">
+      <label class="tooltip-wrap">Hora del recordatorio de cierre <span class="tooltip-icon">i</span><span class="tooltip-box">El bot manda el aviso "falta una hora" en el ciclo m&#xe1;s cercano a esta hora. Ej: 20:30 &#x2192; manda entre 20:30 y 20:45.</span></label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="time" id="cfg-hora-record" value="20:30" style="width:110px;font-size:13px;border-radius:8px;border:1px solid #ddd;padding:4px 8px">
+        <span style="font-size:11px;color:#888">&#xb1; un ciclo (~15 min)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="cfg-card" style="margin-bottom:1rem"><h3>&#x1f4ac; Espacios de Chat</h3>
+    <div class="cfg-row" style="margin-bottom:12px">
+      <label>&#x1f4e2; Enviar a espacio Reporte</label>
+      <label class="toggle"><input type="checkbox" id="cfg-env-reporte" checked><span class="slider"></span></label>
+    </div>
+    <div class="cfg-row full"><label style="font-size:11px;color:#888">URL Reporte</label><input type="text" id="cfg-wh-reporte"></div>
+
+    <div class="cfg-row" style="margin:18px 0 12px 0">
+      <label>&#x1f454; Enviar a espacio Jefes</label>
+      <label class="toggle"><input type="checkbox" id="cfg-env-jefes" checked><span class="slider"></span></label>
+    </div>
+    <div class="cfg-row full"><label style="font-size:11px;color:#888">URL Jefes</label><input type="text" id="cfg-wh-jefes"></div>
+
+    <div class="cfg-row" style="margin:18px 0 12px 0">
+      <label>&#x23f1;&#xfe0f; Enviar a espacio Tiempos</label>
+      <label class="toggle"><input type="checkbox" id="cfg-env-tiempos" checked><span class="slider"></span></label>
+    </div>
+    <div class="cfg-row full"><label style="font-size:11px;color:#888">URL Tiempos</label><input type="text" id="cfg-wh-tiempos"></div>
+
+    <div style="font-size:11px;color:#854f0b;margin-top:12px;background:#fef9f0;padding:8px 12px;border-radius:6px">
+      &#x2139;&#xfe0f; Si desactivas un espacio, el bot deja de mandarle mensajes pero sigue funcionando normal en los demas.
+    </div>
+  </div>
+  <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:1rem">
+    <button onclick="cargarConfig()">&#x1f504; Recargar</button>
+    <button class="btn-primary" id="btn-guardar" onclick="guardarConfig()">&#x1f4be; Guardar</button>
+  </div>
+</div>
+
+<!-- &#x2500;&#x2500; DESCANSOS POR JEFE &#x2500;&#x2500; -->
+<div id="tab-descansos" class="section" style="margin-top:1rem">
+  <div class="section-intro">&#x1f3d6;&#xfe0f; <b>Descansos de jefes</b> &#x2014; Registra cuando un jefe descansa para que el bot reasigne autom&#xe1;ticamente sus secciones al jefe que lo cubre ese d&#xed;a.</div>
+  <div class="cfg-card" style="margin-bottom:1rem">
+    <h3>&#x2795; Agregar descanso de jefe</h3>
+    <div class="cfg-grid" style="margin-bottom:0">
+      <div class="cfg-row full"><label>&#x1f4c5; Fecha</label><input type="date" id="d-fecha"></div>
+      <div class="cfg-row full"><label>&#x1f464; Jefe que descansa</label>
+        <select id="d-jefe-descansa" style="width:100%;text-align:left"><option value="">Cargando...</option></select>
+      </div>
+    </div>
+    <div class="cfg-row full" style="margin-top:8px"><label>&#x1f464; Jefe que cubre</label>
+      <select id="d-jefe-cubre" style="width:100%;text-align:left"><option value="">Cargando...</option></select>
+    </div>
+    <div style="margin-top:12px;text-align:right">
+      <button class="btn-primary" onclick="agregarDescanso()">&#x2795; Agregar</button>
+    </div>
+    <div style="font-size:11px;color:#854f0b;margin-top:10px;background:#fef9f0;padding:8px 12px;border-radius:6px">
+      &#x2139;&#xfe0f; Cuando un jefe descansa, TODAS sus secciones se reasignan al jefe que cubre. No aparecen como pendientes del jefe que descansa.
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#x1f4cb; Descansos programados</div>
+    <table><thead><tr><th>Fecha</th><th>Jefe que descansa</th><th>Jefe que cubre</th><th></th></tr></thead>
+      <tbody id="tabla-descansos"><tr><td colspan="4" style="text-align:center;color:#888;padding:1.5rem">Cargando...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- &#x2500;&#x2500; GESTION DE JEFES &#x2500;&#x2500; -->
+<div id="tab-jefes" class="section" style="margin-top:1rem">
+  <div class="section-intro">&#x1f454; <b>Directorio de jefes</b> &#x2014; El bot actualiza este directorio autom&#xe1;ticamente. Aqu&#xed; puedes consultar qu&#xe9; jefe est&#xe1; asignado a cada secci&#xf3;n y en qu&#xe9; piso est&#xe1;.</div>
+  <div class="estado-bar ok" style="font-size:11px">
+    &#x1f4a1; Solo vista. El bot actualiza el directorio automaticamente cada vez que descarga el CSV. Si un jefe cambia de seccion, el bot lo detecta y lo asigna a la nueva.
+  </div>
+  <div class="card">
+    <div class="card-title">&#x1f4cb; Directorio de secciones</div>
+    <input type="text" id="filtro-jefes" placeholder="&#x1f50d; Buscar seccion, nombre o jefe..." style="width:100%;margin-bottom:10px;padding:8px 12px" oninput="filtrarJefes()">
+    <table><thead><tr><th>Seccion</th><th>Nombre</th><th>Jefe</th><th>Piso</th></tr></thead>
+      <tbody id="tabla-jefes"><tr><td colspan="4" style="text-align:center;color:#888;padding:1.5rem">Cargando...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- &#x2500;&#x2500; RUTAS DE MENSAJES &#x2500;&#x2500; -->
+<div id="tab-routing" class="section" style="margin-top:1rem">
+  <div class="section-intro">&#x1f4e8; <b>Rutas de mensajes</b> &#x2014; Decide a qu&#xe9; espacio de Google Chat se env&#xed;a cada tipo de mensaje. Puedes activar o desactivar destinos sin afectar el resto del bot.</div>
+  <div class="estado-bar warn" style="font-size:11px">
+    &#x1f4a1; Decide a que espacio mandar cada tipo de mensaje. Puedes enviarlo a uno, varios o ninguno.
+  </div>
+
+  <div id="routing-container">
+    <div class="cfg-card" style="margin-bottom:8px" data-tipo="apertura">
+      <h3>&#x1f305; Mensaje de apertura (10 AM)</h3>
+      <div class="cfg-row"><label>&#x1f4e2; Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x1f454; Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x23f1;&#xfe0f; Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
+    </div>
+
+    <div class="cfg-card" style="margin-bottom:8px" data-tipo="cierre">
+      <h3>&#x1f319; Mensaje de cierre (9:30 PM)</h3>
+      <div class="cfg-row"><label>&#x1f4e2; Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x1f454; Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x23f1;&#xfe0f; Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
+    </div>
+
+    <div class="cfg-card" style="margin-bottom:8px" data-tipo="recordatorio">
+      <h3>&#x23f0; Recordatorio (8:30 PM)</h3>
+      <div class="cfg-row"><label>&#x1f4e2; Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x1f454; Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x23f1;&#xfe0f; Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
+    </div>
+
+    <div class="cfg-card" style="margin-bottom:8px" data-tipo="indicadores">
+      <h3>&#x1f4ca; Indicadores (cada 15 min)</h3>
+      <div class="cfg-row"><label>&#x1f4e2; Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x1f454; Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x23f1;&#xfe0f; Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
+    </div>
+
+    <div class="cfg-card" style="margin-bottom:8px" data-tipo="vencidas">
+      <h3>&#x26a0;&#xfe0f; Resumen de vencidas (cada 15 min)</h3>
+      <div class="cfg-row"><label>&#x1f4e2; Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x1f454; Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x23f1;&#xfe0f; Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
+    </div>
+
+    <div class="cfg-card" style="margin-bottom:8px" data-tipo="piso">
+      <h3>&#x1f3ec; Mensajes por piso (cada 30 min)</h3>
+      <div class="cfg-row"><label>&#x1f4e2; Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x1f454; Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x23f1;&#xfe0f; Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
+    </div>
+
+    <div class="cfg-card" style="margin-bottom:8px" data-tipo="tiempos">
+      <h3>&#x23f1;&#xfe0f; Resumen de tiempos (9:30 PM)</h3>
+      <div class="cfg-row"><label>&#x1f4e2; Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x1f454; Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x23f1;&#xfe0f; Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
+    </div>
+
+    <div class="cfg-card" style="margin-bottom:8px" data-tipo="ranking">
+      <h3>&#x1f3c6; Ranking de jefes (9:30 PM)</h3>
+      <div class="cfg-row"><label>&#x1f4e2; Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x1f454; Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x23f1;&#xfe0f; Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
+    </div>
+
+    <div class="cfg-card" style="margin-bottom:8px" data-tipo="alerta">
+      <h3>&#x1f6a8; Alertas de anomalia</h3>
+      <div class="cfg-row"><label>&#x1f4e2; Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x1f454; Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x23f1;&#xfe0f; Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
+    </div>
+
+    <div class="cfg-card" style="margin-bottom:8px" data-tipo="comparativa">
+      <h3>&#x1f4c8; Comparativa semanal (viernes)</h3>
+      <div class="cfg-row"><label>&#x1f4e2; Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x1f454; Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x23f1;&#xfe0f; Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
+    </div>
+
+    <div class="cfg-card" style="margin-bottom:8px" data-tipo="watchdog">
+      <h3>&#x1f415; Alertas Watchdog</h3>
+      <div class="cfg-row"><label>&#x1f4e2; Reporte</label><label class="toggle"><input type="checkbox" data-dest="reporte"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x1f454; Jefes</label><label class="toggle"><input type="checkbox" data-dest="jefes"><span class="slider"></span></label></div>
+      <div class="cfg-row"><label>&#x23f1;&#xfe0f; Tiempos</label><label class="toggle"><input type="checkbox" data-dest="tiempos"><span class="slider"></span></label></div>
+    </div>
+  </div>
+
+  <div style="text-align:right;margin-bottom:1rem">
+    <button class="btn-primary" onclick="guardarRouting()">&#x1f4be; Guardar rutas</button>
+  </div>
+
+  <!-- Webhooks personales por jefe -->
+  <div class="card" style="margin-top:1.5rem">
+    <div class="card-title">&#x1f4f1; Webhooks personales de jefes
+      <button onclick="cargarWebhooksJefes()" style="margin-left:auto;font-size:11px;padding:4px 10px;border-radius:8px">&#x1f504; Actualizar</button>
+    </div>
+    <div style="font-size:12px;color:#888;margin-bottom:1rem">
+      Los jefes marcados con &#x2705; reciben su mensaje detallado personal cada 30 min. Los que tienen &#x274c; no tienen webhook configurado en la hoja <b>WEBHOOKS_JEFES</b>.
+    </div>
+    <div id="grid-webhooks-jefes" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px">
+      <div style="color:#aaa;font-size:13px;grid-column:1/-1;text-align:center;padding:1.5rem">Cargando...</div>
+    </div>
+  </div>
+</div>
+
+<!-- &#x2500;&#x2500; PCS &#x2500;&#x2500; -->
+<div id="tab-pcs" class="section" style="margin-top:1rem">
+  <div class="section-intro">&#x1f4bb; <b>PCs</b> &#x2014; Monitorea y pausa/reanuda cada PC de forma individual. Los cambios aplican en la pr&#xf3;xima ejecuci&#xf3;n del bot (m&#xe1;x 15 min).</div>
+  <div class="card">
+    <div class="card-title" style="justify-content:space-between">
+      <span>&#x1f5a5;&#xfe0f; PCs registradas</span>
+      <button onclick="cargarPcs()" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #ddd;background:#faf9f7;cursor:pointer">&#x1f504; Actualizar</button>
+    </div>
+    <div id="pcs-lista" style="margin-top:8px">
+      <div style="text-align:center;padding:2rem;color:#aaa">Cargando...</div>
+    </div>
+  </div>
+</div>
+
+<!-- &#x2500;&#x2500; ACCIONES RAPIDAS &#x2500;&#x2500; -->
+<div id="tab-acciones" class="section" style="margin-top:1rem">
+  <div class="section-intro">&#x1f527; <b>Acciones r&#xe1;pidas</b> &#x2014; Controles inmediatos del bot: pausar, reanudar o limpiar la cola de mensajes pendientes.</div>
+  <div class="estado-bar ok" style="font-size:11px">
+    &#x1f4a1; Acciones que se aplican inmediatamente o en la proxima ejecucion del bot.
+  </div>
+  <div class="grid2">
+    <button class="btn-action" onclick="confirmarAccion('pausar','&#x23f8;&#xfe0f; Pausar bot','&#xbf;Detener el env&#xed;o de mensajes? El bot seguir&#xe1; descargando datos pero no mandar&#xe1; nada al Chat.')">
+      <b>&#x23f8;&#xfe0f; Pausar bot</b><span>Detiene el envio de mensajes pero el bot sigue corriendo</span>
+    </button>
+    <button class="btn-action" onclick="confirmarAccion('reanudar','&#x25b6;&#xfe0f; Reanudar bot','&#xbf;Reanudar el env&#xed;o de mensajes? El bot volver&#xe1; a mandar normalmente en la pr&#xf3;xima ejecuci&#xf3;n.')">
+      <b>&#x25b6;&#xfe0f; Reanudar bot</b><span>Si esta pausado, vuelve a mandar mensajes normalmente</span>
+    </button>
+    <button class="btn-action" onclick="mostrarModal('&#x1f680;','Correr bot ahora','Para forzar una ejecuci&#xf3;n inmediata, abre la PC del bot y ejecuta el archivo <b>correr_ahora.bat</b>',null,null,'Entendido')">
+      <b>&#x1f680; Correr bot ahora</b><span>Forzar ejecucion sin esperar 15 min &#x2014; debes hacerlo en la PC</span>
+    </button>
+    <button class="btn-action" onclick="confirmarAccion('limpiar_cola','&#x1f9f9; Limpiar cola','&#xbf;Borrar todos los mensajes pendientes de la cola? Los mensajes que no se pudieron mandar se perder&#xe1;n.')">
+      <b>&#x1f9f9; Limpiar cola de mensajes</b><span>Borra mensajes pendientes que no se pudieron mandar</span>
+    </button>
+    <button class="btn-action" onclick="confirmarKpiVendedores()">
+      <b>&#x1f3f7;&#xfe0f; Enviar reporte vendedores</b><span>Crea la se&#xf1;al para que el bot mande al espacio Tiempos cuanto tarda cada vendedor en generar etiqueta (T2&#x2192;T3)</span>
+    </button>
+  </div>
+</div>
+
+<!-- &#x2500;&#x2500; MENSAJES PROGRAMADOS &#x2500;&#x2500; -->
+<div id="tab-mensajes" class="section" style="margin-top:1rem">
+  <div class="section-intro">&#x1f4c5; <b>Mensajes programados</b> &#x2014; Escribe un mensaje personalizado, elige cada cu&#xe1;ntos ciclos quieres que se mande y a qu&#xe9; espacio. Cada ciclo dura ~15 min. El bot lo enviar&#xe1; autom&#xe1;ticamente. Para detenerlo, solo b&#xf3;rralo.</div>
+
+  <div class="cfg-card" style="margin-bottom:1rem">
+    <h3>&#x2795; Nuevo mensaje programado</h3>
+    <div class="cfg-row full" style="margin-bottom:14px">
+      <label>&#x1f4ac; Mensaje</label>
+      <textarea id="msg-texto" style="min-height:110px;font-family:monospace;font-size:12px;line-height:1.6" placeholder="Escribe aqu&#xed; el mensaje que quieres que el bot mande autom&#xe1;ticamente..."></textarea>
+    </div>
+    <div class="cfg-grid" style="margin-bottom:4px">
+      <div class="cfg-row">
+        <label class="tooltip-wrap">Cada cu&#xe1;ntos ciclos <span class="tooltip-icon">i</span><span class="tooltip-box">El bot lo enviar&#xe1; cada X ciclos. 1 ciclo &#x2248; 15 min. Ej: 2 = cada ~30 min, 4 = cada ~1 hora.</span></label>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="number" id="msg-intervalo" min="1" max="96" value="1" style="width:80px" oninput="actualizarEtiquetaCiclos(this.value)">
+          <span style="font-size:12px;color:#888" id="ciclos-label">ciclo (~15 min)</span>
+        </div>
+      </div>
+      <div class="cfg-row">
+        <label>&#x1f4f2; Destino</label>
+        <select id="msg-destino" style="width:auto;text-align:left">
+          <option value="reporte">&#x1f4e2; Reporte</option>
+          <option value="jefes">&#x1f454; Jefes</option>
+          <option value="tiempos">&#x23f1;&#xfe0f; Tiempos</option>
+          <option value="reporte,jefes">&#x1f4e2; Reporte + &#x1f454; Jefes</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <span style="font-size:11px;color:#888">El bot lo enviar&#xe1; en la pr&#xf3;xima ejecuci&#xf3;n (m&#xe1;x ~15 min)</span>
+      <button class="btn-primary" onclick="agregarMensajeProgramado()">&#x2795; Agregar mensaje</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="justify-content:space-between">
+      <span>&#x1f4cb; Mensajes programados activos</span>
+      <button onclick="cargarMensajesProgramados()" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #ddd;background:#faf9f7;cursor:pointer">&#x1f504; Actualizar</button>
+    </div>
+    <div id="msgs-prog-lista">
+      <div style="text-align:center;padding:2rem;color:#aaa">Cargando...</div>
+    </div>
+  </div>
+</div>
+
+<!-- &#x2500;&#x2500; PRUEBAS DE MENSAJES &#x2500;&#x2500; -->
+<div id="tab-pruebas" class="section" style="margin-top:1rem">
+  <div class="section-intro">&#x1f9ea; <b>Pruebas</b> &#x2014; Env&#xed;a mensajes de prueba a cualquier espacio para verificar que todo funcione. Los mensajes llevan la etiqueta PRUEBA para que el equipo sepa que no son reales.</div>
+  <div class="estado-bar warn" style="font-size:11px">
+    &#x1f4a1; Manda mensajes de prueba a cualquier espacio de Chat para verificar que los webhooks funcionan. El mensaje se envia de verdad &#x2014; asegurate de que diga PRUEBA.
+  </div>
+  <div class="cfg-card" style="margin-bottom:1rem">
+    <h3>&#x1f9ea; Enviar mensaje de prueba</h3>
+    <div class="cfg-row" style="margin-bottom:14px">
+      <label>&#x1f4dd; Tipo de mensaje</label>
+      <select onchange="cargarPrueba(this.value)">
+        <option value="">Selecciona para pre-llenar...</option>
+        <option value="apertura">&#x1f305; Apertura (10 AM)</option>
+        <option value="cierre">&#x1f319; Cierre (9:30 PM)</option>
+        <option value="vencidas">&#x26a0;&#xfe0f; Resumen vencidas</option>
+        <option value="alerta">&#x1f6a8; Alerta de anomalia</option>
+        <option value="ranking">&#x1f3c6; Ranking del dia</option>
+        <option value="tiempos">&#x23f1;&#xfe0f; Resumen de tiempos</option>
+      </select>
+    </div>
+    <div class="cfg-row" style="margin-bottom:14px">
+      <label>&#x1f4f2; Espacio destino</label>
+      <select id="prueba-espacio">
+        <option value="reporte">&#x1f4e2; Reporte</option>
+        <option value="jefes">&#x1f454; Jefes</option>
+        <option value="tiempos">&#x23f1;&#xfe0f; Tiempos</option>
+      </select>
+    </div>
+    <div class="cfg-row full" style="margin-bottom:14px">
+      <label>&#x1f4ac; Mensaje (editable)</label>
+      <textarea id="prueba-mensaje" style="min-height:200px;font-family:monospace;font-size:12px;line-height:1.6" placeholder="Selecciona un tipo de mensaje o escribe uno personalizado..."></textarea>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:11px;color:#854f0b">&#x26a0;&#xfe0f; Se envia al Chat de verdad</span>
+      <button class="btn-primary" onclick="mandarPrueba()">&#x1f4e4; Enviar prueba</button>
+    </div>
+  </div>
+  <div class="cfg-card">
+    <h3>&#x1f50c; Estado de webhooks</h3>
+    <div id="webhooks-status" style="font-size:12px;color:#666;line-height:2">
+      <div>&#x1f4e2; Reporte: <span id="wh-reporte-status" class="badge info">No verificado</span></div>
+      <div>&#x1f454; Jefes: <span id="wh-jefes-status" class="badge info">No verificado</span></div>
+      <div>&#x23f1;&#xfe0f; Tiempos: <span id="wh-tiempos-status" class="badge info">No verificado</span></div>
+    </div>
+    <button onclick="verificarWebhooks()" style="margin-top:10px">&#x1f50d; Verificar webhooks</button>
+  </div>
+
+  <!-- Modo Demo -->
+  <div class="cfg-card" style="margin-top:1rem;border:2px solid #c9254e20;background:#fff5f7">
+    <h3>&#x1f3af; Modo Demo</h3>
+    <p style="font-size:12px;color:#666;margin-bottom:14px">Ejecuta el bot completo con el navegador visible y redirige todos los mensajes a los webhooks de demo configurados aqu&#xed;. Ideal para mostrar el sistema en funcionamiento sin afectar los espacios reales.</p>
+    <div class="cfg-row" style="margin-bottom:10px">
+      <label>&#x1f4f2; Webhook Demo 1 (Reporte)</label>
+      <input type="url" id="cfg-wh-demo1" placeholder="https://chat.googleapis.com/..." style="font-size:12px">
+    </div>
+    <div class="cfg-row" style="margin-bottom:10px">
+      <label>&#x1f4f2; Webhook Demo 2 (Jefes)</label>
+      <input type="url" id="cfg-wh-demo2" placeholder="https://chat.googleapis.com/..." style="font-size:12px">
+    </div>
+    <div class="cfg-row" style="margin-bottom:10px">
+      <label>&#x1f4f2; Webhook Demo 3 (Tiempos)</label>
+      <input type="url" id="cfg-wh-demo3" placeholder="https://chat.googleapis.com/..." style="font-size:12px">
+    </div>
+    <div class="cfg-row" style="margin-bottom:14px">
+      <label>&#x23f1; Intervalo entre ejecuciones demo (minutos)</label>
+      <input type="number" id="cfg-intervalo-demo" value="15" min="1" max="60" style="width:80px">
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <span style="font-size:11px;color:#854f0b">&#x26a0;&#xfe0f; Los mensajes demo llegan a los webhooks configurados arriba</span>
+      <div style="display:flex;gap:8px">
+        <button onclick="guardarDemo()" style="background:#c9254e;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600">&#x1f4be; Guardar config demo</button>
+      </div>
+    </div>
+    <div id="demo-estado" style="margin-top:10px;font-size:12px"></div>
+  </div>
+</div>
+
+<!-- &#x2500;&#x2500; LOGS &#x2500;&#x2500; -->
+<div id="tab-logs" class="section" style="margin-top:1rem">
+  <div class="section-intro">&#x1f4dc; <b>Logs</b> &#x2014; Registro de las &#xfa;ltimas ejecuciones con detalles de errores. &#xda;til para diagnosticar problemas.</div>
+  <div class="estado-bar warn" style="font-size:11px">
+    &#x1f4a1; Ultimas 30 ejecuciones del bot con detalles de errores.
+  </div>
+  <div class="card">
+    <div class="card-title">&#x1f4dc; Logs recientes</div>
+    <button onclick="cargarLogs()" style="margin-bottom:10px">&#x1f504; Actualizar</button>
+    <div id="logs-container"><div style="text-align:center;color:#888;padding:1.5rem">Cargando...</div></div>
+  </div>
+</div>
+
+<!-- &#x2500;&#x2500; KPI TIEMPOS &#x2500;&#x2500; -->
+<div id="tab-tiempos" class="section" style="margin-top:1rem">
+  <div class="section-intro">&#x23f1; <b>KPI Tiempos de asignaci&#xf3;n</b> &#x2014; Se actualiza autom&#xe1;ticamente al cierre del turno. Mide cu&#xe1;nto tarda cada jefe en asignar remisiones a vendedores desde que llegan a tienda.</div>
+
+  <div class="card">
+    <div class="card-title" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <span>&#x1f4ca; Tiempos por jefe</span>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <select id="kpi-dia-sel" onchange="filtrarKpiPorDia()" style="font-size:12px;border-radius:8px;border:1px solid #ddd;padding:5px 10px;background:#faf9f7;cursor:pointer">
+          <option value="">Cargando...</option>
+        </select>
+        <button onclick="cargarKpiTiempos()" style="font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #ddd;background:#faf9f7;cursor:pointer">&#x1f504; Actualizar</button>
+      </div>
+    </div>
+    <div id="kpi-meta" style="font-size:12px;color:#888;margin-bottom:12px">Cargando...</div>
+    <div class="kpi-legend">
+      <div class="kpi-legend-item"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2ecc71;margin-right:4px"></span>0-5 min: Excelente</div>
+      <div class="kpi-legend-item"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f39c12;margin-right:4px"></span>5-20 min: Regular</div>
+      <div class="kpi-legend-item"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#e74c3c;margin-right:4px"></span>+20 min: Lento</div>
+      <span style="color:#bbb;font-size:11px;margin-left:auto">Tiempo desde que llega la remisi&#xf3;n hasta que el jefe la asigna</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Jefe</th>
+          <th style="color:#2ecc71">&#x1f7e2; M&#xe1;s r&#xe1;pido <span style="font-weight:400;font-size:10px;opacity:.7">(mejor tiempo)</span></th>
+          <th>&#x23f1; Promedio <span style="font-weight:400;font-size:10px;opacity:.7">(tiempo t&#xed;pico)</span></th>
+          <th style="color:#e74c3c">&#x1f534; M&#xe1;s lento <span style="font-weight:400;font-size:10px;opacity:.7">(peor caso)</span></th>
+          <th>Remisiones</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-kpi-tiempos">
+        <tr><td colspan="6" style="text-align:center;color:#888;padding:2rem">Cargando datos...</td></tr>
+      </tbody>
+    </table>
+    <div id="kpi-footer" style="margin-top:12px;font-size:12px;color:#aaa;text-align:right"></div>
+  </div>
+
+  <!-- Mini gr&#xe1;fica de barras -->
+  <div class="card" style="margin-top:1rem">
+    <div class="card-title">&#x1f4c8; Promedio por jefe (min)</div>
+    <canvas id="chart-kpi" height="120"></canvas>
+  </div>
+</div>
+
+</div>
+
+<!-- &#x2500;&#x2500; MODAL DE CONFIRMACION &#x2500;&#x2500; -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-icon" id="modal-icon">&#x26a0;&#xfe0f;</div>
+    <div class="modal-title" id="modal-title">&#xbf;Confirmar acci&#xf3;n?</div>
+    <div class="modal-desc" id="modal-desc"></div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="cerrarModal()">Cancelar</button>
+      <button class="modal-confirm" id="modal-confirm-btn">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- &#x2500;&#x2500; TOUR DE BIENVENIDA &#x2500;&#x2500; -->
+<div class="tour-overlay" id="tour-overlay">
+  <div class="tour-box">
+    <div class="tour-icon" id="tour-icon">&#x1f44b;</div>
+    <div class="tour-title" id="tour-title"></div>
+    <div class="tour-desc" id="tour-desc"></div>
+    <div class="tour-dots" id="tour-dots"></div>
+    <div class="tour-btns">
+      <button class="tour-skip" onclick="cerrarTour()">Saltar</button>
+      <button class="tour-next" id="tour-next-btn" onclick="tourSiguiente()">Siguiente &#x2192;</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
 <script>
-  // placeholder - full content pushed separately
-  console.log('Argos dashboard placeholder');
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxBSox6hX-SfSemrq-CQAx_w_iCGP-4uUsMB1eKD8HCYJJC_Ul9BoEItLAAVNVm5ELtzA/exec";
+const SHEET_ID = "135lsymm5A67_ieYZLaKIfvPpkyqRWbUf9UV-mv3b7js";
+const URL_MONITOR  = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=MONITOR";
+const URL_METRICAS = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=METRICAS";
+const URL_KPI_TIEMPOS  = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=KPI_TIEMPOS";
+const URL_TIEMPOS_LIVE = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=TIEMPOS";
+let chartKpi = null;
+let todos=[],chartT,chartI,chartV;
+let DIRECTORIO_SECCIONES = [], DIRECTORIO_JEFES = [];
+let countdownSeg = 30, countdownTimer;
+
+// \u2500\u2500 FECHA HEADER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+(function(){
+  const d=new Date();
+  const dias=['Domingo','Lunes','Martes','Mi\u00e9rcoles','Jueves','Viernes','S\u00e1bado'];
+  const meses=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  document.getElementById('hdr-fecha').textContent=dias[d.getDay()]+' '+d.getDate()+' de '+meses[d.getMonth()]+' '+d.getFullYear();
+})();
+
+// \u2500\u2500 MODAL \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+let _modalCallback = null;
+function mostrarModal(icon, titulo, desc, callback, labelConfirm, labelCancel){
+  document.getElementById('modal-icon').textContent = icon || '\u26a0\ufe0f';
+  document.getElementById('modal-title').textContent = titulo;
+  document.getElementById('modal-desc').innerHTML = desc;
+  const btn = document.getElementById('modal-confirm-btn');
+  if(callback){
+    btn.style.display='inline-block';
+    btn.textContent = labelConfirm || 'Confirmar';
+    _modalCallback = callback;
+  } else {
+    btn.style.display='none';
+    _modalCallback = null;
+  }
+  const cancel = document.querySelector('.modal-cancel');
+  cancel.textContent = labelCancel || 'Cancelar';
+  document.getElementById('modal-overlay').classList.add('show');
+}
+function cerrarModal(){ document.getElementById('modal-overlay').classList.remove('show'); _modalCallback=null; }
+document.getElementById('modal-overlay').addEventListener('click', function(e){ if(e.target===this) cerrarModal(); });
+document.getElementById('modal-confirm-btn').addEventListener('click', function(){
+  cerrarModal();
+  if(_modalCallback) _modalCallback();
+});
+
+function confirmarAccion(tipo, titulo, desc){
+  const iconos={pausar:'\u23f8\ufe0f',reanudar:'\u25b6\ufe0f',limpiar_cola:'\ud83e\uddf9'};
+  mostrarModal(iconos[tipo]||'\u2699\ufe0f', titulo, desc, ()=>accion(tipo), 'S\u00ed, continuar');
+}
+function confirmarKpiVendedores(){
+  mostrarModal('\ud83c\udff7\ufe0f','Enviar reporte vendedores','\u00bfEnviar reporte de tiempos por vendedor al espacio Tiempos?<br><br>El bot lo procesar\u00e1 en la pr\u00f3xima ejecuci\u00f3n (m\u00e1ximo 15 min).', enviarKpiVendedores, 'S\u00ed, enviar');
+}
+
+// \u2500\u2500 GLOBAL STATUS BAR \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+function actualizarGlobalStatus(ul){
+  if(!ul) return;
+  const estadoEl = document.getElementById('gsb-estado');
+  const dotEl    = document.getElementById('gsb-dot');
+  if(ul.exito){
+    estadoEl.className='gsb-pill gsb-ok';
+    estadoEl.innerHTML='<span class="dot dot-live" style="width:8px;height:8px;background:#3b6d11;margin-right:6px"></span>Bot activo';
+  } else {
+    estadoEl.className='gsb-pill gsb-err';
+    estadoEl.innerHTML='<span style="margin-right:6px">\u274c</span>\u00daltima ejecuci\u00f3n con error';
+  }
+  document.getElementById('gsb-ultima').textContent = ul.fecha+' '+ul.hora;
+  document.getElementById('gsb-total').textContent  = ul.total;
+  const vEl = document.getElementById('gsb-vencidas');
+  vEl.textContent = ul.vencidas;
+  vEl.style.color = ul.vencidas>20?'#E24B4A':ul.vencidas>5?'#f39c12':'#3b6d11';
+  document.getElementById('gsb-dur').textContent = formatDur(ul.duracion);
+  document.getElementById('hdr-ultima').textContent = '\u00daltima ejec: '+ul.hora;
+}
+
+// \u2500\u2500 FILTRO DE FECHAS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+function limpiarFiltroFecha(){
+  document.getElementById('filtro-fecha-ini').value='';
+  document.getElementById('filtro-fecha-fin').value='';
+  renderAll();
+}
+
+function showTab(id,btn){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');btn.classList.add('active');if(id==='routing')cargarWebhooksJefes();if(id==='tiempos')cargarKpiTiempos();if(id==='pcs')cargarPcs();if(id==='mensajes')cargarMensajesProgramados();}
+
+// Navegar a una pesta\u00f1a desde las tarjetas de Inicio
+function irATab(id){
+  const btn = document.querySelector('.nav button[data-tab="'+id+'"]');
+  if(btn) showTab(id, btn);
+}
+
+// \u2500\u2500 TOUR DE BIENVENIDA \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+const TOUR_PASOS = [
+  { icon:'\ud83d\udc4b', titulo:'\u00a1Bienvenido a Argos!',
+    desc:'Argos vigila las remisiones de OMS todo el d\u00eda y avisa por Google Chat cuando hay art\u00edculos pendientes. Este panel es tu centro de control. Te ense\u00f1amos lo b\u00e1sico en 5 pasos.' },
+  { icon:'\ud83d\udfe2', titulo:'La barra de estado',
+    desc:'La barra gris debajo del encabezado siempre te dice si el bot est\u00e1 corriendo, cu\u00e1ndo fue su \u00faltima ejecuci\u00f3n y cu\u00e1ntas remisiones y vencidas hay. <b>Es visible desde cualquier pesta\u00f1a.</b>' },
+  { icon:'\ud83d\udcca', titulo:'Pesta\u00f1a Monitor',
+    desc:'Es la pesta\u00f1a que m\u00e1s vas a usar: muestra cu\u00e1ntas remisiones hay en espera, cu\u00e1ntas est\u00e1n vencidas (+20 min) y el historial de cada ejecuci\u00f3n del bot.' },
+  { icon:'\ud83c\udfd6\ufe0f', titulo:'Descansos de jefes',
+    desc:'Cuando un jefe descansa, reg\u00edstralo en la pesta\u00f1a Descansos e indica qui\u00e9n lo cubre. As\u00ed los avisos de sus secciones le llegan al jefe correcto ese d\u00eda.' },
+  { icon:'\ud83d\udd27', titulo:'\u00bfNecesitas pausar el bot?',
+    desc:'En la pesta\u00f1a Acciones puedes pausar y reanudar el bot con un clic. Y si algo no funciona, en Pruebas puedes mandar un mensaje de prueba para verificar los chats.<br><br><b>\u00a1Listo! Ya conoces el panel.</b> Puedes repetir este tour con el bot\u00f3n \u2753 Ayuda de arriba.' }
+];
+let tourPaso = 0;
+
+function iniciarTour(){
+  tourPaso = 0;
+  renderTourPaso();
+  document.getElementById('tour-overlay').classList.add('show');
+}
+function renderTourPaso(){
+  const p = TOUR_PASOS[tourPaso];
+  document.getElementById('tour-icon').textContent  = p.icon;
+  document.getElementById('tour-title').textContent = p.titulo;
+  document.getElementById('tour-desc').innerHTML    = p.desc;
+  document.getElementById('tour-dots').innerHTML    = TOUR_PASOS.map((_,i)=>
+    '<span class="tour-dot'+(i===tourPaso?' active':'')+'"></span>').join('');
+  document.getElementById('tour-next-btn').textContent =
+    tourPaso === TOUR_PASOS.length-1 ? '\u2713 Terminar' : 'Siguiente \u2192';
+}
+function tourSiguiente(){
+  if(tourPaso < TOUR_PASOS.length-1){ tourPaso++; renderTourPaso(); }
+  else cerrarTour();
+}
+function cerrarTour(){
+  document.getElementById('tour-overlay').classList.remove('show');
+  try{ localStorage.setItem('argos_tour_visto','1'); }catch(e){}
+}
+document.getElementById('tour-overlay').addEventListener('click', function(e){ if(e.target===this) cerrarTour(); });
+
+// Mostrar el tour autom\u00e1ticamente la primera vez que alguien abre el panel
+try{
+  if(!localStorage.getItem('argos_tour_visto')) setTimeout(iniciarTour, 800);
+}catch(e){}
+
+// \u2500\u2500 PCS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+async function cargarPcs(){
+  const div = document.getElementById('pcs-lista');
+  div.innerHTML = '<div style="text-align:center;padding:2rem;color:#aaa">Cargando...</div>';
+  try {
+    const r    = await fetch(APPS_SCRIPT_URL + '?action=getPcs&t=' + Date.now());
+    const data = await r.json();
+    if(!data.pcs || data.pcs.length === 0){
+      div.innerHTML = '<div style="text-align:center;padding:2rem;color:#aaa">No hay PCs registradas a\u00fan. Se registran autom\u00e1ticamente la primera vez que corre el bot.</div>';
+      return;
+    }
+    let html = '<table><thead><tr><th>PC</th><th>Estado</th><th>\u00daltima conexi\u00f3n</th><th>Versi\u00f3n</th><th>Acci\u00f3n</th></tr></thead><tbody>';
+    data.pcs.forEach(pc => {
+      const activo  = pc.estado.toLowerCase() !== 'pausado';
+      const badge   = activo
+        ? '<span style="background:#e8f5e9;color:#2e7d32;padding:3px 10px;border-radius:12px;font-size:12px">\u2705 Activo</span>'
+        : '<span style="background:#fdecea;color:#c62828;padding:3px 10px;border-radius:12px;font-size:12px">\u23f8\ufe0f Pausado</span>';
+      const btn     = activo
+        ? `<button onclick="togglePc('${pc.nombre}','pausado')" style="background:#fdecea;color:#c62828;border:1px solid #f5c6cb;padding:5px 12px;border-radius:8px;cursor:pointer;font-size:12px">\u23f8\ufe0f Pausar</button>`
+        : `<button onclick="togglePc('${pc.nombre}','activo')" style="background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;padding:5px 12px;border-radius:8px;cursor:pointer;font-size:12px">\u25b6\ufe0f Reanudar</button>`;
+      html += `<tr><td><b>${pc.nombre}</b></td><td>${badge}</td><td style="color:#888;font-size:12px">${pc.ultima_conexion||'\u2014'}</td><td style="color:#888;font-size:12px">${pc.version||'\u2014'}</td><td>${btn}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    div.innerHTML = html;
+  } catch(e){
+    div.innerHTML = '<div style="color:red;padding:1rem">Error cargando PCs: ' + e + '</div>';
+  }
+}
+
+async function togglePc(nombre, nuevoEstado){
+  const accion = nuevoEstado === 'pausado' ? 'Pausar' : 'Reanudar';
+  if(!confirm(`\u00bf${accion} la PC "${nombre}"?\n\nEl cambio aplica en m\u00e1ximo 15 minutos.`)) return;
+  try {
+    const r    = await fetch(APPS_SCRIPT_URL + '?action=setPcEstado&nombre=' + encodeURIComponent(nombre) + '&estado=' + encodeURIComponent(nuevoEstado) + '&t=' + Date.now());
+    const data = await r.json();
+    if(data.ok) { cargarPcs(); }
+    else alert('Error: ' + (data.error || 'desconocido'));
+  } catch(e){ alert('Error: ' + e); }
+}
+
+// \u2500\u2500 KPI TIEMPOS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+function fmtMin(m){m=Math.round(Number(m)||0);const h=Math.floor(m/60),min=m%60;return h>0?h+'h '+min+'min':min+'min';}
+function semaforoColor(p){if(p<=5)return '#2ecc71';if(p<=20)return '#f39c12';return '#e74c3c';}
+
+let _kpiTodos = []; // todos los registros hist\u00f3ricos
+
+async function cargarKpiTiempos(){
+  const tbody = document.getElementById('tabla-kpi-tiempos');
+  const meta  = document.getElementById('kpi-meta');
+  const sel   = document.getElementById('kpi-dia-sel');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#aaa">Cargando...</td></tr>';
+  try {
+    const r    = await fetch(URL_TIEMPOS_LIVE + '&t=' + Date.now());
+    const txt  = await r.text();
+    const json = JSON.parse(txt.replace(/^[^\(]+\(|\);?$/g,''));
+    const rows = json.table?.rows || [];
+    if(!rows.length){
+      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#aaa;padding:2rem">Sin datos a\u00fan \u2014 el bot no ha registrado tiempos todav\u00eda.</td></tr>';
+      meta.textContent='Sin datos a\u00fan';
+      return;
+    }
+    // Schema TIEMPOS: Fecha(0) Hora(1) Jefe(2) Seccion(3) Segundos(4) Fecha_H(5) FechaStatus(6)
+    // Aggregate by dia+jefe: compute min/prom/max/rem from seconds\u2192minutes
+    const agg = {}; // { "DD/MM/YYYY|Jefe": { mins:[], hora:"HH:MM" } }
+    for(const row of rows){
+      const dia  = row.c[0]?.v || row.c[0]?.f || '';
+      const hora = row.c[1]?.v || row.c[1]?.f || '';
+      const jefe = row.c[2]?.v || '';
+      const segs = Number(row.c[4]?.v || 0);
+      if(!jefe || !dia || segs <= 0) continue;
+      const key = dia + '|' + jefe;
+      if(!agg[key]) agg[key] = { dia, jefe, mins:[], hora:'' };
+      agg[key].mins.push(segs / 60);
+      if(hora) agg[key].hora = hora; // keep last recorded hora
+    }
+    if(!Object.keys(agg).length){
+      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#aaa;padding:2rem">Sin datos v\u00e1lidos en la hoja TIEMPOS.</td></tr>';
+      meta.textContent='Sin datos';
+      return;
+    }
+    _kpiTodos = Object.values(agg).map(a=>{
+      const mn = a.mins;
+      const sum = mn.reduce((s,v)=>s+v,0);
+      return {
+        dia  : a.dia,
+        jefe : a.jefe,
+        min  : Math.round(Math.min(...mn)),
+        prom : Math.round(sum / mn.length),
+        max  : Math.round(Math.max(...mn)),
+        rem  : mn.length,
+        hora : a.hora,
+      };
+    }).filter(d=>d.jefe && d.dia);
+
+    // D\u00edas \u00fanicos, m\u00e1s reciente primero
+    const dias = [...new Set(_kpiTodos.map(d=>d.dia))].sort((a,b)=>{
+      const p = s=>s.split('/').reverse().join('');
+      return p(b).localeCompare(p(a));
+    });
+
+    sel.innerHTML = dias.map((d,i)=>
+      `<option value="${d}">${d}${i===0?' (m\u00e1s reciente)':''}</option>`
+    ).join('');
+
+    filtrarKpiPorDia();
+  } catch(e){
+    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#e74c3c;padding:2rem">Error: '+e.message+'</td></tr>';
+    meta.textContent='Error';
+  }
+}
+
+function filtrarKpiPorDia(){
+  const tbody  = document.getElementById('tabla-kpi-tiempos');
+  const meta   = document.getElementById('kpi-meta');
+  const footer = document.getElementById('kpi-footer');
+  const dia    = document.getElementById('kpi-dia-sel').value;
+  if(!dia || !_kpiTodos.length) return;
+
+  const datos = _kpiTodos.filter(d=>d.dia===dia).sort((a,b)=>a.prom-b.prom);
+  if(!datos.length){
+    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#aaa;padding:2rem">Sin datos para este d\u00eda.</td></tr>';
+    meta.textContent=dia;
+    return;
+  }
+
+  const hora = datos[0]?.hora || '';
+  meta.textContent = `\ud83d\udcc5 ${dia}  \u00b7  \u00falt. registro: ${hora}  \u00b7  ${datos.length} jefes`;
+
+  tbody.innerHTML = datos.map((d,i)=>{
+    const color = semaforoColor(d.prom);
+    const dot   = `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${color};margin-right:6px"></span>`;
+    return `<tr>
+      <td style="color:#aaa;font-size:11px">${i+1}</td>
+      <td><b>${d.jefe}</b></td>
+      <td style="color:#2ecc71;font-weight:600">${fmtMin(d.min)}</td>
+      <td>${dot}<b>${fmtMin(d.prom)}</b></td>
+      <td style="color:#e74c3c">${fmtMin(d.max)}</td>
+      <td style="color:#888">${d.rem} rem</td>
+    </tr>`;
+  }).join('');
+
+  const promGral = Math.round(datos.reduce((s,d)=>s+d.prom,0)/datos.length);
+  footer.textContent = `Promedio general del d\u00eda: ${fmtMin(promGral)}`;
+
+  const labels = datos.map(d=>d.jefe.split(' ').slice(0,2).join(' '));
+  const proms  = datos.map(d=>d.prom);
+  const colors = proms.map(p=>semaforoColor(p));
+  const ctx    = document.getElementById('chart-kpi').getContext('2d');
+  if(chartKpi) chartKpi.destroy();
+  chartKpi = new Chart(ctx, {
+    type:'bar',
+    data:{labels, datasets:[{label:'Promedio (min)',data:proms,backgroundColor:colors,borderRadius:6}]},
+    options:{
+      responsive:true,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmtMin(c.raw)}}},
+      scales:{y:{ticks:{callback:v=>fmtMin(v)},grid:{color:'rgba(0,0,0,.05)'}},x:{ticks:{font:{size:10}}}}
+    }
+  });
+}
+function formatDur(seg){seg=Math.round(Number(seg)||0);const m=Math.floor(seg/60),s=seg%60;if(m===0)return s+'s';return m+'m '+(s<10?'0':'')+s+'s';}
+function showToast(msg, tipo){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+(tipo||'ok');setTimeout(()=>t.classList.remove('show'),3000);}
+
+async function cargarMetricas(){
+  try{
+    const r=await fetch(URL_METRICAS+'&t='+Date.now());
+    const txt=await r.text();
+    const json=JSON.parse(txt.replace(/^[^{]+/,'').replace(/[^}]+$/,''));
+    const rows=json.table.rows||[];
+    if(!rows.length) return;
+    // Ultima fila = datos mas recientes (col: Fecha,Total,Espera,Etiquetas,Sin_Asignar,Vencidas,Hora)
+    const last=rows[rows.length-1].c;
+    const espera   = Number(last[2]?.v)||0;
+    const etiquetas= Number(last[3]?.v)||0;
+    const sinAsig  = Number(last[4]?.v)||0;
+    const vencidas = Number(last[5]?.v)||0;
+    const hora     = last[6]?.v||'';
+    document.getElementById('m-espera').textContent      = espera;
+    document.getElementById('m-espera-sub').textContent  = 'Actualizado: '+hora;
+    document.getElementById('m-etiquetas').textContent   = etiquetas;
+    document.getElementById('m-etiquetas-sub').textContent = hora;
+    document.getElementById('m-sin-asignar').textContent = sinAsig;
+    document.getElementById('m-sin-asignar-sub').textContent = hora;
+    document.getElementById('m-vencidas-hoy').textContent= vencidas;
+    document.getElementById('m-vencidas-sub').textContent= hora;
+    // Color dinamico en vencidas
+    const cardVenc=document.querySelector('#m-vencidas-hoy').closest('.metric');
+    if(cardVenc) cardVenc.style.borderLeftColor = vencidas>20?'#E24B4A':vencidas>5?'#F5A623':'#1D9E75';
+  }catch(e){ console.warn('METRICAS no disponible:', e.message); }
+}
+
+async function cargar(){try{
+  const r=await fetch(URL_MONITOR+'&t='+Date.now());
+  const txt=await r.text();
+  const json=JSON.parse(txt.replace(/^[^{]+/,'').replace(/[^}]+$/,''));
+  todos=(json.table.rows||[]).map(row=>({fecha:row.c[0]?.v||'',hora:row.c[1]?.v||'',duracion:Number(row.c[2]?.v)||0,total:Number(row.c[3]?.v)||0,vencidas:Number(row.c[4]?.v)||0,exito:(row.c[5]?.v||'').toLowerCase()==='exitosa',intentos:Number(row.c[6]?.v)||1}));
+  document.getElementById('dot').className='dot dot-live';
+  document.getElementById('status-txt').textContent='En vivo';
+  document.getElementById('ultima').textContent='Cargado: '+new Date().toLocaleTimeString('es-MX');
+  iniciarCountdown();
+  renderAll();
+  cargarMetricas();
+}catch(e){
+  document.getElementById('dot').className='dot dot-off';
+  document.getElementById('status-txt').textContent='Sin conexion';
+}}
+
+function filtrados(){
+  const n=parseInt(document.getElementById('filtro').value);
+  const est=document.getElementById('filtro-estado').value;
+  const fIni=document.getElementById('filtro-fecha-ini').value;
+  const fFin=document.getElementById('filtro-fecha-fin').value;
+  let base=todos;
+  if(est==='exitosa')base=todos.filter(e=>e.exito);
+  else if(est==='error')base=todos.filter(e=>!e.exito);
+  if(fIni){base=base.filter(e=>{const p=e.fecha.split('/');return p.length===3?new Date(p[2],p[1]-1,p[0])>=new Date(fIni):true;});}
+  if(fFin){base=base.filter(e=>{const p=e.fecha.split('/');return p.length===3?new Date(p[2],p[1]-1,p[0])<=new Date(fFin):true;});}
+  return base.slice(-n);
+}
+function prom(arr,key){const v=arr.filter(e=>e.exito).map(e=>e[key]);return v.length?Math.round(v.reduce((a,b)=>a+b,0)/v.length):0;}
+
+function renderCards(data){
+  const ex=data.filter(e=>e.exito).length,ul=data[data.length-1];
+  document.getElementById('cards').innerHTML=`
+    <div class="metric"><div class="lbl">Duracion promedio</div><div class="val">${formatDur(prom(data,'duracion'))}</div><div class="sub">Ultima: ${ul?formatDur(ul.duracion):'\u2014'}</div></div>
+    <div class="metric"><div class="lbl">Intentos promedio</div><div class="val">${prom(data,'intentos')}</div><div class="sub">Ultima: ${ul?ul.intentos:'\u2014'}</div></div>
+    <div class="metric"><div class="lbl">Tasa de exito</div><div class="val">${data.length?Math.round(ex/data.length*100):0}%</div><div class="sub">${ex} ok / ${data.length-ex} errores</div></div>
+    <div class="metric"><div class="lbl">Ejecuciones</div><div class="val">${data.length}</div><div class="sub">de ${todos.length} totales</div></div>`;
+}
+
+function renderTabla(data){
+  const tbody=document.getElementById('tabla');
+  if(!data.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:#888;padding:1.5rem">Sin datos</td></tr>';return;}
+  tbody.innerHTML=[...data].reverse().map((e,i)=>`
+    <tr><td style="color:#aaa">${data.length-i}</td><td>${e.fecha}</td><td>${e.hora}</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><span style="min-width:48px">${formatDur(e.duracion)}</span><div class="bar-wrap"><div class="bar" style="width:${Math.min(100,Math.round(e.duracion/180*100))}%"></div></div></div></td>
+      <td>${e.total}</td><td>${e.vencidas}</td>
+      <td><span class="badge ${e.intentos===1?'ok':e.intentos<=3?'warn':'err'}">${e.intentos}</span></td>
+      <td><span class="badge ${e.exito?'ok':'err'}">${e.exito?'exitosa':'error'}</span></td></tr>`).join('');
+}
+
+function renderCharts(data){
+  const labels=data.map((_,i)=>'#'+(i+1));
+  const colors=data.map(e=>e.exito?'#E8416C':'#E24B4A');
+  if(chartT)chartT.destroy();if(chartI)chartI.destroy();
+  chartT=new Chart(document.getElementById('cT'),{type:'bar',data:{labels,datasets:[{data:data.map(e=>Math.round(e.duracion)),backgroundColor:colors}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{callback:v=>formatDur(v),font:{size:10}}},x:{ticks:{font:{size:10},autoSkip:true,maxRotation:0}}}}});
+  chartI=new Chart(document.getElementById('cI'),{type:'bar',data:{labels,datasets:[{data:data.map(e=>e.intentos),backgroundColor:data.map(e=>e.intentos===1?'#1D9E75':e.intentos<=3?'#F5A623':'#E24B4A')}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1,font:{size:10}}},x:{ticks:{font:{size:10},autoSkip:true,maxRotation:0}}}}});
+}
+
+function renderVencidas(data){
+  const labels=data.map((_,i)=>'#'+(i+1));
+  if(chartV)chartV.destroy();
+  chartV=new Chart(document.getElementById('cV'),{
+    type:'line',
+    data:{labels,datasets:[{data:data.map(e=>e.vencidas),borderColor:'#E8416C',backgroundColor:'rgba(232,65,108,.1)',tension:.35,fill:true,pointRadius:3,pointHoverRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:5,font:{size:10}}},x:{ticks:{font:{size:10},autoSkip:true,maxRotation:0}}}}
+  });
+}
+
+function actualizarBotStatus(data){
+  if(!data.length)return;
+  const ul=data[data.length-1];
+  const bar=document.getElementById('bot-status-bar');
+  bar.style.display='flex';
+  bar.style.alignItems='center';
+  bar.style.gap='10px';
+  bar.style.padding='10px 14px';
+  bar.style.borderRadius='8px';
+  bar.style.fontSize='13px';
+  bar.style.marginBottom='1rem';
+  if(ul.exito){bar.style.background='#eaf3de';bar.style.color='#3b6d11';}
+  else{bar.style.background='#fcebeb';bar.style.color='#a32d2d';}
+  bar.innerHTML=(ul.exito?'\u2705':'\u274c')+' Ultima ejecucion: <b>'+ul.fecha+' '+ul.hora+'</b> \u2014 '+ul.total+' remisiones, '+ul.vencidas+' vencidas, '+formatDur(ul.duracion)+(ul.exito?'':' \u26a0\ufe0f Con error');
+  actualizarGlobalStatus(ul);
+  const gsb=document.getElementById('gsb-refresh');
+  if(gsb)gsb.textContent='Actualiza en '+countdownSeg+'s';
+}
+
+function exportarCSV(){
+  if(!todos.length){showToast('Sin datos para exportar','err');return;}
+  const hdr=['Fecha','Hora','Duracion_seg','Total','Vencidas','Estado','Intentos'];
+  const filas=[hdr,...todos.map(e=>[e.fecha,e.hora,Math.round(e.duracion),e.total,e.vencidas,e.exito?'exitosa':'error',e.intentos])];
+  const csv=filas.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='monitor_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+
+function iniciarCountdown(){
+  clearInterval(countdownTimer);
+  countdownSeg=30;
+  countdownTimer=setInterval(()=>{
+    countdownSeg--;
+    const txt='Actualiza en '+countdownSeg+'s';
+    const el=document.getElementById('refresh-countdown');
+    if(el)el.textContent=txt;
+    const gsb=document.getElementById('gsb-refresh');
+    if(gsb)gsb.textContent=txt;
+    if(countdownSeg<=0)countdownSeg=30;
+  },1000);
+}
+
+function renderAll(){const d=filtrados();renderCards(d);renderTabla(d);renderCharts(d);renderVencidas(d);actualizarBotStatus(d);}
+
+async function verificarWebhooks(){
+  const ids=['reporte','jefes','tiempos'];
+  for(const id of ids){
+    const el=document.getElementById('wh-'+id+'-status');
+    if(el){el.className='badge warn';el.textContent='Verificando...';}
+  }
+  for(const [id,url] of Object.entries(WEBHOOKS_MAP)){
+    const el=document.getElementById('wh-'+id+'-status');
+    if(!el)continue;
+    try{
+      await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:''})});
+      el.className='badge ok';el.textContent='OK';
+    }catch(e){
+      el.className='badge err';el.textContent='Error';
+    }
+  }
+}
+
+// CONFIG
+function actualizarLabelCiclos(inputId, labelId){
+  const n = parseInt(document.getElementById(inputId).value) || 1;
+  const el = document.getElementById(labelId);
+  if(el) el.textContent = n === 1 ? 'ciclo (~15 min)' : `ciclos (~${n*15} min)`;
+}
+
+function actualizarResumen(){
+  const hi=document.getElementById('cfg-hora-inicio').value;
+  const hf=document.getElementById('cfg-hora-fin').value;
+  const mf=document.getElementById('cfg-minuto-fin').value.padStart(2,'0');
+  document.getElementById('rs-horario').textContent=hi+':00 - '+hf+':'+mf;
+  const dias=[...document.querySelectorAll('.dia-chip.active')].map(c=>c.textContent);
+  document.getElementById('rs-dias').textContent=dias.length===7?'Todos los dias':dias.join(', ');
+  document.getElementById('rs-estado').textContent=document.getElementById('cfg-pausado').checked?'\u23f8\ufe0f Pausado':'\u2705 Activo';
+  document.getElementById('rs-vencida').textContent=document.getElementById('cfg-vencida').value+' min';
+}
+
+async function cargarConfig(){
+  const estado=document.getElementById('cfg-estado');
+  estado.className='estado-bar warn';estado.textContent='\u23f3 Cargando...';
+  try{
+    const r=await fetch(APPS_SCRIPT_URL+'?accion=config');
+    const data=await r.json();
+    if(!data.ok)throw new Error(data.error);
+    const c=data.config;
+    // Limpiar valores corruptos (ej: fechas en lugar de numeros)
+    const num = (v, def) => { const n=parseFloat(v); return isNaN(n)?def:n; };
+    document.getElementById('cfg-hora-inicio').value=num(c.hora_inicio,10);
+    document.getElementById('cfg-hora-fin').value=num(c.hora_fin,21);
+    document.getElementById('cfg-minuto-fin').value=num(c.minuto_fin,30);
+    document.getElementById('cfg-pausado').checked=(c.pausado||'').toLowerCase()==='si';
+    document.getElementById('cfg-vencida').value=num(c.minutos_vencida,20);
+    document.getElementById('cfg-anomalia').value=num(c.umbral_anomalia,1.5);
+    document.getElementById('cfg-watchdog').value=num(c.watchdog_minutos,30);
+    document.getElementById('cfg-wh-reporte').value=c.webhook_reporte||'';
+    document.getElementById('cfg-wh-jefes').value=c.webhook_jefes||'';
+    document.getElementById('cfg-wh-tiempos').value=c.webhook_tiempos||'';
+    document.getElementById('cfg-env-reporte').checked=(c.enviar_reporte||'si').toLowerCase()==='si';
+    document.getElementById('cfg-env-jefes').checked=(c.enviar_jefes||'si').toLowerCase()==='si';
+    document.getElementById('cfg-env-tiempos').checked=(c.enviar_tiempos||'si').toLowerCase()==='si';
+    document.getElementById('cfg-ciclos-jefes').value=num(c.ciclos_jefes,2);
+    document.getElementById('cfg-ciclos-vendedores').value=num(c.ciclos_vendedores,2);
+    document.getElementById('cfg-ciclos-reporte').value=num(c.ciclos_reporte,1);
+    document.getElementById('cfg-hora-record').value=c.hora_recordatorio||'20:30';
+    actualizarLabelCiclos('cfg-ciclos-jefes','lbl-ciclos-jefes');
+    actualizarLabelCiclos('cfg-ciclos-vendedores','lbl-ciclos-vendedores');
+    actualizarLabelCiclos('cfg-ciclos-reporte','lbl-ciclos-reporte');
+    // Demo fields
+    if(document.getElementById('cfg-wh-demo1'))document.getElementById('cfg-wh-demo1').value=c.webhook_demo_1||'';
+    if(document.getElementById('cfg-wh-demo2'))document.getElementById('cfg-wh-demo2').value=c.webhook_demo_2||'';
+    if(document.getElementById('cfg-wh-demo3'))document.getElementById('cfg-wh-demo3').value=c.webhook_demo_3||'';
+    if(document.getElementById('cfg-intervalo-demo'))document.getElementById('cfg-intervalo-demo').value=num(c.intervalo_demo,15);
+    const dias=(c.dias_activos||'lun,mar,mie,jue,vie,sab,dom').split(',').map(d=>d.trim());
+    document.querySelectorAll('.dia-chip').forEach(chip=>{if(dias.includes(chip.dataset.dia))chip.classList.add('active');else chip.classList.remove('active');});
+    estado.className='estado-bar ok';estado.textContent='\u2705 Cargada';
+    actualizarResumen();
+  }catch(e){estado.className='estado-bar err';estado.textContent='\u274c '+e.message;}
+}
+
+async function guardarConfig(){
+  const btn=document.getElementById('btn-guardar');btn.disabled=true;btn.textContent='\u23f3 Guardando...';
+  const dias=[...document.querySelectorAll('.dia-chip.active')].map(c=>c.dataset.dia).join(',');
+  const cfg={hora_inicio:document.getElementById('cfg-hora-inicio').value,hora_fin:document.getElementById('cfg-hora-fin').value,minuto_fin:document.getElementById('cfg-minuto-fin').value,pausado:document.getElementById('cfg-pausado').checked?'si':'no',dias_activos:dias,minutos_vencida:document.getElementById('cfg-vencida').value,umbral_anomalia:document.getElementById('cfg-anomalia').value,watchdog_minutos:document.getElementById('cfg-watchdog').value,watchdog_activo:document.getElementById('cfg-watchdog-activo').checked?'si':'no',webhook_reporte:document.getElementById('cfg-wh-reporte').value,webhook_jefes:document.getElementById('cfg-wh-jefes').value,webhook_tiempos:document.getElementById('cfg-wh-tiempos').value,enviar_reporte:document.getElementById('cfg-env-reporte').checked?'si':'no',enviar_jefes:document.getElementById('cfg-env-jefes').checked?'si':'no',enviar_tiempos:document.getElementById('cfg-env-tiempos').checked?'si':'no',ciclos_jefes:document.getElementById('cfg-ciclos-jefes').value,ciclos_vendedores:document.getElementById('cfg-ciclos-vendedores').value,ciclos_reporte:document.getElementById('cfg-ciclos-reporte').value,hora_recordatorio:document.getElementById('cfg-hora-record').value};
+  try{
+    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'config',config:cfg})});
+    const data=await r.json();
+    if(data.ok)showToast('\u2705 Configuracion guardada','ok');
+    else throw new Error(data.error||'Error al guardar');
+  }catch(e){showToast('\u274c '+e.message,'err');}
+  finally{btn.disabled=false;btn.textContent='\ud83d\udcbe Guardar';}
+}
+
+document.querySelectorAll('.dia-chip').forEach(chip=>{chip.addEventListener('click',()=>{chip.classList.toggle('active');actualizarResumen();});});
+document.querySelectorAll('#cfg-hora-inicio,#cfg-hora-fin,#cfg-minuto-fin,#cfg-pausado,#cfg-vencida').forEach(el=>el.addEventListener('change',actualizarResumen));
+
+async function guardarDemo(){
+  const el=document.getElementById('demo-estado');
+  el.textContent='\u23f3 Guardando...';
+  const cfg={
+    webhook_demo_1:document.getElementById('cfg-wh-demo1').value,
+    webhook_demo_2:document.getElementById('cfg-wh-demo2').value,
+    webhook_demo_3:document.getElementById('cfg-wh-demo3').value,
+    intervalo_demo:document.getElementById('cfg-intervalo-demo').value
+  };
+  try{
+    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'config',config:cfg})});
+    const data=await r.json();
+    if(data.ok){el.textContent='\u2705 Configuraci\u00f3n demo guardada';showToast('\u2705 Config demo guardada','ok');}
+    else throw new Error(data.error||'Error al guardar');
+  }catch(e){el.textContent='\u274c '+e.message;showToast('\u274c '+e.message,'err');}
+}
+
+// DESCANSOS
+async function cargarDirectorio(){
+  try{
+    const r=await fetch(APPS_SCRIPT_URL+'?accion=directorio');
+    const data=await r.json();
+    if(!data.ok||!data.directorio)return;
+    DIRECTORIO_SECCIONES=data.directorio;
+    // Extraer jefes unicos del directorio
+    const jefesSet=new Set(data.directorio.map(d=>d.jefe).filter(j=>j&&j.trim()));
+    DIRECTORIO_JEFES=[...jefesSet].sort();
+    const opcionesJefes='<option value="">Selecciona jefe</option>'+DIRECTORIO_JEFES.map(j=>`<option value="${j}">${j}</option>`).join('');
+    document.getElementById('d-jefe-descansa').innerHTML=opcionesJefes;
+    document.getElementById('d-jefe-cubre').innerHTML=opcionesJefes;
+    renderJefes();
+  }catch(e){console.error(e);}
+}
+
+async function cargarDescansos(){
+  try{
+    const r=await fetch(APPS_SCRIPT_URL+'?accion=descansos');
+    const data=await r.json();
+    const tbody=document.getElementById('tabla-descansos');
+    if(!data.descansos||data.descansos.length===0){tbody.innerHTML='<tr><td colspan="4" style="text-align:center;color:#888;padding:1.5rem">Sin descansos programados</td></tr>';return;}
+    data.descansos.sort((a,b)=>{const pa=a.fecha.split('/');const pb=b.fecha.split('/');return new Date(pa[2],pa[1]-1,pa[0])-new Date(pb[2],pb[1]-1,pb[0]);});
+    tbody.innerHTML=data.descansos.map(d=>`<tr><td>${d.fecha}</td><td>${d.jefe_descansa}</td><td>${d.jefe_cubre}</td><td><button onclick="borrarDescanso('${d.fecha}','${d.jefe_descansa}')" style="background:#fcebeb;color:#a32d2d;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px">\ud83d\uddd1\ufe0f</button></td></tr>`).join('');
+  }catch(e){document.getElementById('tabla-descansos').innerHTML='<tr><td colspan="4" style="text-align:center;color:#a32d2d;padding:1.5rem">Error: '+e.message+'</td></tr>';}
+}
+
+async function agregarDescanso(){
+  const fechaIso=document.getElementById('d-fecha').value;
+  const jefeDescansa=document.getElementById('d-jefe-descansa').value;
+  const jefeCubre=document.getElementById('d-jefe-cubre').value;
+  if(!fechaIso||!jefeDescansa||!jefeCubre){showToast('\u26a0\ufe0f Completa todos los campos','err');return;}
+  if(jefeDescansa===jefeCubre){showToast('\u26a0\ufe0f El jefe que cubre debe ser diferente','err');return;}
+  const [y,m,d]=fechaIso.split('-');const fecha=`${d}/${m}/${y}`;
+  try{
+    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'agregar_descanso',fecha,jefe_descansa:jefeDescansa,jefe_cubre:jefeCubre})});
+    const data=await r.json();
+    if(data.ok){const n=data.secciones_agregadas||0;showToast(`\u2705 Descanso agregado \u2014 ${n} secci\u00f3n${n===1?'':'es'} de ${jefeDescansa.split(' ')[0]} asignadas a ${jefeCubre.split(' ')[0]}`,'ok');document.getElementById('d-fecha').value='';document.getElementById('d-jefe-descansa').value='';document.getElementById('d-jefe-cubre').value='';cargarDescansos();}
+    else throw new Error(data.error);
+  }catch(e){showToast('\u274c '+e.message,'err');}
+}
+
+async function borrarDescanso(fecha,jefe){
+  if(!confirm('\u00bfBorrar descanso del '+fecha+' de '+jefe+'?'))return;
+  try{
+    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'borrar_descanso',fecha,jefe_descansa:jefe})});
+    const data=await r.json();
+    if(data.ok){showToast('\u2705 Borrado','ok');cargarDescansos();}
+    else throw new Error(data.error);
+  }catch(e){showToast('\u274c '+e.message,'err');}
+}
+
+
+// JEFES
+function renderJefes(){
+  const tbody=document.getElementById('tabla-jefes');
+  if(!DIRECTORIO_SECCIONES.length){tbody.innerHTML='<tr><td colspan="4" style="text-align:center;color:#888;padding:1.5rem">Sin datos</td></tr>';return;}
+  const filtro=(document.getElementById('filtro-jefes').value||'').toLowerCase();
+  const filtrados=DIRECTORIO_SECCIONES.filter(s=>s.seccion.toLowerCase().includes(filtro)||s.nombre.toLowerCase().includes(filtro)||s.jefe.toLowerCase().includes(filtro));
+  tbody.innerHTML=filtrados.slice(0,150).map(s=>`<tr>
+    <td><b>${s.seccion}</b></td>
+    <td>${s.nombre}</td>
+    <td>${s.jefe||'<span style="color:#aaa">Sin asignar</span>'}</td>
+    <td>${s.ubicacion||'<span style="color:#aaa">-</span>'}</td>
+  </tr>`).join('');
+}
+
+function filtrarJefes(){renderJefes();}
+
+async function cargarWebhooksJefes(){
+  const grid=document.getElementById('grid-webhooks-jefes');
+  if(!grid)return;
+  grid.innerHTML='<div style="color:#aaa;font-size:13px;grid-column:1/-1;text-align:center;padding:1rem">Cargando...</div>';
+  try{
+    const r=await fetch(APPS_SCRIPT_URL+'?accion=webhooks_jefes');
+    const data=await r.json();
+    if(!data.ok||!data.jefes||!data.jefes.length){
+      grid.innerHTML='<div style="color:#aaa;font-size:13px;grid-column:1/-1;text-align:center;padding:1rem">Sin datos \u2014 agrega webhooks en la hoja WEBHOOKS_JEFES</div>';
+      return;
+    }
+    const conWebhook=data.jefes.filter(j=>j.tiene_webhook&&j.activo!==false).length;
+    const sinWebhook=data.jefes.filter(j=>!j.tiene_webhook).length;
+    const desactivados=data.jefes.filter(j=>j.tiene_webhook&&j.activo===false).length;
+    grid.innerHTML=`
+      <div style="grid-column:1/-1;display:flex;gap:10px;margin-bottom:6px;flex-wrap:wrap">
+        <span style="font-size:12px;background:#eaf3de;color:#3b6d11;padding:4px 12px;border-radius:20px;font-weight:600">\u2705 Activos: ${conWebhook}</span>
+        ${desactivados>0?`<span style="font-size:12px;background:#faeeda;color:#854f0b;padding:4px 12px;border-radius:20px;font-weight:600">\u23f8\ufe0f Desactivados: ${desactivados}</span>`:''}
+        <span style="font-size:12px;background:#fcebeb;color:#a32d2d;padding:4px 12px;border-radius:20px;font-weight:600">\u274c Sin webhook: ${sinWebhook}</span>
+      </div>
+      ${data.jefes.map(j=>{
+        const activo=j.tiene_webhook&&j.activo!==false;
+        const sinWH=!j.tiene_webhook;
+        return `<div id="card-jefe-${j.nombre.replace(/\s+/g,'_')}" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;border:1.5px solid ${activo?'rgba(29,158,117,.25)':sinWH?'rgba(0,0,0,.07)':'rgba(240,175,40,.3)'};background:${activo?'#f2fbf7':sinWH?'#faf9f7':'#fefbf0'};transition:.2s">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:#222;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${j.nombre}</div>
+            <div style="font-size:11px;color:${activo?'#1D9E75':sinWH?'#bbb':'#c08000'};margin-top:2px">${activo?'Recibe mensaje personal':sinWH?'Sin webhook configurado':'Webhook desactivado'}</div>
+          </div>
+          ${j.tiene_webhook?`<label class="toggle" title="${activo?'Desactivar':'Activar'}">
+            <input type="checkbox" ${activo?'checked':''} onchange="toggleWebhookJefe('${j.nombre}',this.checked,this)">
+            <span class="slider"></span>
+          </label>`:`<span style="font-size:18px;opacity:.4">\u274c</span>`}
+        </div>`;
+      }).join('')}`;
+  }catch(e){
+    grid.innerHTML='<div style="color:#a32d2d;font-size:13px;grid-column:1/-1;text-align:center;padding:1rem">Error al cargar \u2014 verifica que el Apps Script tenga el endpoint webhooks_jefes</div>';
+  }
+}
+
+async function toggleWebhookJefe(nombre,activo,checkbox){
+  checkbox.disabled=true;
+  try{
+    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'toggle_webhook_jefe',nombre,activo})});
+    const data=await r.json();
+    if(data.ok){
+      showToast(activo?`\u2705 ${nombre} activado`:`\u23f8\ufe0f ${nombre} desactivado`,'ok');
+      cargarWebhooksJefes();
+    }else{
+      showToast('Error al guardar','err');
+      checkbox.checked=!activo;
+      checkbox.disabled=false;
+    }
+  }catch(e){
+    showToast('Error de conexi\u00f3n','err');
+    checkbox.checked=!activo;
+    checkbox.disabled=false;
+  }
+}
+
+async function actualizarJefe(el){
+  const sec=el.dataset.sec;const tipo=el.dataset.tipo;const valor=el.value;
+  try{
+    const payload={accion:'actualizar_jefe',seccion:sec};payload[tipo]=valor;
+    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)});
+    const data=await r.json();
+    if(data.ok){showToast('\u2705 Actualizado','ok');const s=DIRECTORIO_SECCIONES.find(x=>x.seccion===sec);if(s)s[tipo]=valor;}
+    else throw new Error(data.error);
+  }catch(e){showToast('\u274c '+e.message,'err');}
+}
+
+// FESTIVOS
+async function cargarFestivos(){
+  try{
+    const r=await fetch(APPS_SCRIPT_URL+'?accion=festivos');
+    const data=await r.json();
+    const tbody=document.getElementById('tabla-festivos');
+    if(!tbody)return;
+    if(!data.festivos||!data.festivos.length){tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:#888;padding:1.5rem">Sin festivos</td></tr>';return;}
+    tbody.innerHTML=data.festivos.map(f=>`<tr><td>${f.fecha}</td><td>${f.descripcion}</td><td><button onclick="borrarFestivo('${f.fecha}')" style="background:#fcebeb;color:#a32d2d;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px">\ud83d\uddd1\ufe0f</button></td></tr>`).join('');
+  }catch(e){const el=document.getElementById('tabla-festivos');if(el)el.innerHTML='<tr><td colspan="3" style="text-align:center;color:#a32d2d;padding:1.5rem">Error</td></tr>';}
+}
+
+async function agregarFestivo(){
+  const fechaIso=document.getElementById('f-fecha').value;
+  const desc=document.getElementById('f-desc').value;
+  if(!fechaIso){showToast('\u26a0\ufe0f Selecciona fecha','err');return;}
+  const [y,m,d]=fechaIso.split('-');const fecha=`${d}/${m}/${y}`;
+  try{
+    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'agregar_festivo',fecha,descripcion:desc})});
+    const data=await r.json();
+    if(data.ok){showToast('\u2705 Festivo agregado','ok');document.getElementById('f-fecha').value='';document.getElementById('f-desc').value='';cargarFestivos();}
+    else throw new Error(data.error);
+  }catch(e){showToast('\u274c '+e.message,'err');}
+}
+
+async function borrarFestivo(fecha){
+  if(!confirm('\u00bfBorrar festivo '+fecha+'?'))return;
+  try{
+    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'borrar_festivo',fecha})});
+    const data=await r.json();
+    if(data.ok){showToast('\u2705 Borrado','ok');cargarFestivos();}
+    else throw new Error(data.error);
+  }catch(e){showToast('\u274c '+e.message,'err');}
+}
+
+// ACCIONES
+async function accion(tipo){
+  if(!confirm('\u00bfEjecutar accion: '+tipo+'?'))return;
+  try{
+    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'accion_rapida',tipo})});
+    const data=await r.json();
+    if(data.ok)showToast('\u2705 '+(data.mensaje||'Hecho'),'ok');
+    else throw new Error(data.error);
+  }catch(e){showToast('\u274c '+e.message,'err');}
+}
+
+// KPI VENDEDORES (manual)
+async function enviarKpiVendedores(){
+  if(!confirm('\u00bfEnviar reporte de tiempos por vendedor al espacio Tiempos?\n\nEl bot lo procesara en la proxima ejecucion (maximo 15 min).'))return;
+  try{
+    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'kpi_vendedores'})});
+    const data=await r.json();
+    if(data.ok)showToast('\u2705 Se\u00f1al enviada \u2014 el bot mandara el reporte en la proxima ejecucion','ok');
+    else throw new Error(data.error||'Error desconocido');
+  }catch(e){
+    showToast('\u26a0\ufe0f Usa el archivo enviar_kpi_vendedores.bat en la PC del bot','warn');
+  }
+}
+
+// LOGS
+async function cargarLogs(){
+  try{
+    const r=await fetch(APPS_SCRIPT_URL+'?accion=logs');
+    const data=await r.json();
+    const cont=document.getElementById('logs-container');
+    if(!data.logs||!data.logs.length){cont.innerHTML='<div style="text-align:center;color:#888;padding:1.5rem">Sin logs</div>';return;}
+    cont.innerHTML=data.logs.map(l=>`<div class="feature" style="border-left-color:${l.estado==='exitosa'?'#1D9E75':'#E24B4A'}">
+      <div class="title">${l.estado==='exitosa'?'\u2705':'\u274c'} ${l.fecha} ${l.hora}</div>
+      <div class="desc">Duracion: ${formatDur(l.duracion)} \u00b7 Total: ${l.total} \u00b7 Vencidas: ${l.vencidas} \u00b7 Intentos: ${l.intentos}${l.error?' \u00b7 '+l.error:''}</div>
+    </div>`).join('');
+  }catch(e){document.getElementById('logs-container').innerHTML='<div style="color:#a32d2d;padding:1rem">Error: '+e.message+'</div>';}
+}
+
+// Inicializar
+// ROUTING DE MENSAJES
+async function cargarRouting(){
+  try{
+    const r=await fetch(APPS_SCRIPT_URL+'?accion=config');
+    const data=await r.json();
+    if(!data.ok)return;
+    const c=data.config;
+    document.querySelectorAll('#routing-container .cfg-card').forEach(card=>{
+      const tipo=card.dataset.tipo;
+      const dest=(c['destino_'+tipo]||'').toLowerCase();
+      card.querySelectorAll('input[type="checkbox"]').forEach(chk=>{
+        chk.checked=dest.includes(chk.dataset.dest);
+      });
+    });
+  }catch(e){console.error(e);}
+}
+
+async function guardarRouting(){
+  const cfg={};
+  document.querySelectorAll('#routing-container .cfg-card').forEach(card=>{
+    const tipo=card.dataset.tipo;
+    const destinos=[];
+    card.querySelectorAll('input[type="checkbox"]:checked').forEach(chk=>{destinos.push(chk.dataset.dest);});
+    cfg['destino_'+tipo]=destinos.join(',');
+  });
+  try{
+    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'config',config:cfg})});
+    const data=await r.json();
+    if(data.ok)showToast('\u2705 Rutas guardadas \u2014 '+data.cambios+' cambios','ok');
+    else throw new Error(data.error);
+  }catch(e){showToast('\u274c '+e.message,'err');}
+}
+
+// Actualizar cargar/guardar config para incluir watchdog_activo
+const _cargarConfigOriginal = cargarConfig;
+cargarConfig = async function(){
+  await _cargarConfigOriginal();
+  try{
+    const r=await fetch(APPS_SCRIPT_URL+'?accion=config');
+    const data=await r.json();
+    if(data.ok){
+      document.getElementById('cfg-watchdog-activo').checked=(data.config.watchdog_activo||'si').toLowerCase()==='si';
+    }
+  }catch(e){}
+};
+
+const _guardarConfigOriginal = guardarConfig;
+guardarConfig = async function(){
+  const btn=document.getElementById('btn-guardar');btn.disabled=true;btn.textContent='\u23f3 Guardando...';
+  const dias=[...document.querySelectorAll('.dia-chip.active')].map(c=>c.dataset.dia).join(',');
+  const cfg={hora_inicio:document.getElementById('cfg-hora-inicio').value,hora_fin:document.getElementById('cfg-hora-fin').value,minuto_fin:document.getElementById('cfg-minuto-fin').value,pausado:document.getElementById('cfg-pausado').checked?'si':'no',dias_activos:dias,minutos_vencida:document.getElementById('cfg-vencida').value,umbral_anomalia:document.getElementById('cfg-anomalia').value,watchdog_minutos:document.getElementById('cfg-watchdog').value,watchdog_activo:document.getElementById('cfg-watchdog-activo').checked?'si':'no',webhook_reporte:document.getElementById('cfg-wh-reporte').value,webhook_jefes:document.getElementById('cfg-wh-jefes').value,webhook_tiempos:document.getElementById('cfg-wh-tiempos').value,enviar_reporte:document.getElementById('cfg-env-reporte').checked?'si':'no',enviar_jefes:document.getElementById('cfg-env-jefes').checked?'si':'no',enviar_tiempos:document.getElementById('cfg-env-tiempos').checked?'si':'no'};
+  try{
+    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'config',config:cfg})});
+    const data=await r.json();
+    if(data.ok)showToast('\u2705 Configuracion guardada','ok');
+    else throw new Error(data.error||'Error al guardar');
+  }catch(e){showToast('\u274c '+e.message,'err');}
+  finally{btn.disabled=false;btn.textContent='\ud83d\udcbe Guardar';}
+};
+
+// MENSAJES PROGRAMADOS
+const URL_MSGS_PROG = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=MENSAJES_PROGRAMADOS";
+
+async function cargarMensajesProgramados(){
+  const div = document.getElementById('msgs-prog-lista');
+  div.innerHTML = '<div style="text-align:center;padding:2rem;color:#aaa">Cargando...</div>';
+  try {
+    const r   = await fetch(URL_MSGS_PROG + '&t=' + Date.now());
+    const txt = await r.text();
+    const json = JSON.parse(txt.replace(/^[^\(]+\(|\);?$/g,''));
+    const rows = json.table?.rows || [];
+    if (!rows.length) {
+      div.innerHTML = '<div style="text-align:center;padding:2rem;color:#aaa">Sin mensajes programados. Agrega el primero arriba.</div>';
+      return;
+    }
+    const DEST_LABEL = {reporte:'\ud83d\udce2 Reporte', jefes:'\ud83d\udc54 Jefes', tiempos:'\u23f1\ufe0f Tiempos', 'reporte,jefes':'\ud83d\udce2 Reporte + \ud83d\udc54 Jefes'};
+    let html = '<table><thead><tr><th>Mensaje</th><th>Intervalo</th><th>Destino</th><th>Estado</th><th>\u00daltimo env\u00edo</th><th></th></tr></thead><tbody>';
+    rows.forEach(row => {
+      const c        = row.c || [];
+      const id       = c[0]?.v?.toString() || '';
+      const texto    = c[1]?.v || '';
+      const intervalo= c[2]?.v || 0;
+      const destino  = c[3]?.v || 'reporte';
+      const activo   = ['si','yes','true','1'].includes((c[4]?.v || 'si').toString().toLowerCase());
+      const ultimo   = c[5]?.v || '';
+      const preview  = texto.length > 70 ? texto.substring(0,70) + '...' : texto;
+      const dLabel   = DEST_LABEL[destino] || destino;
+      html += `<tr>
+        <td style="max-width:300px;word-break:break-word;font-size:12px">${preview.replace(/\n/g,'<br>')}</td>
+        <td style="white-space:nowrap">cada <b>${intervalo} ciclo${intervalo==1?'':'s'}</b><br><span style="color:#888;font-size:10px">\u2248${intervalo*15} min</span></td>
+        <td><span class="badge info">${dLabel}</span></td>
+        <td><span class="badge ${activo?'ok':'warn'}">${activo?'\u2705 Activo':'\u23f8\ufe0f Pausado'}</span></td>
+        <td style="color:#888;font-size:11px;white-space:nowrap">${ultimo||'\u2014'}</td>
+        <td style="white-space:nowrap">
+          <button onclick="toggleMensajeProgramado('${id}',${!activo})"
+            style="font-size:11px;padding:3px 9px;border-radius:6px;background:${activo?'#faeeda':'#eaf3de'};border:none;color:${activo?'#854f0b':'#3b6d11'};cursor:pointer">
+            ${activo?'\u23f8 Pausar':'\u25b6 Activar'}
+          </button>
+          <button onclick="borrarMensajeProgramado('${id}')"
+            style="font-size:11px;padding:3px 9px;border-radius:6px;background:#fcebeb;border:none;color:#a32d2d;cursor:pointer;margin-left:4px">
+            \ud83d\uddd1\ufe0f Borrar
+          </button>
+        </td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    div.innerHTML = html;
+  } catch(e) {
+    div.innerHTML = '<div style="text-align:center;padding:2rem;color:#aaa">La hoja MENSAJES_PROGRAMADOS a\u00fan no existe \u2014 el bot la crea en la primera ejecuci\u00f3n, o agrega el primer mensaje.</div>';
+  }
+}
+
+function actualizarEtiquetaCiclos(v){
+  const n = parseInt(v) || 1;
+  const el = document.getElementById('ciclos-label');
+  if (el) el.textContent = n === 1 ? 'ciclo (~15 min)' : `ciclos (~${n*15} min)`;
+}
+
+async function agregarMensajeProgramado(){
+  const texto     = document.getElementById('msg-texto').value.trim();
+  const intervalo = parseInt(document.getElementById('msg-intervalo').value) || 0;
+  const destino   = document.getElementById('msg-destino').value;
+  if (!texto)          { showToast('\u26a0\ufe0f Escribe un mensaje','err'); return; }
+  if (intervalo < 1)   { showToast('\u26a0\ufe0f M\u00ednimo 1 ciclo (~15 min)','err'); return; }
+  try {
+    const id     = Date.now().toString();
+    const creado = new Date().toISOString().replace('T',' ').substring(0,19);
+    const r    = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({accion:'agregar_mensaje_programado', id, texto, intervalo_ciclos: intervalo, destino, creado})
+    });
+    const data = await r.json();
+    if (data.ok) {
+      showToast('\u2705 Mensaje programado agregado','ok');
+      document.getElementById('msg-texto').value    = '';
+      document.getElementById('msg-intervalo').value = '1';
+      actualizarEtiquetaCiclos(1);
+      cargarMensajesProgramados();
+    } else {
+      throw new Error(data.error || 'Error al guardar');
+    }
+  } catch(e) {
+    showToast('\u274c ' + e.message,'err');
+  }
+}
+
+async function borrarMensajeProgramado(id){
+  if (!confirm('\u00bfEliminar este mensaje? Ya no se volver\u00e1 a enviar.')) return;
+  try {
+    const r    = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({accion:'borrar_mensaje_programado', id})
+    });
+    const data = await r.json();
+    if (data.ok) { showToast('\u2705 Mensaje eliminado','ok'); cargarMensajesProgramados(); }
+    else throw new Error(data.error || 'Error al borrar');
+  } catch(e) {
+    showToast('\u274c ' + e.message,'err');
+  }
+}
+
+async function toggleMensajeProgramado(id, nuevoActivo){
+  try {
+    const r    = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({accion:'toggle_mensaje_programado', id, activo: nuevoActivo ? 'si' : 'no'})
+    });
+    const data = await r.json();
+    if (data.ok) {
+      showToast(nuevoActivo ? '\u2705 Mensaje activado' : '\u23f8\ufe0f Mensaje pausado','ok');
+      cargarMensajesProgramados();
+    } else {
+      throw new Error(data.error || 'Error');
+    }
+  } catch(e) {
+    showToast('\u274c ' + e.message,'err');
+  }
+}
+
+// MENSAJES DE PRUEBA
+const PLANTILLAS_PRUEBA = {
+  apertura: `\ud83c\udf05 *Buenos dias* \u2014 PRUEBA
+
+Iniciamos el dia de hoy con *189* clientes en espera de sus articulos.
+Jefes, contamos con su apoyo para trabajar las remisiones de ayer.
+
+\ud83d\udcca Desglose:
+\ud83d\udd34 Mercancia en Espera: *173*
+  \ud83d\udcc5 De ayer: *45* | De hoy: *128*
+\ud83c\udff7\ufe0f Etiquetas Generadas: *16*
+
+_Mensaje de PRUEBA enviado desde el dashboard_`,
+
+  cierre: `\ud83c\udf19 *Buenas noches* \u2014 PRUEBA
+
+Terminamos el dia de hoy con *45* clientes aun en espera.
+
+\ud83d\udcca Resumen de cierre:
+\ud83d\udd34 Mercancia en Espera: *32*
+\ud83c\udff7\ufe0f Etiquetas Generadas: *13*
+
+\u26a0\ufe0f Al cierre contamos con:
+  \ud83d\udc68 JEFE PRUEBA \u2014 *5* pendientes
+    \ud83d\udccd Seccion 201 Deportes \u2014 2h 15min
+
+_Mensaje de PRUEBA enviado desde el dashboard_`,
+
+  vencidas: `\ud83d\udcca *Resumen remisiones vencidas \u2014 PRUEBA*
+
+\ud83d\udd34 Total vencidas: *22*
+\ud83d\udc54 Jefes afectados: *8*
+\ud83d\udc64 Vendedores afectados: *15*
+\u26a0\ufe0f Sin vendedor: *3*
+
+_Mensaje de PRUEBA enviado desde el dashboard_`,
+
+  alerta: `\ud83d\udea8 *ALERTA \u2014 Vencidas por encima del promedio* (PRUEBA)
+
+Actualmente: *75* remisiones vencidas
+Promedio del dia: *35*
+Incremento: *+40*
+
+_Mensaje de PRUEBA enviado desde el dashboard_`,
+
+  ranking: `\ud83c\udfc6 *Ranking del dia \u2014 PRUEBA*
+
+\ud83e\udd47 *JEFE EJEMPLO 1*
+   Promedio: *2 min 08 seg* | 31 remisiones
+
+\ud83e\udd48 *JEFE EJEMPLO 2*
+   Promedio: *3 min 15 seg* | 24 remisiones
+
+\ud83e\udd49 *JEFA EJEMPLO 3*
+   Promedio: *5 min 02 seg* | 18 remisiones
+
+_Mensaje de PRUEBA enviado desde el dashboard_`,
+
+  tiempos: `\ud83d\udcca *Resumen del dia \u2014 tiempos sin asignar (PRUEBA)*
+
+\u23f1\ufe0f Promedio general: *4 min 32 seg*
+\ud83d\udce6 Total remisiones: *189*
+
+\ud83d\udc68 JEFE EJEMPLO
+  \u23f1\ufe0f Promedio: *3 min 15 seg*
+  \u2705 Mas rapido: *21 seg*
+  \ud83d\udd34 Mas lento: *12 min 40 seg*
+  \ud83d\udccb Remisiones: *24*
+
+_Mensaje de PRUEBA enviado desde el dashboard_`,
+};
+
+function cargarPrueba(tipo){
+  document.getElementById('prueba-mensaje').value = PLANTILLAS_PRUEBA[tipo] || '';
+  // Pre-seleccionar espacio recomendado
+  const sugerido = {apertura:'reporte', cierre:'jefes', vencidas:'reporte', alerta:'jefes', ranking:'tiempos', tiempos:'tiempos'};
+  if (sugerido[tipo]) document.getElementById('prueba-espacio').value = sugerido[tipo];
+}
+
+// Los webhooks viven en la hoja CONFIG \u2014 el Apps Script los lee y env\u00eda.
+async function mandarPrueba(){
+  const espacio = document.getElementById('prueba-espacio').value;
+  const mensaje = document.getElementById('prueba-mensaje').value.trim();
+  if (!mensaje) {showToast('\u26a0\ufe0f El mensaje no puede estar vacio', 'err'); return;}
+
+  try {
+    const r = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({accion: 'prueba_mensaje', espacio, mensaje})
+    });
+    const data = await r.json();
+    if (data.ok) showToast('\u2705 Mensaje enviado al espacio ' + espacio, 'ok');
+    else throw new Error(data.error || 'Error al enviar');
+  } catch(e) {
+    showToast('\u274c ' + e.message, 'err');
+  }
+}
+
+// HISTORICO SEMANAL
+function formatSeg(s){s=Math.round(s||0);if(s<60)return s+'s';const m=Math.floor(s/60),sec=s%60;if(m<60)return m+'m '+(sec<10?'0':'')+sec+'s';const h=Math.floor(m/60),min=m%60;return h+'h '+(min<10?'0':'')+min+'m';}
+
+async function cargarHistorico(){
+  try{
+    const r=await fetch(APPS_SCRIPT_URL+'?accion=historico');
+    const data=await r.json();
+    if(!data.ok)return;
+    document.getElementById('hist-meta').innerHTML=data.ultima_actualizacion?
+      `\ud83d\udcc5 Ultima actualizacion: <b>${data.ultima_actualizacion}</b> \u00b7 ${data.filas} filas en archivo \u00b7 ${data.total_procesados||0} remisiones procesadas`:
+      'Sin datos. Sube un archivo primero.';
+    const tbody=document.getElementById('tabla-historico');
+    if(!data.jefes||!data.jefes.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#888;padding:1.5rem">Sin datos</td></tr>';return;}
+    tbody.innerHTML=data.jefes.map((j,i)=>{
+      const medalla=i===0?'\ud83e\udd47':i===1?'\ud83e\udd48':i===2?'\ud83e\udd49':(i+1);
+      return `<tr>
+        <td style="color:#aaa">${medalla}</td>
+        <td><b>${j.jefe}</b></td>
+        <td>${formatSeg(j.promedio)}</td>
+        <td style="color:#3b6d11">${formatSeg(j.minimo)}</td>
+        <td style="color:#a32d2d">${formatSeg(j.maximo)}</td>
+        <td>${j.total}</td>
+      </tr>`;
+    }).join('');
+  }catch(e){document.getElementById('tabla-historico').innerHTML='<tr><td colspan="6" style="color:#a32d2d;padding:1rem;text-align:center">Error: '+e.message+'</td></tr>';}
+}
+
+async function subirHistorico(){
+  const file=document.getElementById('hist-file').files[0];
+  if(!file){showToast('\u26a0\ufe0f Selecciona un archivo','err');return;}
+  const btn=document.getElementById('btn-subir-hist');
+  btn.disabled=true;btn.textContent='\u23f3 Procesando...';
+  try{
+    const text=await file.text();
+    // Parsear CSV simple
+    const lineas=text.split(/\r?\n/).filter(l=>l.trim());
+    const filas=[];
+    for(const linea of lineas){
+      // Parser CSV con manejo de comillas
+      const fila=[];let actual='';let dentroComillas=false;
+      for(let i=0;i<linea.length;i++){
+        const c=linea[i];
+        if(c==='"'){if(dentroComillas&&linea[i+1]==='"'){actual+='"';i++;}else{dentroComillas=!dentroComillas;}}
+        else if(c===','&&!dentroComillas){fila.push(actual);actual='';}
+        else{actual+=c;}
+      }
+      fila.push(actual);
+      // Limpiar prefijo ="..."
+      const filaLimpia=fila.map(v=>v.replace(/^="+/,'').replace(/"+$/,'').trim());
+      filas.push(filaLimpia);
+    }
+    document.getElementById('hist-info').textContent=`Procesando ${filas.length-1} filas...`;
+
+    // Subir en bloques si es muy grande
+    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'subir_historico',filas:filas})});
+    const data=await r.json();
+    if(data.ok){
+      showToast('\u2705 Subido: '+data.filas+' filas','ok');
+      document.getElementById('hist-file').value='';
+      document.getElementById('hist-info').textContent='';
+      setTimeout(cargarHistorico,1000);
+    }else{
+      throw new Error(data.error||'Error');
+    }
+  }catch(e){showToast('\u274c '+e.message,'err');document.getElementById('hist-info').textContent='';}
+  finally{btn.disabled=false;btn.textContent='\ud83d\udce4 Procesar y subir';}
+}
+
+cargar();
+setInterval(()=>{cargar();},30000);
+cargarConfig();
+cargarDirectorio();
+cargarDescansos();
+cargarFestivos();
+cargarLogs();
+cargarRouting();
+cargarHistorico();
 </script>
 </body>
 </html>
