@@ -1827,7 +1827,7 @@ def construir_card_resumen_general(por_piso, dir_dict, fecha_now):
                     "uncollapsibleWidgetsCount": 1,
                 })
 
-    gran_total = sum(t for _, t in totales_piso)
+    gran_total = sum(v + r for _, v, r in datos_chart)
     sections.append({
         "widgets": [
             {"divider": {}},
