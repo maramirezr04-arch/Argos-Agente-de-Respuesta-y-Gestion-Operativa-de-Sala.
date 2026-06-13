@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.4.1"
+VERSION = "1.5.0"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 # El repo se renombró: el nombre viejo (liverpool-bot) redirige por ahora,
@@ -260,6 +260,7 @@ def cargar_estructuras_sheets(ss):
                     dir_dict[str(row[0]).strip()] = {
                         "nombre_seccion": row[1] if len(row) > 1 else "",
                         "jefe":           row[2] if len(row) > 2 else "",
+                        "gerencia":       row[3] if len(row) > 3 else "",
                         "ubicacion":      row[5] if len(row) > 5 else "",
                     }
         if len(results) >= 2 and results[1].get("values"):
@@ -1343,9 +1344,9 @@ def enviar_apertura(datos, dir_dict, hist_dict):
         "",
         "📊 *Desglose:*",
         "🔴 Mercancia en Espera: *" + str(espera_ayer + espera_hoy) + "*",
-        "  📅 De ayer: *" + str(espera_ayer) + "* | De hoy: *" + str(espera_hoy) + "*",
+        "  🟣 De ayer: *" + str(espera_ayer) + "* | De hoy: *" + str(espera_hoy) + "*",
         "🏷️ Etiquetas Generadas: *" + str(etiq_ayer + etiq_hoy) + "*",
-        "  📅 De ayer: *" + str(etiq_ayer) + "* | De hoy: *" + str(etiq_hoy) + "*",
+        "  🟣 De ayer: *" + str(etiq_ayer) + "* | De hoy: *" + str(etiq_hoy) + "*",
     ]
 
     if jefes_ayer:
@@ -1588,7 +1589,7 @@ def construir_card_piso(ubicacion, info_piso, fecha_now):
 
         # chipList de resumen + detalle por vendedor colapsable
         widgets = [{"chipList": {"chips": chips}}]
-        for emoji, grp in [("📅", info_j["de_ayer"]), ("🔴", info_j["vencidas"]), ("🟢", info_j["en_tiempo"])]:
+        for emoji, grp in [("🟣", info_j["de_ayer"]), ("🔴", info_j["vencidas"]), ("🟢", info_j["en_tiempo"])]:
             for ven, ds in sorted(grp.items(), key=lambda x: -x[1]["max_min"]):
                 if ds["count"] == 0:
                     continue
@@ -1632,6 +1633,159 @@ def construir_card_piso(ubicacion, info_piso, fecha_now):
                     "title": f"🏬 {ubicacion}",
                     "subtitle": f"Liverpool Tienda 456 — {fecha_now}",
                     "imageUrl": "https://fonts.gstatic.com/s/i/googlematerialicons/store/v6/24px.svg",
+                    "imageType": "CIRCLE"
+                },
+                "sections": sections
+            }
+        }]
+    }
+
+
+def _url_chart_pisos(totales_piso):
+    """Genera URL de quickchart.io con barra horizontal: piso → total remisiones."""
+    import json as _json, urllib.parse as _up
+    labels = []
+    data   = []
+    colores = []
+    palette = ["#4285F4", "#EA4335", "#FBBC05", "#34A853"]
+    for i, (nombre, total) in enumerate(totales_piso):
+        labels.append(nombre)
+        data.append(total)
+        colores.append(palette[i % len(palette)])
+    cfg = {
+        "type": "horizontalBar",
+        "data": {
+            "labels": labels,
+            "datasets": [{"label": "Remisiones", "data": data, "backgroundColor": colores}]
+        },
+        "options": {
+            "plugins": {"legend": {"display": False}},
+            "scales": {"xAxes": [{"ticks": {"beginAtZero": True, "precision": 0}}]}
+        }
+    }
+    return "https://quickchart.io/chart?c=" + _up.quote(_json.dumps(cfg, separators=(",", ":")))
+
+
+def construir_card_resumen_general(por_piso, dir_dict, fecha_now):
+    """Card v2 con gráfica de pisos y secciones colapsables por gerencia → jefe → vendedores."""
+    sections = []
+
+    # ── Imagen de gráfica ──────────────────────────────────────
+    totales_piso = []
+    for p_idx in sorted(por_piso.keys()):
+        info_piso = por_piso[p_idx]
+        total = sum(
+            ds["count"]
+            for info_j in info_piso["jefes"].values()
+            for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]]
+            for ds in grp.values()
+        )
+        totales_piso.append((info_piso["ubicacion"], total))
+
+    chart_url = _url_chart_pisos(totales_piso)
+    sections.append({"widgets": [{"image": {"imageUrl": chart_url, "altText": "Remisiones por piso"}}]})
+
+    # ── Secciones por piso → gerencia → jefe → vendedores ─────
+    for p_idx in sorted(por_piso.keys()):
+        info_piso = por_piso[p_idx]
+        ubicacion = info_piso["ubicacion"]
+
+        # Agrupar jefes por gerencia
+        por_gerencia = {}
+        for jefe, info_j in info_piso["jefes"].items():
+            # Buscar gerencia en dir_dict por cualquier sección de ese jefe
+            gerencia = ""
+            for sec, sec_info in dir_dict.items():
+                if str(sec_info.get("jefe", "")).strip().upper() == jefe.strip().upper():
+                    gerencia = sec_info.get("gerencia", "").strip()
+                    break
+            if not gerencia:
+                gerencia = "Sin gerencia"
+            if gerencia not in por_gerencia:
+                por_gerencia[gerencia] = {}
+            por_gerencia[gerencia][jefe] = info_j
+
+        total_piso = sum(
+            ds["count"]
+            for info_j in info_piso["jefes"].values()
+            for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]]
+            for ds in grp.values()
+        )
+
+        # Una sección colapsable por piso; dentro, chips de gerencias
+        piso_widgets = []
+        piso_chips = [{"label": f"🏬 {total_piso} rem"}]
+        for gerencia in sorted(por_gerencia.keys()):
+            gtotal = sum(
+                ds["count"]
+                for info_j in por_gerencia[gerencia].values()
+                for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]]
+                for ds in grp.values()
+            )
+            piso_chips.append({"label": f"{gerencia}: {gtotal}"})
+        piso_widgets.append({"chipList": {"chips": piso_chips}})
+
+        # Una fila por jefe dentro de cada gerencia
+        for gerencia in sorted(por_gerencia.keys()):
+            for jefe, info_j in sorted(por_gerencia[gerencia].items(),
+                                       key=lambda x: -sum(ds["count"] for grp in [x[1]["en_tiempo"], x[1]["vencidas"], x[1]["de_ayer"]] for ds in grp.values())):
+                ayer  = sum(ds["count"] for ds in info_j["de_ayer"].values())
+                venc  = sum(ds["count"] for ds in info_j["vencidas"].values())
+                verde = sum(ds["count"] for ds in info_j["en_tiempo"].values())
+                total_j = ayer + venc + verde
+                if total_j == 0:
+                    continue
+                parts = []
+                if ayer:  parts.append(f"🟣{ayer}")
+                if venc:  parts.append(f"🔴{venc}")
+                if verde: parts.append(f"🟢{verde}")
+                genero  = get_genero(jefe)
+                emoji_g = "👩‍💼" if genero == "jefa" else "👨‍💼"
+                piso_widgets.append({"decoratedText": {
+                    "topLabel": f"{emoji_g} {jefe}  ·  {gerencia}",
+                    "text": "  ".join(parts),
+                    "startIcon": {"knownIcon": "PERSON"}
+                }})
+                # Vendedores colapsados dentro del jefe no son posibles en chipList anidado,
+                # por lo que se incluyen como texto compacto
+                ven_lines = []
+                for grp, emoji_g2 in [(info_j["de_ayer"], "🟣"), (info_j["vencidas"], "🔴"), (info_j["en_tiempo"], "🟢")]:
+                    for ven, ds in sorted(grp.items(), key=lambda x: -x[1]["count"]):
+                        if ds["count"] == 0:
+                            continue
+                        t_str = calcular_tiempo_espera_str(ds["max_min"]) if ds["max_min"] > 0 else ""
+                        ven_lines.append(f"{emoji_g2} {ven}: {ds['count']}" + (f" ({t_str})" if t_str else ""))
+                if ven_lines:
+                    piso_widgets.append({"textParagraph": {"text": "\n".join(ven_lines)}})
+
+        sec_piso = {
+            "header": f"🏢 {ubicacion}  ·  {total_piso} rem",
+            "widgets": piso_widgets,
+            "collapsible": True,
+            "uncollapsibleWidgetsCount": 1,
+        }
+        sections.append(sec_piso)
+
+    gran_total = sum(t for _, t in totales_piso)
+    sections.append({
+        "widgets": [
+            {"divider": {}},
+            {"decoratedText": {
+                "topLabel": "Total tienda",
+                "text": f"<b>{gran_total} remisiones activas</b>",
+                "icon": {"knownIcon": "CONFIRMATION_NUMBER_ICON"}
+            }}
+        ]
+    })
+
+    return {
+        "cardsV2": [{
+            "cardId": "resumen-general",
+            "card": {
+                "header": {
+                    "title": "📊 Resumen General",
+                    "subtitle": f"Liverpool Tienda 456 — {fecha_now}",
+                    "imageUrl": "https://fonts.gstatic.com/s/i/googlematerialicons/bar_chart/v6/24px.svg",
                     "imageType": "CIRCLE"
                 },
                 "sections": sections
@@ -1691,7 +1845,7 @@ def construir_card_jefe_individual(jefe, info_j, ubicacion, fecha_now, es_sustit
         }}]})
 
     for titulo, grp, emoji in [
-        ("📅 De ayer sin atender", info_j["de_ayer"],  "📅"),
+        ("🟣 De ayer sin atender", info_j["de_ayer"],  "🟣"),
         ("🔴 Vencidas (+20 min)",  info_j["vencidas"], "🔴"),
         ("⏰ En tiempo",           info_j["en_tiempo"],"🟢"),
     ]:
@@ -1729,13 +1883,13 @@ def construir_card_apertura(emoji, msg_texto, espera_ayer, espera_hoy, etiq_ayer
     if total_espera > 0:
         widgets_desglose.append({"decoratedText": {
             "topLabel": "🔴 Mercancía en Espera",
-            "text": f"<b>{total_espera}</b>  ·  📅 ayer: {espera_ayer}  |  hoy: {espera_hoy}",
+            "text": f"<b>{total_espera}</b>  ·  🟣 ayer: {espera_ayer}  |  hoy: {espera_hoy}",
             "startIcon": {"knownIcon": "CLOCK"}
         }})
     if total_etiq > 0:
         widgets_desglose.append({"decoratedText": {
             "topLabel": "🏷️ Etiquetas Generadas",
-            "text": f"<b>{total_etiq}</b>  ·  📅 ayer: {etiq_ayer}  |  hoy: {etiq_hoy}",
+            "text": f"<b>{total_etiq}</b>  ·  🟣 ayer: {etiq_ayer}  |  hoy: {etiq_hoy}",
             "startIcon": {"knownIcon": "BOOKMARK"}
         }})
     if widgets_desglose:
@@ -1811,7 +1965,7 @@ def construir_card_pendientes_ayer(por_jefe, total_ayer, fecha_now):
     for jefe, secciones in sorted(por_jefe.items(), key=lambda x: -sum(d["count"] for d in x[1].values())):
         total_j = sum(d["count"] for d in secciones.values())
         sin_ven = sum(d["sin_vendedor"] for d in secciones.values())
-        chips   = [{"label": f"📅 {total_j} rem"}]
+        chips   = [{"label": f"🟣 {total_j} rem"}]
         if sin_ven > 0:
             chips.append({"label": f"⚠️ {sin_ven} sin vendedor"})
         widgets = [{"chipList": {"chips": chips}}]
@@ -1834,7 +1988,7 @@ def construir_card_pendientes_ayer(por_jefe, total_ayer, fecha_now):
             "cardId": "pendientes-ayer",
             "card": {
                 "header": {
-                    "title": "📅 Pendientes de ayer",
+                    "title": "🟣 Pendientes de ayer",
                     "subtitle": f"{total_ayer} sin resolver — {fecha_now}",
                     "imageUrl": "https://fonts.gstatic.com/s/i/googlematerialicons/warning/v6/24px.svg",
                     "imageType": "CIRCLE"
@@ -1988,9 +2142,17 @@ def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes
         log.info("Sin remisiones activas para mensaje de jefes")
         return
 
-    # Las cards de piso se mandan una vez al día y se reescriben el resto del día
-    mensajes_pisos = _leer_mensajes_reescribibles(MENSAJES_PISOS_FILE)
+    # ── Card resumen general (gráfica + desglose por piso/gerencia) ──────
+    payload_resumen = construir_card_resumen_general(por_piso, dir_dict, fecha_now)
+    mensajes_pisos  = _leer_mensajes_reescribibles(MENSAJES_PISOS_FILE)
     hoy = datetime.now().strftime("%d/%m/%Y")
+    msg_name_res = mensajes_pisos.get("resumen-general", {}).get("name", "")
+    nuevo_res = _enviar_o_reescribir(WEBHOOK_JEFES, payload_resumen, msg_name_res)
+    if nuevo_res:
+        mensajes_pisos["resumen-general"] = {"name": nuevo_res, "fecha": hoy}
+    else:
+        post_chat_con_reintento(WEBHOOK_JEFES, payload_resumen)
+    log.info("Card resumen general enviada al espacio jefes ✅")
 
     for p_idx in sorted(por_piso.keys()):
         info_piso = por_piso[p_idx]
