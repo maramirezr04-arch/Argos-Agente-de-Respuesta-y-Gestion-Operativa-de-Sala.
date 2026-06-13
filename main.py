@@ -1701,7 +1701,13 @@ def construir_card_resumen_general(por_piso, dir_dict, fecha_now):
     chart_url = _url_chart_pisos(datos_chart)
     sections.append({"widgets": [{"image": {"imageUrl": chart_url, "altText": "Remisiones por piso"}}]})
 
-    # ── Secciones por piso → gerencia → jefe → vendedores ─────
+    # ── Secciones por piso → gerencia → jefe (colapsable) → vendedores ──
+    # Nivel 1: una sección colapsable por piso.
+    #   Al expandir: muestra nombre de gerencia como texto + filas de jefes con chips.
+    # Nivel 2: una sección colapsable por jefe (header = nombre jefe).
+    #   Al expandir: muestra vendedores con conteo y tiempo.
+    # Google Chat no soporta secciones anidadas, por lo que ambos niveles
+    # se aplanan como secciones consecutivas en la misma card.
     for p_idx in sorted(por_piso.keys()):
         info_piso = por_piso[p_idx]
         ubicacion = info_piso["ubicacion"]
@@ -1709,7 +1715,6 @@ def construir_card_resumen_general(por_piso, dir_dict, fecha_now):
         # Agrupar jefes por gerencia
         por_gerencia = {}
         for jefe, info_j in info_piso["jefes"].items():
-            # Buscar gerencia en dir_dict por cualquier sección de ese jefe
             gerencia = ""
             for sec, sec_info in dir_dict.items():
                 if str(sec_info.get("jefe", "")).strip().upper() == jefe.strip().upper():
@@ -1717,9 +1722,7 @@ def construir_card_resumen_general(por_piso, dir_dict, fecha_now):
                     break
             if not gerencia:
                 gerencia = "Sin gerencia"
-            if gerencia not in por_gerencia:
-                por_gerencia[gerencia] = {}
-            por_gerencia[gerencia][jefe] = info_j
+            por_gerencia.setdefault(gerencia, {})[jefe] = info_j
 
         total_piso = sum(
             ds["count"]
@@ -1728,59 +1731,101 @@ def construir_card_resumen_general(por_piso, dir_dict, fecha_now):
             for ds in grp.values()
         )
 
-        # Una sección colapsable por piso; dentro, chips de gerencias
-        piso_widgets = []
+        # ── Sección PISO (colapsable, nivel 1) ───────────────────
+        # Siempre visible: chipList total + resumen por gerencia
+        # Al expandir: nombre de cada gerencia + jefe chips con totales
         piso_chips = [{"label": f"🏬 {total_piso} rem"}]
-        for gerencia in sorted(por_gerencia.keys()):
+        for ger in sorted(por_gerencia.keys()):
             gtotal = sum(
                 ds["count"]
-                for info_j in por_gerencia[gerencia].values()
+                for info_j in por_gerencia[ger].values()
                 for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]]
                 for ds in grp.values()
             )
-            piso_chips.append({"label": f"{gerencia}: {gtotal}"})
-        piso_widgets.append({"chipList": {"chips": piso_chips}})
+            piso_chips.append({"label": f"{ger}: {gtotal}"})
 
-        # Una fila por jefe dentro de cada gerencia
-        for gerencia in sorted(por_gerencia.keys()):
-            for jefe, info_j in sorted(por_gerencia[gerencia].items(),
-                                       key=lambda x: -sum(ds["count"] for grp in [x[1]["en_tiempo"], x[1]["vencidas"], x[1]["de_ayer"]] for ds in grp.values())):
+        piso_widgets = [{"chipList": {"chips": piso_chips}}]
+
+        for ger in sorted(por_gerencia.keys()):
+            gtotal = sum(
+                ds["count"]
+                for info_j in por_gerencia[ger].values()
+                for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]]
+                for ds in grp.values()
+            )
+            piso_widgets.append({"textParagraph": {
+                "text": f"<b>Gerencia {ger}</b>  ·  {gtotal} rem"
+            }})
+            for jefe, info_j in sorted(
+                por_gerencia[ger].items(),
+                key=lambda x: -sum(ds["count"] for grp in [x[1]["en_tiempo"], x[1]["vencidas"], x[1]["de_ayer"]] for ds in grp.values())
+            ):
                 ayer  = sum(ds["count"] for ds in info_j["de_ayer"].values())
                 venc  = sum(ds["count"] for ds in info_j["vencidas"].values())
                 verde = sum(ds["count"] for ds in info_j["en_tiempo"].values())
                 total_j = ayer + venc + verde
                 if total_j == 0:
                     continue
-                parts = []
-                if ayer:  parts.append(f"🟣{ayer}")
-                if venc:  parts.append(f"🔴{venc}")
-                if verde: parts.append(f"🟢{verde}")
+                partes = []
+                if ayer:  partes.append(f"🟣 {ayer}")
+                if venc:  partes.append(f"🔴 {venc}")
+                if verde: partes.append(f"🟢 {verde}")
                 genero  = get_genero(jefe)
                 emoji_g = "👩‍💼" if genero == "jefa" else "👨‍💼"
                 piso_widgets.append({"decoratedText": {
-                    "topLabel": f"{emoji_g} {jefe}  ·  {gerencia}",
-                    "text": "  ".join(parts),
+                    "topLabel": f"{emoji_g} {jefe}",
+                    "text": "  ".join(partes),
                     "startIcon": {"knownIcon": "PERSON"}
                 }})
-                # Vendedores colapsados dentro del jefe no son posibles en chipList anidado,
-                # por lo que se incluyen como texto compacto
-                ven_lines = []
-                for grp, emoji_g2 in [(info_j["de_ayer"], "🟣"), (info_j["vencidas"], "🔴"), (info_j["en_tiempo"], "🟢")]:
+
+        sections.append({
+            "header": f"🏢 {ubicacion}",
+            "widgets": piso_widgets,
+            "collapsible": True,
+            "uncollapsibleWidgetsCount": 1,
+        })
+
+        # ── Secciones JEFE (colapsables, nivel 2) ─────────────────
+        # Una sección por jefe: siempre visible = chipList verde/rojo/ayer
+        # Al expandir: filas de vendedor con conteo y tiempo máximo
+        for ger in sorted(por_gerencia.keys()):
+            for jefe, info_j in sorted(
+                por_gerencia[ger].items(),
+                key=lambda x: -sum(ds["count"] for grp in [x[1]["en_tiempo"], x[1]["vencidas"], x[1]["de_ayer"]] for ds in grp.values())
+            ):
+                ayer  = sum(ds["count"] for ds in info_j["de_ayer"].values())
+                venc  = sum(ds["count"] for ds in info_j["vencidas"].values())
+                verde = sum(ds["count"] for ds in info_j["en_tiempo"].values())
+                total_j = ayer + venc + verde
+                if total_j == 0:
+                    continue
+
+                chips_j = []
+                if ayer:  chips_j.append({"label": f"🟣 {ayer} ayer"})
+                if venc:  chips_j.append({"label": f"🔴 {venc} venc"})
+                if verde: chips_j.append({"label": f"🟢 {verde} ok"})
+
+                jefe_widgets = [{"chipList": {"chips": chips_j}}]
+                for grp, emoji_v in [(info_j["de_ayer"], "🟣"), (info_j["vencidas"], "🔴"), (info_j["en_tiempo"], "🟢")]:
                     for ven, ds in sorted(grp.items(), key=lambda x: -x[1]["count"]):
                         if ds["count"] == 0:
                             continue
                         t_str = calcular_tiempo_espera_str(ds["max_min"]) if ds["max_min"] > 0 else ""
-                        ven_lines.append(f"{emoji_g2} {ven}: {ds['count']}" + (f" ({t_str})" if t_str else ""))
-                if ven_lines:
-                    piso_widgets.append({"textParagraph": {"text": "\n".join(ven_lines)}})
+                        icono = "⚠️" if ven == "Sin asignar" else emoji_v
+                        jefe_widgets.append({"decoratedText": {
+                            "topLabel": f"{icono} {ven}",
+                            "text": f"<b>{ds['count']} rem</b>" + (f"  ·  {t_str}" if t_str else ""),
+                            "startIcon": {"knownIcon": "PERSON"}
+                        }})
 
-        sec_piso = {
-            "header": f"🏢 {ubicacion}  ·  {total_piso} rem",
-            "widgets": piso_widgets,
-            "collapsible": True,
-            "uncollapsibleWidgetsCount": 1,
-        }
-        sections.append(sec_piso)
+                genero  = get_genero(jefe)
+                emoji_g = "👩‍💼" if genero == "jefa" else "👨‍💼"
+                sections.append({
+                    "header": f"{emoji_g} {jefe}  ·  {ger}  ·  {ubicacion}",
+                    "widgets": jefe_widgets,
+                    "collapsible": True,
+                    "uncollapsibleWidgetsCount": 1,
+                })
 
     gran_total = sum(t for _, t in totales_piso)
     sections.append({
