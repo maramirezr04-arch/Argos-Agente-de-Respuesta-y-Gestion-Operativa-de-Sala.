@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.5.5"
+VERSION = "1.5.6"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 # El repo se renombró: el nombre viejo (liverpool-bot) redirige por ahora,
@@ -1686,10 +1686,10 @@ def _url_chart_pisos(datos_piso):
 
 
 def construir_card_resumen_general(por_piso, dir_dict, fecha_now):
-    """Card v2 con gráfica de pisos y secciones colapsables por gerencia → jefe → vendedores."""
+    """Card compacta: gráfica + una sección colapsable por piso (chips + jefes tras 'ver más')."""
     sections = []
 
-    # ── Imagen de gráfica ──────────────────────────────────────
+    # ── Gráfica ───────────────────────────────────────────────
     datos_chart = []
     for p_idx in sorted(por_piso.keys()):
         info_piso = por_piso[p_idx]
@@ -1701,10 +1701,8 @@ def construir_card_resumen_general(por_piso, dir_dict, fecha_now):
     chart_url = _url_chart_pisos(datos_chart)
     sections.append({"widgets": [{"image": {"imageUrl": chart_url, "altText": "Remisiones por piso"}}]})
 
-    # ── Estructura: piso como encabezado fijo + sección colapsable por jefe ──
-    # El piso se muestra como sección NO colapsable con chips Espera/Etiquetas.
-    # Debajo, una sección colapsable por cada jefe: chips de urgencia siempre
-    # visibles, vendedores ocultos hasta "ver más".
+    # ── Una sección colapsable por piso ───────────────────────
+    # Chips de estatus siempre visibles; jefes detrás del "ver más".
     for p_idx in sorted(por_piso.keys()):
         info_piso = por_piso[p_idx]
         ubicacion = info_piso["ubicacion"]
@@ -1724,13 +1722,8 @@ def construir_card_resumen_general(por_piso, dir_dict, fecha_now):
             )
             piso_chips.append({"label": f"🏬 {total_piso} rem"})
 
-        # Sección de piso — NO colapsable, solo muestra chips
-        sections.append({
-            "header": f"🏢 {ubicacion}",
-            "widgets": [{"chipList": {"chips": piso_chips}}],
-        })
+        piso_widgets = [{"chipList": {"chips": piso_chips}}]
 
-        # Jefes ordenados por total de remisiones desc
         jefes_ordenados = sorted(
             info_piso["jefes"].items(),
             key=lambda x: -sum(ds["count"] for grp in [x[1]["en_tiempo"], x[1]["vencidas"], x[1]["de_ayer"]] for ds in grp.values())
@@ -1744,34 +1737,26 @@ def construir_card_resumen_general(por_piso, dir_dict, fecha_now):
             if total_j == 0:
                 continue
 
-            # Chips siempre visibles — urgencia del jefe
-            chips_j = []
-            if ayer:  chips_j.append({"label": f"🟣 {ayer} de ayer"})
-            if venc:  chips_j.append({"label": f"🔴 {venc} vencidas"})
-            if verde: chips_j.append({"label": f"🟢 {verde} en tiempo"})
-
-            # Vendedores — ocultos hasta "ver más"
-            jefe_widgets = [{"chipList": {"chips": chips_j}}]
-            for grp, emoji_v in [(info_j["de_ayer"], "🟣"), (info_j["vencidas"], "🔴"), (info_j["en_tiempo"], "🟢")]:
-                for ven, ds in sorted(grp.items(), key=lambda x: -x[1]["count"]):
-                    if ds["count"] == 0:
-                        continue
-                    t_str = calcular_tiempo_espera_str(ds["max_min"]) if ds["max_min"] > 0 else ""
-                    icono = "⚠️" if ven == "Sin asignar" else emoji_v
-                    jefe_widgets.append({"decoratedText": {
-                        "topLabel": f"{icono} {ven}",
-                        "text": f"<b>{ds['count']} rem</b>" + (f"  ·  {t_str}" if t_str else ""),
-                        "startIcon": {"knownIcon": "PERSON"}
-                    }})
+            partes = []
+            if ayer:  partes.append(f"🟣 {ayer}")
+            if venc:  partes.append(f"🔴 {venc}")
+            if verde: partes.append(f"🟢 {verde}")
+            conteos_txt = "  ·  ".join(partes)
 
             genero  = get_genero(jefe)
             emoji_g = "👩‍💼" if genero == "jefa" else "👨‍💼"
-            sections.append({
-                "header": f"{emoji_g} {jefe}",
-                "widgets": jefe_widgets,
-                "collapsible": True,
-                "uncollapsibleWidgetsCount": 1,
-            })
+            piso_widgets.append({"decoratedText": {
+                "topLabel": f"{emoji_g} {jefe}",
+                "text": conteos_txt,
+                "startIcon": {"knownIcon": "PERSON"}
+            }})
+
+        sections.append({
+            "header": f"🏢 {ubicacion}",
+            "widgets": piso_widgets,
+            "collapsible": True,
+            "uncollapsibleWidgetsCount": 1,
+        })
 
     gran_total = sum(v + r for _, v, r in datos_chart)
     sections.append({
