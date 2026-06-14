@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.5.4"
+VERSION = "1.5.5"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 # El repo se renombró: el nombre viejo (liverpool-bot) redirige por ahora,
@@ -2162,27 +2162,18 @@ def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes
         post_chat_con_reintento(WEBHOOK_JEFES, payload_resumen)
     log.info("Card resumen general enviada al espacio jefes ✅")
 
+    # Las cards individuales por piso ya no se mandan al espacio jefes —
+    # el Resumen General las reemplaza. Solo se mandan las cards individuales
+    # a cada jefe por su propio webhook.
     for p_idx in sorted(por_piso.keys()):
         info_piso = por_piso[p_idx]
         ubicacion = info_piso["ubicacion"]
-
-        payload  = construir_card_piso(ubicacion, info_piso, fecha_now)
-        clave    = "piso-" + ubicacion.replace(" ", "_")
-        msg_name = mensajes_pisos.get(clave, {}).get("name", "")
-        nuevo    = _enviar_o_reescribir(WEBHOOK_JEFES, payload, msg_name)
-        if nuevo:
-            mensajes_pisos[clave] = {"name": nuevo, "fecha": hoy}
-        else:
-            # Fallback: si la creación directa falló, intentar con la cola de reintentos
-            post_chat_con_reintento(WEBHOOK_JEFES, payload)
-        log.info("Mensaje enviado al espacio jefes — piso: " + ubicacion)
-
         for jefe, info_j in sorted(info_piso["jefes"].items()):
             jefe_original = info_j.get("jefe_original", "")
             enviar_mensaje_jefe_individual(jefe, info_j, ubicacion, fecha_now, dir_dict, jefe_original=jefe_original)
 
     _guardar_mensajes_reescribibles(MENSAJES_PISOS_FILE, mensajes_pisos)
-    log.info("4 mensajes por piso enviados al espacio jefes ✅")
+    log.info("Mensajes individuales de jefes enviados ✅")
 
 def enviar_mensajes_vendedores(todas_remisiones, dir_dict, descansos=None):
     """Manda a cada vendedor (con webhook activo en WEBHOOKS_VENDEDORES) un
