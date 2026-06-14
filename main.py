@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.5.3"
+VERSION = "1.5.4"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 # El repo se renombró: el nombre viejo (liverpool-bot) redirige por ahora,
@@ -308,7 +308,7 @@ MINUTO_FIN      = 30
 CICLOS_JEFES       = 2       # ciclos entre mensajes al espacio Jefes
 CICLOS_VENDEDORES  = 2       # ciclos entre mensajes individuales a vendedores
 CICLOS_REPORTE     = 1       # ciclos entre mensajes al espacio Reporte
-HORA_RECORDATORIO  = "20:30" # hora objetivo del recordatorio (HH:MM)
+HORA_RECORDATORIO  = "20:00" # hora objetivo del recordatorio (HH:MM)
 # ── Demo mode ────────────────────────────────────────────────
 WEBHOOK_DEMO_1  = ""
 WEBHOOK_DEMO_2  = ""
@@ -1701,122 +1701,77 @@ def construir_card_resumen_general(por_piso, dir_dict, fecha_now):
     chart_url = _url_chart_pisos(datos_chart)
     sections.append({"widgets": [{"image": {"imageUrl": chart_url, "altText": "Remisiones por piso"}}]})
 
-    # ── Secciones por piso → gerencia → jefe (colapsable) → vendedores ──
-    # Nivel 1: una sección colapsable por piso.
-    #   Al expandir: muestra nombre de gerencia como texto + filas de jefes con chips.
-    # Nivel 2: una sección colapsable por jefe (header = nombre jefe).
-    #   Al expandir: muestra vendedores con conteo y tiempo.
-    # Google Chat no soporta secciones anidadas, por lo que ambos niveles
-    # se aplanan como secciones consecutivas en la misma card.
+    # ── Estructura: piso como encabezado fijo + sección colapsable por jefe ──
+    # El piso se muestra como sección NO colapsable con chips Espera/Etiquetas.
+    # Debajo, una sección colapsable por cada jefe: chips de urgencia siempre
+    # visibles, vendedores ocultos hasta "ver más".
     for p_idx in sorted(por_piso.keys()):
         info_piso = por_piso[p_idx]
         ubicacion = info_piso["ubicacion"]
 
-        # Agrupar jefes por gerencia
-        por_gerencia = {}
-        for jefe, info_j in info_piso["jefes"].items():
-            gerencia = ""
-            for sec, sec_info in dir_dict.items():
-                if str(sec_info.get("jefe", "")).strip().upper() == jefe.strip().upper():
-                    gerencia = sec_info.get("gerencia", "").strip()
-                    break
-            if not gerencia:
-                gerencia = "Sin gerencia"
-            por_gerencia.setdefault(gerencia, {})[jefe] = info_j
-
-        total_piso = sum(
-            ds["count"]
-            for info_j in info_piso["jefes"].values()
-            for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]]
-            for ds in grp.values()
-        )
-
-        # ── Sección PISO (colapsable, nivel 1) ───────────────────
-        # Siempre visible: Mercancía en Espera y Etiquetas Generadas
-        # Al expandir: nombre de cada gerencia + jefe chips con totales
-        sc = info_piso.get("status_counts", {})
+        sc       = info_piso.get("status_counts", {})
         espera   = sc.get("Mercancia en Espera de Entrega", 0)
         etiqueta = sc.get("Etiqueta Generada", 0)
         piso_chips = []
         if espera:   piso_chips.append({"label": f"🔴 Mercancía en Espera: {espera}"})
         if etiqueta: piso_chips.append({"label": f"🏷️ Etiquetas Generadas: {etiqueta}"})
-        if not piso_chips: piso_chips.append({"label": f"🏬 {total_piso} rem"})
+        if not piso_chips:
+            total_piso = sum(
+                ds["count"]
+                for info_j in info_piso["jefes"].values()
+                for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]]
+                for ds in grp.values()
+            )
+            piso_chips.append({"label": f"🏬 {total_piso} rem"})
 
-        piso_widgets = [{"chipList": {"chips": piso_chips}}]
+        # Sección de piso — NO colapsable, solo muestra chips
+        sections.append({
+            "header": f"🏢 {ubicacion}",
+            "widgets": [{"chipList": {"chips": piso_chips}}],
+        })
 
-        # Jefes del piso ordenados por total desc (sin agrupar por gerencia en pantalla)
-        todos_jefes_piso = [
-            (jefe, info_j)
-            for ger in por_gerencia.values()
-            for jefe, info_j in ger.items()
-        ]
-        todos_jefes_piso.sort(
+        # Jefes ordenados por total de remisiones desc
+        jefes_ordenados = sorted(
+            info_piso["jefes"].items(),
             key=lambda x: -sum(ds["count"] for grp in [x[1]["en_tiempo"], x[1]["vencidas"], x[1]["de_ayer"]] for ds in grp.values())
         )
 
-        for jefe, info_j in todos_jefes_piso:
+        for jefe, info_j in jefes_ordenados:
             ayer  = sum(ds["count"] for ds in info_j["de_ayer"].values())
             venc  = sum(ds["count"] for ds in info_j["vencidas"].values())
             verde = sum(ds["count"] for ds in info_j["en_tiempo"].values())
             total_j = ayer + venc + verde
             if total_j == 0:
                 continue
-            partes = []
-            if ayer:  partes.append(f"🟣 {ayer}")
-            if venc:  partes.append(f"🔴 {venc}")
-            if verde: partes.append(f"🟢 {verde}")
+
+            # Chips siempre visibles — urgencia del jefe
+            chips_j = []
+            if ayer:  chips_j.append({"label": f"🟣 {ayer} de ayer"})
+            if venc:  chips_j.append({"label": f"🔴 {venc} vencidas"})
+            if verde: chips_j.append({"label": f"🟢 {verde} en tiempo"})
+
+            # Vendedores — ocultos hasta "ver más"
+            jefe_widgets = [{"chipList": {"chips": chips_j}}]
+            for grp, emoji_v in [(info_j["de_ayer"], "🟣"), (info_j["vencidas"], "🔴"), (info_j["en_tiempo"], "🟢")]:
+                for ven, ds in sorted(grp.items(), key=lambda x: -x[1]["count"]):
+                    if ds["count"] == 0:
+                        continue
+                    t_str = calcular_tiempo_espera_str(ds["max_min"]) if ds["max_min"] > 0 else ""
+                    icono = "⚠️" if ven == "Sin asignar" else emoji_v
+                    jefe_widgets.append({"decoratedText": {
+                        "topLabel": f"{icono} {ven}",
+                        "text": f"<b>{ds['count']} rem</b>" + (f"  ·  {t_str}" if t_str else ""),
+                        "startIcon": {"knownIcon": "PERSON"}
+                    }})
+
             genero  = get_genero(jefe)
             emoji_g = "👩‍💼" if genero == "jefa" else "👨‍💼"
-            piso_widgets.append({"decoratedText": {
-                "topLabel": f"{emoji_g} {jefe}",
-                "text": "  ".join(partes),
-                "startIcon": {"knownIcon": "PERSON"}
-            }})
-
-        sections.append({
-            "header": f"🏢 {ubicacion}",
-            "widgets": piso_widgets,
-            "collapsible": True,
-            "uncollapsibleWidgetsCount": 1,
-        })
-
-        # ── Secciones JEFE (colapsables, nivel 2) ─────────────────
-        # Una sección por jefe: siempre visible = chipList con urgencia
-        # Al expandir: filas de vendedor con conteo y tiempo máximo
-        for jefe, info_j in todos_jefes_piso:
-                ayer  = sum(ds["count"] for ds in info_j["de_ayer"].values())
-                venc  = sum(ds["count"] for ds in info_j["vencidas"].values())
-                verde = sum(ds["count"] for ds in info_j["en_tiempo"].values())
-                total_j = ayer + venc + verde
-                if total_j == 0:
-                    continue
-
-                chips_j = []
-                if ayer:  chips_j.append({"label": f"🟣 {ayer} de ayer"})
-                if venc:  chips_j.append({"label": f"🔴 {venc} vencidas"})
-                if verde: chips_j.append({"label": f"🟢 {verde} en tiempo"})
-
-                jefe_widgets = [{"chipList": {"chips": chips_j}}]
-                for grp, emoji_v in [(info_j["de_ayer"], "🟣"), (info_j["vencidas"], "🔴"), (info_j["en_tiempo"], "🟢")]:
-                    for ven, ds in sorted(grp.items(), key=lambda x: -x[1]["count"]):
-                        if ds["count"] == 0:
-                            continue
-                        t_str = calcular_tiempo_espera_str(ds["max_min"]) if ds["max_min"] > 0 else ""
-                        icono = "⚠️" if ven == "Sin asignar" else emoji_v
-                        jefe_widgets.append({"decoratedText": {
-                            "topLabel": f"{icono} {ven}",
-                            "text": f"<b>{ds['count']} rem</b>" + (f"  ·  {t_str}" if t_str else ""),
-                            "startIcon": {"knownIcon": "PERSON"}
-                        }})
-
-                genero  = get_genero(jefe)
-                emoji_g = "👩‍💼" if genero == "jefa" else "👨‍💼"
-                sections.append({
-                    "header": f"{emoji_g} {jefe}  ·  {ubicacion}",
-                    "widgets": jefe_widgets,
-                    "collapsible": True,
-                    "uncollapsibleWidgetsCount": 1,
-                })
+            sections.append({
+                "header": f"{emoji_g} {jefe}",
+                "widgets": jefe_widgets,
+                "collapsible": True,
+                "uncollapsibleWidgetsCount": 1,
+            })
 
     gran_total = sum(v + r for _, v, r in datos_chart)
     sections.append({
