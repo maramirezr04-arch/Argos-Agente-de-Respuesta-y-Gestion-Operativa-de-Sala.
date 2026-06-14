@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.5.2"
+VERSION = "1.5.3"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 # El repo se renombró: el nombre viejo (liverpool-bot) redirige por ahora,
@@ -1744,37 +1744,34 @@ def construir_card_resumen_general(por_piso, dir_dict, fecha_now):
 
         piso_widgets = [{"chipList": {"chips": piso_chips}}]
 
-        for ger in sorted(por_gerencia.keys()):
-            gtotal = sum(
-                ds["count"]
-                for info_j in por_gerencia[ger].values()
-                for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]]
-                for ds in grp.values()
-            )
-            piso_widgets.append({"textParagraph": {
-                "text": f"<b>Gerencia {ger}</b>  ·  {gtotal} rem"
+        # Jefes del piso ordenados por total desc (sin agrupar por gerencia en pantalla)
+        todos_jefes_piso = [
+            (jefe, info_j)
+            for ger in por_gerencia.values()
+            for jefe, info_j in ger.items()
+        ]
+        todos_jefes_piso.sort(
+            key=lambda x: -sum(ds["count"] for grp in [x[1]["en_tiempo"], x[1]["vencidas"], x[1]["de_ayer"]] for ds in grp.values())
+        )
+
+        for jefe, info_j in todos_jefes_piso:
+            ayer  = sum(ds["count"] for ds in info_j["de_ayer"].values())
+            venc  = sum(ds["count"] for ds in info_j["vencidas"].values())
+            verde = sum(ds["count"] for ds in info_j["en_tiempo"].values())
+            total_j = ayer + venc + verde
+            if total_j == 0:
+                continue
+            partes = []
+            if ayer:  partes.append(f"🟣 {ayer}")
+            if venc:  partes.append(f"🔴 {venc}")
+            if verde: partes.append(f"🟢 {verde}")
+            genero  = get_genero(jefe)
+            emoji_g = "👩‍💼" if genero == "jefa" else "👨‍💼"
+            piso_widgets.append({"decoratedText": {
+                "topLabel": f"{emoji_g} {jefe}",
+                "text": "  ".join(partes),
+                "startIcon": {"knownIcon": "PERSON"}
             }})
-            for jefe, info_j in sorted(
-                por_gerencia[ger].items(),
-                key=lambda x: -sum(ds["count"] for grp in [x[1]["en_tiempo"], x[1]["vencidas"], x[1]["de_ayer"]] for ds in grp.values())
-            ):
-                ayer  = sum(ds["count"] for ds in info_j["de_ayer"].values())
-                venc  = sum(ds["count"] for ds in info_j["vencidas"].values())
-                verde = sum(ds["count"] for ds in info_j["en_tiempo"].values())
-                total_j = ayer + venc + verde
-                if total_j == 0:
-                    continue
-                partes = []
-                if ayer:  partes.append(f"🟣 {ayer}")
-                if venc:  partes.append(f"🔴 {venc}")
-                if verde: partes.append(f"🟢 {verde}")
-                genero  = get_genero(jefe)
-                emoji_g = "👩‍💼" if genero == "jefa" else "👨‍💼"
-                piso_widgets.append({"decoratedText": {
-                    "topLabel": f"{emoji_g} {jefe}",
-                    "text": "  ".join(partes),
-                    "startIcon": {"knownIcon": "PERSON"}
-                }})
 
         sections.append({
             "header": f"🏢 {ubicacion}",
@@ -1784,13 +1781,9 @@ def construir_card_resumen_general(por_piso, dir_dict, fecha_now):
         })
 
         # ── Secciones JEFE (colapsables, nivel 2) ─────────────────
-        # Una sección por jefe: siempre visible = chipList verde/rojo/ayer
+        # Una sección por jefe: siempre visible = chipList con urgencia
         # Al expandir: filas de vendedor con conteo y tiempo máximo
-        for ger in sorted(por_gerencia.keys()):
-            for jefe, info_j in sorted(
-                por_gerencia[ger].items(),
-                key=lambda x: -sum(ds["count"] for grp in [x[1]["en_tiempo"], x[1]["vencidas"], x[1]["de_ayer"]] for ds in grp.values())
-            ):
+        for jefe, info_j in todos_jefes_piso:
                 ayer  = sum(ds["count"] for ds in info_j["de_ayer"].values())
                 venc  = sum(ds["count"] for ds in info_j["vencidas"].values())
                 verde = sum(ds["count"] for ds in info_j["en_tiempo"].values())
