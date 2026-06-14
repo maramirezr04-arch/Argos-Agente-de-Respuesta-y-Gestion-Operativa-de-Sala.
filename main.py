@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.5.6"
+VERSION = "1.5.7"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 # El repo se renombró: el nombre viejo (liverpool-bot) redirige por ahora,
@@ -1759,23 +1759,13 @@ def construir_card_resumen_general(por_piso, dir_dict, fecha_now):
         })
 
     gran_total = sum(v + r for _, v, r in datos_chart)
-    sections.append({
-        "widgets": [
-            {"divider": {}},
-            {"decoratedText": {
-                "topLabel": "Total tienda",
-                "text": f"<b>{gran_total} remisiones activas</b>",
-                "icon": {"knownIcon": "CONFIRMATION_NUMBER_ICON"}
-            }}
-        ]
-    })
 
     return {
         "cardsV2": [{
             "cardId": "resumen-general",
             "card": {
                 "header": {
-                    "title": "📊 Resumen General",
+                    "title": f"📊 Resumen General — {gran_total} rem",
                     "subtitle": f"Liverpool Tienda 456 — {fecha_now}",
                     "imageUrl": "https://fonts.gstatic.com/s/i/googlematerialicons/bar_chart/v6/24px.svg",
                     "imageType": "CIRCLE"
