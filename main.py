@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from config import LIVERPOOL, GOOGLE, CHAT, CARPETA_DESCARGA, PC_NOMBRE
 
-VERSION = "1.5.1"
+VERSION = "1.5.2"
 
 # ── Auto-update desde GitHub ─────────────────────────────────
 # El repo se renombró: el nombre viejo (liverpool-bot) redirige por ahora,
@@ -1732,17 +1732,15 @@ def construir_card_resumen_general(por_piso, dir_dict, fecha_now):
         )
 
         # ── Sección PISO (colapsable, nivel 1) ───────────────────
-        # Siempre visible: chipList total + resumen por gerencia
+        # Siempre visible: Mercancía en Espera y Etiquetas Generadas
         # Al expandir: nombre de cada gerencia + jefe chips con totales
-        piso_chips = [{"label": f"🏬 {total_piso} rem"}]
-        for ger in sorted(por_gerencia.keys()):
-            gtotal = sum(
-                ds["count"]
-                for info_j in por_gerencia[ger].values()
-                for grp in [info_j["en_tiempo"], info_j["vencidas"], info_j["de_ayer"]]
-                for ds in grp.values()
-            )
-            piso_chips.append({"label": f"{ger}: {gtotal}"})
+        sc = info_piso.get("status_counts", {})
+        espera   = sc.get("Mercancia en Espera de Entrega", 0)
+        etiqueta = sc.get("Etiqueta Generada", 0)
+        piso_chips = []
+        if espera:   piso_chips.append({"label": f"🔴 Mercancía en Espera: {espera}"})
+        if etiqueta: piso_chips.append({"label": f"🏷️ Etiquetas Generadas: {etiqueta}"})
+        if not piso_chips: piso_chips.append({"label": f"🏬 {total_piso} rem"})
 
         piso_widgets = [{"chipList": {"chips": piso_chips}}]
 
@@ -1801,9 +1799,9 @@ def construir_card_resumen_general(por_piso, dir_dict, fecha_now):
                     continue
 
                 chips_j = []
-                if ayer:  chips_j.append({"label": f"🟣 {ayer} ayer"})
-                if venc:  chips_j.append({"label": f"🔴 {venc} venc"})
-                if verde: chips_j.append({"label": f"🟢 {verde} ok"})
+                if ayer:  chips_j.append({"label": f"🟣 {ayer} de ayer"})
+                if venc:  chips_j.append({"label": f"🔴 {venc} vencidas"})
+                if verde: chips_j.append({"label": f"🟢 {verde} en tiempo"})
 
                 jefe_widgets = [{"chipList": {"chips": chips_j}}]
                 for grp, emoji_v in [(info_j["de_ayer"], "🟣"), (info_j["vencidas"], "🔴"), (info_j["en_tiempo"], "🟢")]:
@@ -1821,7 +1819,7 @@ def construir_card_resumen_general(por_piso, dir_dict, fecha_now):
                 genero  = get_genero(jefe)
                 emoji_g = "👩‍💼" if genero == "jefa" else "👨‍💼"
                 sections.append({
-                    "header": f"{emoji_g} {jefe}  ·  {ger}  ·  {ubicacion}",
+                    "header": f"{emoji_g} {jefe}  ·  {ubicacion}",
                     "widgets": jefe_widgets,
                     "collapsible": True,
                     "uncollapsibleWidgetsCount": 1,
@@ -2176,7 +2174,8 @@ def enviar_mensaje_jefes(todas_remisiones, dir_dict, hist_dict, descansos, jefes
         jefe = sustituto or nom_jefe or "SIN ASIGNAR"
 
         if p_idx not in por_piso:
-            por_piso[p_idx] = {"ubicacion": ubicacion, "jefes": {}}
+            por_piso[p_idx] = {"ubicacion": ubicacion, "jefes": {}, "status_counts": {}}
+        por_piso[p_idx]["status_counts"][status] = por_piso[p_idx]["status_counts"].get(status, 0) + 1
         if jefe not in por_piso[p_idx]["jefes"]:
             # jefe_original = quién descansa (para fallback de webhook)
             jefe_original = nom_jefe if sustituto else ""
