@@ -1036,6 +1036,28 @@ const URL_MONITOR  = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gv
 const URL_METRICAS = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=METRICAS";
 const URL_KPI_TIEMPOS  = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=KPI_TIEMPOS";
 const URL_TIEMPOS_LIVE = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=TIEMPOS";
+
+// ── API HELPERS ─────────────────────────────────────────────
+// Centraliza el patron fetch+json+manejo de "ok" que antes se repetia
+// en ~20 funciones distintas. Siempre usa el parametro 'accion' (antes
+// se mezclaba con 'action' en algunos GET).
+async function apiGet(accion, params = {}) {
+  const qs = new URLSearchParams({ accion, ...params, t: Date.now() }).toString();
+  const r = await fetch(APPS_SCRIPT_URL + '?' + qs);
+  const data = await r.json();
+  if (data && data.ok === false) throw new Error(data.error || 'Error desconocido');
+  return data;
+}
+
+async function apiPost(accion, payload = {}) {
+  const r = await fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({ accion, ...payload })
+  });
+  const data = await r.json();
+  if (data && data.ok === false) throw new Error(data.error || 'Error desconocido');
+  return data;
+}
 let chartKpi = null;
 let todos=[],chartT,chartI,chartV;
 let DIRECTORIO_SECCIONES = [], DIRECTORIO_JEFES = [];
@@ -1169,8 +1191,7 @@ async function cargarPcs(){
   const div = document.getElementById('pcs-lista');
   div.innerHTML = '<div style="text-align:center;padding:2rem;color:#aaa">Cargando...</div>';
   try {
-    const r    = await fetch(APPS_SCRIPT_URL + '?action=getPcs&t=' + Date.now());
-    const data = await r.json();
+    const data = await apiGet('getPcs');
     if(!data.pcs || data.pcs.length === 0){
       div.innerHTML = '<div style="text-align:center;padding:2rem;color:#aaa">No hay PCs registradas a\u00fan. Se registran autom\u00e1ticamente la primera vez que corre el bot.</div>';
       return;
@@ -1197,8 +1218,7 @@ async function togglePc(nombre, nuevoEstado){
   const accion = nuevoEstado === 'pausado' ? 'Pausar' : 'Reanudar';
   if(!confirm(`\u00bf${accion} la PC "${nombre}"?\n\nEl cambio aplica en m\u00e1ximo 15 minutos.`)) return;
   try {
-    const r    = await fetch(APPS_SCRIPT_URL + '?action=setPcEstado&nombre=' + encodeURIComponent(nombre) + '&estado=' + encodeURIComponent(nuevoEstado) + '&t=' + Date.now());
-    const data = await r.json();
+    const data = await apiGet('setPcEstado', { nombre, estado: nuevoEstado });
     if(data.ok) { cargarPcs(); }
     else alert('Error: ' + (data.error || 'desconocido'));
   } catch(e){ alert('Error: ' + e); }
@@ -1508,9 +1528,7 @@ async function cargarConfig(){
   const estado=document.getElementById('cfg-estado');
   estado.className='estado-bar warn';estado.textContent='\u23f3 Cargando...';
   try{
-    const r=await fetch(APPS_SCRIPT_URL+'?accion=config');
-    const data=await r.json();
-    if(!data.ok)throw new Error(data.error);
+    const data=await apiGet('config');
     const c=data.config;
     // Limpiar valores corruptos (ej: fechas en lugar de numeros)
     const num = (v, def) => { const n=parseFloat(v); return isNaN(n)?def:n; };
@@ -1521,6 +1539,7 @@ async function cargarConfig(){
     document.getElementById('cfg-vencida').value=num(c.minutos_vencida,20);
     document.getElementById('cfg-anomalia').value=num(c.umbral_anomalia,1.5);
     document.getElementById('cfg-watchdog').value=num(c.watchdog_minutos,30);
+    document.getElementById('cfg-watchdog-activo').checked=(c.watchdog_activo||'si').toLowerCase()==='si';
     document.getElementById('cfg-wh-reporte').value=c.webhook_reporte||'';
     document.getElementById('cfg-wh-jefes').value=c.webhook_jefes||'';
     document.getElementById('cfg-wh-tiempos').value=c.webhook_tiempos||'';
@@ -1551,10 +1570,8 @@ async function guardarConfig(){
   const dias=[...document.querySelectorAll('.dia-chip.active')].map(c=>c.dataset.dia).join(',');
   const cfg={hora_inicio:document.getElementById('cfg-hora-inicio').value,hora_fin:document.getElementById('cfg-hora-fin').value,minuto_fin:document.getElementById('cfg-minuto-fin').value,pausado:document.getElementById('cfg-pausado').checked?'si':'no',dias_activos:dias,minutos_vencida:document.getElementById('cfg-vencida').value,umbral_anomalia:document.getElementById('cfg-anomalia').value,watchdog_minutos:document.getElementById('cfg-watchdog').value,watchdog_activo:document.getElementById('cfg-watchdog-activo').checked?'si':'no',webhook_reporte:document.getElementById('cfg-wh-reporte').value,webhook_jefes:document.getElementById('cfg-wh-jefes').value,webhook_tiempos:document.getElementById('cfg-wh-tiempos').value,enviar_reporte:document.getElementById('cfg-env-reporte').checked?'si':'no',enviar_jefes:document.getElementById('cfg-env-jefes').checked?'si':'no',enviar_tiempos:document.getElementById('cfg-env-tiempos').checked?'si':'no',ciclos_jefes:document.getElementById('cfg-ciclos-jefes').value,ciclos_vendedores:document.getElementById('cfg-ciclos-vendedores').value,ciclos_reporte:document.getElementById('cfg-ciclos-reporte').value,hora_recordatorio:document.getElementById('cfg-hora-record').value};
   try{
-    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'config',config:cfg})});
-    const data=await r.json();
-    if(data.ok)showToast('\u2705 Configuracion guardada','ok');
-    else throw new Error(data.error||'Error al guardar');
+    await apiPost('config', {config: cfg});
+    showToast('\u2705 Configuracion guardada','ok');
   }catch(e){showToast('\u274c '+e.message,'err');}
   finally{btn.disabled=false;btn.textContent='\ud83d\udcbe Guardar';}
 }
@@ -1572,19 +1589,16 @@ async function guardarDemo(){
     intervalo_demo:document.getElementById('cfg-intervalo-demo').value
   };
   try{
-    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'config',config:cfg})});
-    const data=await r.json();
-    if(data.ok){el.textContent='\u2705 Configuraci\u00f3n demo guardada';showToast('\u2705 Config demo guardada','ok');}
-    else throw new Error(data.error||'Error al guardar');
+    await apiPost('config', {config: cfg});
+    el.textContent='\u2705 Configuraci\u00f3n demo guardada';showToast('\u2705 Config demo guardada','ok');
   }catch(e){el.textContent='\u274c '+e.message;showToast('\u274c '+e.message,'err');}
 }
 
 // DESCANSOS
 async function cargarDirectorio(){
   try{
-    const r=await fetch(APPS_SCRIPT_URL+'?accion=directorio');
-    const data=await r.json();
-    if(!data.ok||!data.directorio)return;
+    const data=await apiGet('directorio');
+    if(!data.directorio)return;
     DIRECTORIO_SECCIONES=data.directorio;
     // Extraer jefes unicos del directorio
     const jefesSet=new Set(data.directorio.map(d=>d.jefe).filter(j=>j&&j.trim()));
@@ -1598,8 +1612,7 @@ async function cargarDirectorio(){
 
 async function cargarDescansos(){
   try{
-    const r=await fetch(APPS_SCRIPT_URL+'?accion=descansos');
-    const data=await r.json();
+    const data=await apiGet('descansos');
     const tbody=document.getElementById('tabla-descansos');
     if(!data.descansos||data.descansos.length===0){tbody.innerHTML='<tr><td colspan="4" style="text-align:center;color:#888;padding:1.5rem">Sin descansos programados</td></tr>';return;}
     data.descansos.sort((a,b)=>{const pa=a.fecha.split('/');const pb=b.fecha.split('/');return new Date(pa[2],pa[1]-1,pa[0])-new Date(pb[2],pb[1]-1,pb[0]);});
@@ -1615,20 +1628,16 @@ async function agregarDescanso(){
   if(jefeDescansa===jefeCubre){showToast('\u26a0\ufe0f El jefe que cubre debe ser diferente','err');return;}
   const [y,m,d]=fechaIso.split('-');const fecha=`${d}/${m}/${y}`;
   try{
-    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'agregar_descanso',fecha,jefe_descansa:jefeDescansa,jefe_cubre:jefeCubre})});
-    const data=await r.json();
-    if(data.ok){const n=data.secciones_agregadas||0;showToast(`\u2705 Descanso agregado \u2014 ${n} secci\u00f3n${n===1?'':'es'} de ${jefeDescansa.split(' ')[0]} asignadas a ${jefeCubre.split(' ')[0]}`,'ok');document.getElementById('d-fecha').value='';document.getElementById('d-jefe-descansa').value='';document.getElementById('d-jefe-cubre').value='';cargarDescansos();}
-    else throw new Error(data.error);
+    const data=await apiPost('agregar_descanso', {fecha,jefe_descansa:jefeDescansa,jefe_cubre:jefeCubre});
+    const n=data.secciones_agregadas||0;showToast(`\u2705 Descanso agregado \u2014 ${n} secci\u00f3n${n===1?'':'es'} de ${jefeDescansa.split(' ')[0]} asignadas a ${jefeCubre.split(' ')[0]}`,'ok');document.getElementById('d-fecha').value='';document.getElementById('d-jefe-descansa').value='';document.getElementById('d-jefe-cubre').value='';cargarDescansos();
   }catch(e){showToast('\u274c '+e.message,'err');}
 }
 
 async function borrarDescanso(fecha,jefe){
   if(!confirm('\u00bfBorrar descanso del '+fecha+' de '+jefe+'?'))return;
   try{
-    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'borrar_descanso',fecha,jefe_descansa:jefe})});
-    const data=await r.json();
-    if(data.ok){showToast('\u2705 Borrado','ok');cargarDescansos();}
-    else throw new Error(data.error);
+    await apiPost('borrar_descanso', {fecha,jefe_descansa:jefe});
+    showToast('\u2705 Borrado','ok');cargarDescansos();
   }catch(e){showToast('\u274c '+e.message,'err');}
 }
 
@@ -1654,9 +1663,8 @@ async function cargarWebhooksJefes(){
   if(!grid)return;
   grid.innerHTML='<div style="color:#aaa;font-size:13px;grid-column:1/-1;text-align:center;padding:1rem">Cargando...</div>';
   try{
-    const r=await fetch(APPS_SCRIPT_URL+'?accion=webhooks_jefes');
-    const data=await r.json();
-    if(!data.ok||!data.jefes||!data.jefes.length){
+    const data=await apiGet('webhooks_jefes');
+    if(!data.jefes||!data.jefes.length){
       grid.innerHTML='<div style="color:#aaa;font-size:13px;grid-column:1/-1;text-align:center;padding:1rem">Sin datos \u2014 agrega webhooks en la hoja WEBHOOKS_JEFES</div>';
       return;
     }
@@ -1691,18 +1699,11 @@ async function cargarWebhooksJefes(){
 async function toggleWebhookJefe(nombre,activo,checkbox){
   checkbox.disabled=true;
   try{
-    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'toggle_webhook_jefe',nombre,activo})});
-    const data=await r.json();
-    if(data.ok){
-      showToast(activo?`\u2705 ${nombre} activado`:`\u23f8\ufe0f ${nombre} desactivado`,'ok');
-      cargarWebhooksJefes();
-    }else{
-      showToast('Error al guardar','err');
-      checkbox.checked=!activo;
-      checkbox.disabled=false;
-    }
+    await apiPost('toggle_webhook_jefe', {nombre,activo});
+    showToast(activo?`\u2705 ${nombre} activado`:`\u23f8\ufe0f ${nombre} desactivado`,'ok');
+    cargarWebhooksJefes();
   }catch(e){
-    showToast('Error de conexi\u00f3n','err');
+    showToast(e.message||'Error de conexi\u00f3n','err');
     checkbox.checked=!activo;
     checkbox.disabled=false;
   }
@@ -1711,19 +1712,16 @@ async function toggleWebhookJefe(nombre,activo,checkbox){
 async function actualizarJefe(el){
   const sec=el.dataset.sec;const tipo=el.dataset.tipo;const valor=el.value;
   try{
-    const payload={accion:'actualizar_jefe',seccion:sec};payload[tipo]=valor;
-    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)});
-    const data=await r.json();
-    if(data.ok){showToast('\u2705 Actualizado','ok');const s=DIRECTORIO_SECCIONES.find(x=>x.seccion===sec);if(s)s[tipo]=valor;}
-    else throw new Error(data.error);
+    const extra={seccion:sec};extra[tipo]=valor;
+    await apiPost('actualizar_jefe', extra);
+    showToast('\u2705 Actualizado','ok');const s=DIRECTORIO_SECCIONES.find(x=>x.seccion===sec);if(s)s[tipo]=valor;
   }catch(e){showToast('\u274c '+e.message,'err');}
 }
 
 // FESTIVOS
 async function cargarFestivos(){
   try{
-    const r=await fetch(APPS_SCRIPT_URL+'?accion=festivos');
-    const data=await r.json();
+    const data=await apiGet('festivos');
     const tbody=document.getElementById('tabla-festivos');
     if(!tbody)return;
     if(!data.festivos||!data.festivos.length){tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:#888;padding:1.5rem">Sin festivos</td></tr>';return;}
@@ -1737,20 +1735,16 @@ async function agregarFestivo(){
   if(!fechaIso){showToast('\u26a0\ufe0f Selecciona fecha','err');return;}
   const [y,m,d]=fechaIso.split('-');const fecha=`${d}/${m}/${y}`;
   try{
-    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'agregar_festivo',fecha,descripcion:desc})});
-    const data=await r.json();
-    if(data.ok){showToast('\u2705 Festivo agregado','ok');document.getElementById('f-fecha').value='';document.getElementById('f-desc').value='';cargarFestivos();}
-    else throw new Error(data.error);
+    await apiPost('agregar_festivo', {fecha,descripcion:desc});
+    showToast('\u2705 Festivo agregado','ok');document.getElementById('f-fecha').value='';document.getElementById('f-desc').value='';cargarFestivos();
   }catch(e){showToast('\u274c '+e.message,'err');}
 }
 
 async function borrarFestivo(fecha){
   if(!confirm('\u00bfBorrar festivo '+fecha+'?'))return;
   try{
-    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'borrar_festivo',fecha})});
-    const data=await r.json();
-    if(data.ok){showToast('\u2705 Borrado','ok');cargarFestivos();}
-    else throw new Error(data.error);
+    await apiPost('borrar_festivo', {fecha});
+    showToast('\u2705 Borrado','ok');cargarFestivos();
   }catch(e){showToast('\u274c '+e.message,'err');}
 }
 
@@ -1758,10 +1752,8 @@ async function borrarFestivo(fecha){
 async function accion(tipo){
   if(!confirm('\u00bfEjecutar accion: '+tipo+'?'))return;
   try{
-    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'accion_rapida',tipo})});
-    const data=await r.json();
-    if(data.ok)showToast('\u2705 '+(data.mensaje||'Hecho'),'ok');
-    else throw new Error(data.error);
+    const data=await apiPost('accion_rapida', {tipo});
+    showToast('\u2705 '+(data.mensaje||'Hecho'),'ok');
   }catch(e){showToast('\u274c '+e.message,'err');}
 }
 
@@ -1769,10 +1761,8 @@ async function accion(tipo){
 async function enviarKpiVendedores(){
   if(!confirm('\u00bfEnviar reporte de tiempos por vendedor al espacio Tiempos?\n\nEl bot lo procesara en la proxima ejecucion (maximo 15 min).'))return;
   try{
-    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'kpi_vendedores'})});
-    const data=await r.json();
-    if(data.ok)showToast('\u2705 Se\u00f1al enviada \u2014 el bot mandara el reporte en la proxima ejecucion','ok');
-    else throw new Error(data.error||'Error desconocido');
+    await apiPost('kpi_vendedores');
+    showToast('\u2705 Se\u00f1al enviada \u2014 el bot mandara el reporte en la proxima ejecucion','ok');
   }catch(e){
     showToast('\u26a0\ufe0f Usa el archivo enviar_kpi_vendedores.bat en la PC del bot','warn');
   }
@@ -1781,8 +1771,7 @@ async function enviarKpiVendedores(){
 // LOGS
 async function cargarLogs(){
   try{
-    const r=await fetch(APPS_SCRIPT_URL+'?accion=logs');
-    const data=await r.json();
+    const data=await apiGet('logs');
     const cont=document.getElementById('logs-container');
     if(!data.logs||!data.logs.length){cont.innerHTML='<div style="text-align:center;color:#888;padding:1.5rem">Sin logs</div>';return;}
     cont.innerHTML=data.logs.map(l=>`<div class="feature" style="border-left-color:${l.estado==='exitosa'?'#1D9E75':'#E24B4A'}">
@@ -1796,9 +1785,7 @@ async function cargarLogs(){
 // ROUTING DE MENSAJES
 async function cargarRouting(){
   try{
-    const r=await fetch(APPS_SCRIPT_URL+'?accion=config');
-    const data=await r.json();
-    if(!data.ok)return;
+    const data=await apiGet('config');
     const c=data.config;
     document.querySelectorAll('#routing-container .cfg-card').forEach(card=>{
       const tipo=card.dataset.tipo;
@@ -1819,39 +1806,16 @@ async function guardarRouting(){
     cfg['destino_'+tipo]=destinos.join(',');
   });
   try{
-    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'config',config:cfg})});
-    const data=await r.json();
-    if(data.ok)showToast('\u2705 Rutas guardadas \u2014 '+data.cambios+' cambios','ok');
-    else throw new Error(data.error);
+    const data=await apiPost('config', {config: cfg});
+    showToast('\u2705 Rutas guardadas \u2014 '+data.cambios+' cambios','ok');
   }catch(e){showToast('\u274c '+e.message,'err');}
 }
 
-// Actualizar cargar/guardar config para incluir watchdog_activo
-const _cargarConfigOriginal = cargarConfig;
-cargarConfig = async function(){
-  await _cargarConfigOriginal();
-  try{
-    const r=await fetch(APPS_SCRIPT_URL+'?accion=config');
-    const data=await r.json();
-    if(data.ok){
-      document.getElementById('cfg-watchdog-activo').checked=(data.config.watchdog_activo||'si').toLowerCase()==='si';
-    }
-  }catch(e){}
-};
-
-const _guardarConfigOriginal = guardarConfig;
-guardarConfig = async function(){
-  const btn=document.getElementById('btn-guardar');btn.disabled=true;btn.textContent='\u23f3 Guardando...';
-  const dias=[...document.querySelectorAll('.dia-chip.active')].map(c=>c.dataset.dia).join(',');
-  const cfg={hora_inicio:document.getElementById('cfg-hora-inicio').value,hora_fin:document.getElementById('cfg-hora-fin').value,minuto_fin:document.getElementById('cfg-minuto-fin').value,pausado:document.getElementById('cfg-pausado').checked?'si':'no',dias_activos:dias,minutos_vencida:document.getElementById('cfg-vencida').value,umbral_anomalia:document.getElementById('cfg-anomalia').value,watchdog_minutos:document.getElementById('cfg-watchdog').value,watchdog_activo:document.getElementById('cfg-watchdog-activo').checked?'si':'no',webhook_reporte:document.getElementById('cfg-wh-reporte').value,webhook_jefes:document.getElementById('cfg-wh-jefes').value,webhook_tiempos:document.getElementById('cfg-wh-tiempos').value,enviar_reporte:document.getElementById('cfg-env-reporte').checked?'si':'no',enviar_jefes:document.getElementById('cfg-env-jefes').checked?'si':'no',enviar_tiempos:document.getElementById('cfg-env-tiempos').checked?'si':'no'};
-  try{
-    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'config',config:cfg})});
-    const data=await r.json();
-    if(data.ok)showToast('\u2705 Configuracion guardada','ok');
-    else throw new Error(data.error||'Error al guardar');
-  }catch(e){showToast('\u274c '+e.message,'err');}
-  finally{btn.disabled=false;btn.textContent='\ud83d\udcbe Guardar';}
-};
+// Nota: watchdog_activo ya se lee/guarda directamente en cargarConfig/guardarConfig
+// arriba — antes había aquí un parche duplicado que sobreescribía guardarConfig
+// con una copia vieja a la que le faltaban ciclos_jefes/ciclos_vendedores/
+// ciclos_reporte/hora_recordatorio/umbral_anomalia (se habrían dejado de guardar
+// sin avisar). Se quitó por completo.
 
 // MENSAJES PROGRAMADOS
 const URL_MSGS_PROG = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&sheet=MENSAJES_PROGRAMADOS";
@@ -1958,18 +1922,10 @@ async function agregarPrioridad(){
   try {
     const id     = Date.now().toString();
     const creado = new Date().toISOString().replace('T',' ').substring(0,19);
-    const r    = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({accion:'agregar_prioridad', id, campo, valor, creado})
-    });
-    const data = await r.json();
-    if (data.ok) {
-      showToast('✅ Regla de prioridad agregada','ok');
-      document.getElementById('prio-valor').value = '';
-      cargarPrioridades();
-    } else {
-      throw new Error(data.error || 'Error al guardar');
-    }
+    await apiPost('agregar_prioridad', {id, campo, valor, creado});
+    showToast('✅ Regla de prioridad agregada','ok');
+    document.getElementById('prio-valor').value = '';
+    cargarPrioridades();
   } catch(e) {
     showToast('❌ ' + e.message,'err');
   }
@@ -1978,13 +1934,8 @@ async function agregarPrioridad(){
 async function borrarPrioridad(id){
   if (!confirm('¿Eliminar esta regla de prioridad?')) return;
   try {
-    const r    = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({accion:'borrar_prioridad', id})
-    });
-    const data = await r.json();
-    if (data.ok) { showToast('✅ Regla eliminada','ok'); cargarPrioridades(); }
-    else throw new Error(data.error || 'Error al borrar');
+    await apiPost('borrar_prioridad', {id});
+    showToast('✅ Regla eliminada','ok'); cargarPrioridades();
   } catch(e) {
     showToast('❌ ' + e.message,'err');
   }
@@ -1992,17 +1943,9 @@ async function borrarPrioridad(id){
 
 async function togglePrioridad(id, nuevoActivo){
   try {
-    const r    = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({accion:'toggle_prioridad', id, activo: nuevoActivo ? 'si' : 'no'})
-    });
-    const data = await r.json();
-    if (data.ok) {
-      showToast(nuevoActivo ? '✅ Regla activada' : '⏸️ Regla pausada','ok');
-      cargarPrioridades();
-    } else {
-      throw new Error(data.error || 'Error');
-    }
+    await apiPost('toggle_prioridad', {id, activo: nuevoActivo ? 'si' : 'no'});
+    showToast(nuevoActivo ? '✅ Regla activada' : '⏸️ Regla pausada','ok');
+    cargarPrioridades();
   } catch(e) {
     showToast('❌ ' + e.message,'err');
   }
@@ -2023,20 +1966,12 @@ async function agregarMensajeProgramado(){
   try {
     const id     = Date.now().toString();
     const creado = new Date().toISOString().replace('T',' ').substring(0,19);
-    const r    = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({accion:'agregar_mensaje_programado', id, texto, intervalo_ciclos: intervalo, destino, creado})
-    });
-    const data = await r.json();
-    if (data.ok) {
-      showToast('\u2705 Mensaje programado agregado','ok');
-      document.getElementById('msg-texto').value    = '';
-      document.getElementById('msg-intervalo').value = '1';
-      actualizarEtiquetaCiclos(1);
-      cargarMensajesProgramados();
-    } else {
-      throw new Error(data.error || 'Error al guardar');
-    }
+    await apiPost('agregar_mensaje_programado', {id, texto, intervalo_ciclos: intervalo, destino, creado});
+    showToast('\u2705 Mensaje programado agregado','ok');
+    document.getElementById('msg-texto').value    = '';
+    document.getElementById('msg-intervalo').value = '1';
+    actualizarEtiquetaCiclos(1);
+    cargarMensajesProgramados();
   } catch(e) {
     showToast('\u274c ' + e.message,'err');
   }
@@ -2045,13 +1980,8 @@ async function agregarMensajeProgramado(){
 async function borrarMensajeProgramado(id){
   if (!confirm('\u00bfEliminar este mensaje? Ya no se volver\u00e1 a enviar.')) return;
   try {
-    const r    = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({accion:'borrar_mensaje_programado', id})
-    });
-    const data = await r.json();
-    if (data.ok) { showToast('\u2705 Mensaje eliminado','ok'); cargarMensajesProgramados(); }
-    else throw new Error(data.error || 'Error al borrar');
+    await apiPost('borrar_mensaje_programado', {id});
+    showToast('\u2705 Mensaje eliminado','ok'); cargarMensajesProgramados();
   } catch(e) {
     showToast('\u274c ' + e.message,'err');
   }
@@ -2059,17 +1989,9 @@ async function borrarMensajeProgramado(id){
 
 async function toggleMensajeProgramado(id, nuevoActivo){
   try {
-    const r    = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({accion:'toggle_mensaje_programado', id, activo: nuevoActivo ? 'si' : 'no'})
-    });
-    const data = await r.json();
-    if (data.ok) {
-      showToast(nuevoActivo ? '\u2705 Mensaje activado' : '\u23f8\ufe0f Mensaje pausado','ok');
-      cargarMensajesProgramados();
-    } else {
-      throw new Error(data.error || 'Error');
-    }
+    await apiPost('toggle_mensaje_programado', {id, activo: nuevoActivo ? 'si' : 'no'});
+    showToast(nuevoActivo ? '\u2705 Mensaje activado' : '\u23f8\ufe0f Mensaje pausado','ok');
+    cargarMensajesProgramados();
   } catch(e) {
     showToast('\u274c ' + e.message,'err');
   }
@@ -2161,13 +2083,8 @@ async function mandarPrueba(){
   if (!mensaje) {showToast('\u26a0\ufe0f El mensaje no puede estar vacio', 'err'); return;}
 
   try {
-    const r = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({accion: 'prueba_mensaje', espacio, mensaje})
-    });
-    const data = await r.json();
-    if (data.ok) showToast('\u2705 Mensaje enviado al espacio ' + espacio, 'ok');
-    else throw new Error(data.error || 'Error al enviar');
+    await apiPost('prueba_mensaje', {espacio, mensaje});
+    showToast('\u2705 Mensaje enviado al espacio ' + espacio, 'ok');
   } catch(e) {
     showToast('\u274c ' + e.message, 'err');
   }
@@ -2178,9 +2095,7 @@ function formatSeg(s){s=Math.round(s||0);if(s<60)return s+'s';const m=Math.floor
 
 async function cargarHistorico(){
   try{
-    const r=await fetch(APPS_SCRIPT_URL+'?accion=historico');
-    const data=await r.json();
-    if(!data.ok)return;
+    const data=await apiGet('historico');
     document.getElementById('hist-meta').innerHTML=data.ultima_actualizacion?
       `\ud83d\udcc5 Ultima actualizacion: <b>${data.ultima_actualizacion}</b> \u00b7 ${data.filas} filas en archivo \u00b7 ${data.total_procesados||0} remisiones procesadas`:
       'Sin datos. Sube un archivo primero.';
@@ -2227,16 +2142,11 @@ async function subirHistorico(){
     document.getElementById('hist-info').textContent=`Procesando ${filas.length-1} filas...`;
 
     // Subir en bloques si es muy grande
-    const r=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'subir_historico',filas:filas})});
-    const data=await r.json();
-    if(data.ok){
-      showToast('\u2705 Subido: '+data.filas+' filas','ok');
-      document.getElementById('hist-file').value='';
-      document.getElementById('hist-info').textContent='';
-      setTimeout(cargarHistorico,1000);
-    }else{
-      throw new Error(data.error||'Error');
-    }
+    const data=await apiPost('subir_historico', {filas:filas});
+    showToast('\u2705 Subido: '+data.filas+' filas','ok');
+    document.getElementById('hist-file').value='';
+    document.getElementById('hist-info').textContent='';
+    setTimeout(cargarHistorico,1000);
   }catch(e){showToast('\u274c '+e.message,'err');document.getElementById('hist-info').textContent='';}
   finally{btn.disabled=false;btn.textContent='\ud83d\udce4 Procesar y subir';}
 }

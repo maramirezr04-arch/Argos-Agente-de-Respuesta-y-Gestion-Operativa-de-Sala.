@@ -100,21 +100,33 @@ def cargar_estructuras_sheets(ss):
 
 def cargar_webhooks_jefes(gc, nombres_jefes=None):
     """Lee la hoja WEBHOOKS_JEFES y retorna {nombre_jefe: webhook_url}.
-    Si la hoja esta vacia y se pasan nombres_jefes, los escribe como referencia.
+    Agrega automaticamente cualquier jefe nuevo detectado en el CSV
+    (columna A) para que solo haya que pegar el webhook en la columna B —
+    igual que ya hace cargar_webhooks_vendedores con los vendedores.
     """
     try:
-        ss   = gc.open_by_key(GOOGLE["sheet_id"])
-        hoja = ss.worksheet("WEBHOOKS_JEFES")
+        ss = gc.open_by_key(GOOGLE["sheet_id"])
+        try:
+            hoja = ss.worksheet("WEBHOOKS_JEFES")
+        except gspread.WorksheetNotFound:
+            hoja = ss.add_worksheet("WEBHOOKS_JEFES", rows=100, cols=3)
+            hoja.update([["Jefe", "Webhook", "Activo"]], "A1")
+            log.info("Hoja WEBHOOKS_JEFES creada — agrega los webhooks en columna B")
         rows = hoja.get_all_values()
 
-        # Si solo tiene el header (o esta vacia) y tenemos nombres, poblar columna A
-        datos = [r for r in rows[1:] if any(c.strip() for c in r)]
-        if not datos and nombres_jefes:
-            log.info(f"WEBHOOKS_JEFES vacia — agregando {len(nombres_jefes)} nombres de jefes...")
-            nuevas = [[n, ""] for n in sorted(nombres_jefes)]
-            hoja.append_rows(nuevas, value_input_option="RAW")
-            log.info("WEBHOOKS_JEFES: nombres agregados ✅ — agrega los webhooks en columna B")
-            return {}
+        # Nombres ya presentes en la hoja (columna A, normalizados)
+        existentes = {str(r[0]).strip().upper() for r in rows[1:] if r and str(r[0]).strip()}
+
+        # Agregar jefes nuevos detectados en este ciclo
+        if nombres_jefes:
+            nuevos = sorted({
+                n.strip() for n in nombres_jefes
+                if n and n.strip().upper() not in existentes
+            })
+            if nuevos:
+                hoja.append_rows([[n, ""] for n in nuevos], value_input_option="RAW")
+                log.info(f"WEBHOOKS_JEFES: {len(nuevos)} jefe(s) nuevo(s) agregado(s)")
+                rows = hoja.get_all_values()
 
         resultado = {}
         for row in rows[1:]:
@@ -129,9 +141,6 @@ def cargar_webhooks_jefes(gc, nombres_jefes=None):
                     resultado[nombre] = webhook
         log.info(f"WEBHOOKS_JEFES cargados: {len(resultado)} jefes con webhook activo")
         return resultado
-    except gspread.WorksheetNotFound:
-        log.info("Hoja WEBHOOKS_JEFES no existe — mensajes individuales desactivados")
-        return {}
     except Exception as e:
         log.warning(f"Error cargando WEBHOOKS_JEFES: {e}")
         return {}
@@ -393,8 +402,25 @@ def actualizar_sheets(gc, datos):
     # `datos` ahora es una lista de dicts (remisiones tal cual las manda la
     # API) — se ordenan según COLUMNAS_REMISION en vez de por índice de CSV.
     datos_limpios = preparar_filas(datos, COLUMNAS_REMISION)
-    hoja1.clear()
+
+    # Escribir primero, limpiar el sobrante despues — si algo truena entre
+    # medio (ej. un 503 de Sheets), la hoja se queda con los datos nuevos o
+    # los viejos, pero nunca en blanco.
+    try:
+        filas_previas = len(hoja1.col_values(1))
+    except Exception:
+        filas_previas = 0
+
     hoja1.update([COLUMNAS_REMISION] + datos_limpios, "A1", value_input_option="RAW")
+
+    filas_nuevas = len(datos_limpios) + 1  # +1 por encabezado
+    if filas_previas > filas_nuevas:
+        try:
+            ultima_col = gspread.utils.rowcol_to_a1(1, len(COLUMNAS_REMISION)).rstrip("1")
+            hoja1.batch_clear([f"A{filas_nuevas + 1}:{ultima_col}{filas_previas}"])
+        except Exception as e:
+            log.warning(f"No se pudo limpiar sobrante de Sheet 1: {e}")
+
     log.info("Sheet 1 actualizado ✅ (columnas API)")
 
     ss2 = gc.open_by_key(GOOGLE["sheet2_id"])
@@ -468,7 +494,11 @@ def actualizar_sheets(gc, datos):
     except gspread.WorksheetNotFound:
         hoja_app = ss1.add_worksheet("APP 2.0", rows=5000, cols=15)
 
-    hoja_app.clear()
+    try:
+        filas_previas_app = len(hoja_app.col_values(1))
+    except Exception:
+        filas_previas_app = 0
+
     ubicaciones = sorted(set([v["ubicacion"] for v in dir_dict.values() if v["ubicacion"]]))
     opciones    = ["Todas"] + ubicaciones
     hoja_app.update([["Filtrar por ubicacion", "", "", "Todas", "", "Haz clic en D1 y selecciona"]], "A1")
@@ -477,17 +507,19 @@ def actualizar_sheets(gc, datos):
 
     ESTATUS_FILTRO = ["Etiqueta Generada", "Mercancia en Espera de Entrega"]
 
+    estatus_vistos = set()
     rows_app = []
     for row in datos:
         if not row:
             continue
         status = str(row.get("StatusRemision", "")).strip()
+        estatus_vistos.add(status)
         if status not in ESTATUS_FILTRO:
             continue
         sec       = str(row.get("Seccion", "")).strip().replace(".0","")
         jefe      = str(row.get("NombreJefeDePiso", "")).strip()
         ubicacion = dir_dict.get(sec, {}).get("ubicacion", "")
-        if not jefe or jefe in ("","nan","Sin Asignar","UNASSIGNED"):
+        if not jefe or jefe.strip().lower() in ("","nan","sin asignar","unassigned"):
             jefe = dir_dict.get(sec, {}).get("jefe","") or hist_dict.get(sec, {}).get("Jefe","Sin Asignar")
         if sec in descansos:
             jefe = jefe + " -> " + descansos[sec]
@@ -502,12 +534,23 @@ def actualizar_sheets(gc, datos):
 
     if rows_app:
         hoja_app.update(rows_app, "A3", value_input_option="RAW")
+
+    filas_nuevas_app = len(rows_app) + 2  # +2 por encabezado (fila 1) y titulos (fila 2)
+    if filas_previas_app > filas_nuevas_app:
+        try:
+            hoja_app.batch_clear([f"A{filas_nuevas_app + 1}:I{filas_previas_app}"])
+        except Exception as e:
+            log.warning(f"No se pudo limpiar sobrante de APP 2.0: {e}")
+
     try:
         aplicar_formato(ss1, hoja_app, len(rows_app))
     except Exception as e:
         log.error(f"Error formato: {e}")
 
     log.info(f"APP 2.0 actualizada: {len(rows_app)} filas ✅")
+    otros_estatus = estatus_vistos - set(ESTATUS_FILTRO)
+    if otros_estatus:
+        log.debug(f"APP 2.0: estatus vistos fuera del filtro (excluidos a propósito o nuevos): {sorted(otros_estatus)}")
 
     try:
         from actualizar_directorio import actualizar_directorio_e_historial
